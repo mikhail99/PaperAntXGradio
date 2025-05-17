@@ -5,6 +5,7 @@ from core.data_models import Collection, Article
 from core.collections_manager import CollectionsManager
 from core.article_manager import ArticleManager
 from core.copilot_service import CopilotService
+import html
 
 # Helper to convert collections dict to DataFrame rows
 def collections_to_rows(collections):
@@ -19,17 +20,25 @@ def collections_to_rows(collections):
         ])
     return rows
 
-def articles_to_df(articles):
+# Global variable to store filtered articles for selection
+filtered_articles = []
+
+def articles_table_value(articles):
+    global filtered_articles
+    filtered_articles = articles  # Store for selection callback
     data = []
     for a in articles:
-        data.append([
-            a.id,
-            a.title,
-            ", ".join(a.authors),
-            a.rating or "",
-            ", ".join(a.tags),
-        ])
-    return pd.DataFrame(data, columns=["ID", "Title", "Authors", "Rating", "Tags"])
+        rating_icon = {
+            "favorite": "★",
+            "accept": "✓",
+            "reject": "✗",
+            None: "",
+            "": "",
+        }.get(a.rating, "")
+        tags_text = ", ".join(a.tags)
+        data.append([a.title, ", ".join(a.authors), rating_icon, tags_text])
+    headers = ["Title", "Authors", "Rating", "Tags"]
+    return {"data": data, "headers": headers}
 
 def style_article_rows(df):
     def row_style(row):
@@ -57,6 +66,73 @@ with gr.Blocks(title="PaperAnt X") as demo:
     copilot_chat_history = gr.State([])
     selected_article_title = gr.State("")
 
+    # Add custom CSS for a more modern look
+    gr.HTML("""
+    <style>
+    .gradio-container {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .container {
+        max-width: 1200px;
+        margin: auto;
+    }
+    
+    /* Table Styling */
+    .dataframe-container {
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    .dataframe {
+        font-size: 14px;
+    }
+    .dataframe tr:hover {
+        background-color: #f5f5f5;
+    }
+    
+    /* Tag Styling */
+    .tag-chip {
+        display: inline-block;
+        background-color: #e0e0e0;
+        border-radius: 16px;
+        padding: 2px 8px;
+        margin: 2px;
+        font-size: 12px;
+    }
+    
+    /* Rating Icons */
+    .rating-icon {
+        font-weight: bold;
+        font-size: 16px;
+    }
+    .rating-favorite {
+        color: #ffd700;
+    }
+    .rating-accept {
+        color: #28a745;
+    }
+    .rating-reject {
+        color: #dc3545;
+    }
+    
+    /* Button Styling */
+    button.primary {
+        background-color: #4a90e2 !important;
+    }
+    .accordion-title {
+        font-weight: bold;
+    }
+    
+    /* Article Details Section */
+    .article-details {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 16px;
+        background-color: #f9f9f9;
+    }
+    </style>
+    """)
+
     gr.Markdown("# PaperAnt X")
     with gr.Tabs():
         with gr.TabItem("Collections Management"):
@@ -79,45 +155,146 @@ with gr.Blocks(title="PaperAnt X") as demo:
             status = gr.Markdown("")
 
         with gr.TabItem("Article Management"):
-            with gr.Row():
+            # --- Toolbar Row ---
+            with gr.Row(equal_height=True):
                 collection_dropdown = gr.Dropdown(
                     choices=collection_options,
-                    label="Select Collection",
+                    label="Collection",
                     value=collection_options[0][1] if collection_options else None,
+                    interactive=True,
                 )
-                search_box = gr.Textbox(label="Search Articles (Title, Abstract)")
+                search_box = gr.Textbox(label="🔍 Search articles...", placeholder="Title, Abstract", scale=2)
                 tag_filter_dropdown = gr.Dropdown(
                     choices=[],
                     multiselect=True,
-                    label="Filter by Tags (select one or more)",
+                    label="🏷️ Filter by tags",
                 )
-                semantic_search_box = gr.Textbox(label="Semantic Search (Natural Language Query)")
-                semantic_search_btn = gr.Button("Semantic Search")
+                semantic_search_box = gr.Textbox(label="🧠 Semantic Search...", placeholder="Natural language query", scale=2)
+                semantic_search_btn = gr.Button("Semantic Search", elem_id="semantic-search-btn")
 
+            # --- Articles Table ---
             articles_df = gr.Dataframe(
-                value=style_article_rows(pd.DataFrame(columns=["ID", "Title", "Authors", "Rating", "Tags"])),
+                value=articles_table_value([]),
                 label="Articles",
                 interactive=False,
-                max_height=200,
+                max_height=300,
+                elem_id="articles-table",
+                show_search="search",
             )
 
-            article_title_md = gr.Markdown("<i>No article selected</i>")
-            with gr.Row():
-                with gr.Column():
-                    article_abstract_md = gr.Markdown("<i>No article selected</i>")
-                with gr.Column():
-                    with gr.Row():
-                        rating_radio = gr.Radio(label="Rating", choices=["accept", "reject", "favorite"])
-                        tags_edit_box = gr.Textbox(label="Modify Tags (comma-separated)")
+            # --- Article Details Accordion ---
+            with gr.Accordion("Article Details", open=False, elem_classes=["article-details"]) as article_details_accordion:
+                article_title_md = gr.Markdown("<i>No article selected</i>")
+                with gr.Row():
+                    with gr.Column(scale=3):
+                        article_abstract_md = gr.Markdown("<i>No article selected</i>")
+                    with gr.Column(scale=2):
+                        rating_radio = gr.Radio(
+                            label="Rating", 
+                            choices=["accept", "reject", "favorite"], 
+                            info="✓ Accept, ✗ Reject, ★ Favorite"
+                        )
+                        tags_edit_box = gr.Textbox(
+                            label="Modify Tags (comma-separated)", 
+                            placeholder="e.g. AI ethics, fairness, ..."
+                        )
+                        notes_box = gr.Textbox(
+                            label="My Notes", 
+                            lines=4, 
+                            placeholder="Write your notes here..."
+                        )
+                        save_article_btn = gr.Button("Update Article Details", elem_classes=["primary"])
+            article_status = gr.Markdown(visible=False)
 
-                    notes_box = gr.Textbox(label="My Notes", lines=4)
-                    save_article_btn = gr.Button("Update Article Details (Rating/Tags/Notes)")
-            
-   
+            # --- Add Article Row ---
             with gr.Row():
-                add_id_box = gr.Textbox(label="Add Article by ID (DOI, arXiv ID, etc.)")
+                add_id_box = gr.Textbox(label="➕ Add Article by ID", placeholder="DOI, arXiv ID, etc.")
                 fetch_add_btn = gr.Button("Fetch and Add Article")
-            article_status = gr.Markdown("")
+
+            # --- Callbacks ---
+            # Update handle_article_select to use the correct index and show details
+            def handle_article_select(evt: gr.SelectData, collection_id):
+                try:
+                    global filtered_articles
+                    if not evt.index or len(evt.index) == 0:
+                        return "", "", None, "", "<i>No article selected</i>", "<i>No article selected</i>"
+                    row_index = evt.index[0]
+                    if row_index is None or row_index >= len(filtered_articles):
+                        return "", "", None, "", "<i>No article selected</i>", "<i>No article selected</i>"
+                    article = filtered_articles[row_index]
+                    notes = getattr(article, 'notes', "")
+                    tags = ", ".join(article.tags)
+                    rating = article.rating
+                    title_md = f"### {article.title}\n*by {', '.join(article.authors)}*"
+                    abstract_md = f"**Abstract:**<br>{article.abstract}" if article.abstract else "<i>No abstract available</i>"
+                    return notes, tags, rating, article.id, title_md, abstract_md
+                except Exception as e:
+                    print(f"Error selecting article: {str(e)}")
+                    print(traceback.format_exc())
+                    return "", "", None, "", "<i>No article selected</i>", "<i>No article selected</i>"
+
+            # Update auto_refresh_articles to use the new table format
+            def auto_refresh_articles(collection_id, search_text, selected_tags):
+                try:
+                    if not collection_id:
+                        return articles_table_value([])
+                    articles = get_articles_for_collection(collection_id)
+                    if search_text.strip():
+                        search_lower = search_text.strip().lower()
+                        articles = [a for a in articles if search_lower in a.title.lower() or search_lower in a.abstract.lower()]
+                    if selected_tags:
+                        articles = [a for a in articles if any(tag in a.tags for tag in selected_tags)]
+                    return articles_table_value(articles)
+                except Exception as e:
+                    print(f"Error filtering articles: {str(e)}")
+                    print(traceback.format_exc())
+                    return articles_table_value([])
+
+            # Bind callbacks
+            articles_df.select(handle_article_select, [collection_dropdown], [notes_box, tags_edit_box, rating_radio, selected_article_id, article_title_md, article_abstract_md])
+            
+            # Update auto-refresh articles function to use the new one
+            collection_dropdown.change(auto_refresh_articles, [collection_dropdown, search_box, tag_filter_dropdown], [articles_df])
+            search_box.change(auto_refresh_articles, [collection_dropdown, search_box, tag_filter_dropdown], [articles_df])
+            tag_filter_dropdown.change(auto_refresh_articles, [collection_dropdown, search_box, tag_filter_dropdown], [articles_df])
+
+            # Update save_article to refresh with the new table format
+            def handle_save_article(collection_id, article_id, notes, tags_str, rating):
+                if not article_id:
+                    return "**No article selected**", articles_table_value(get_articles_for_collection(collection_id))
+                try:
+                    article = article_manager.get_article(collection_id, article_id)
+                    if not article:
+                        return "**Article not found**", articles_table_value(get_articles_for_collection(collection_id))
+                    article.notes = notes
+                    article.tags = [t.strip() for t in tags_str.split(",") if t.strip()]
+                    article.rating = rating
+                    updated = article_manager.update_article(collection_id, article)
+                    status = "**Article updated**" if updated else "**Failed to update article**"
+                    updated_articles = get_articles_for_collection(collection_id)
+                    return status, articles_table_value(updated_articles)
+                except Exception as e:
+                    error_msg = f"**Error updating article: {str(e)}**"
+                    print(error_msg)
+                    print(traceback.format_exc())
+                    updated_articles = get_articles_for_collection(collection_id)
+                    return error_msg, articles_table_value(updated_articles)
+
+            # Update semantic search to use the new table format
+            def handle_semantic_search(collection_id, query):
+                if not collection_id or not query.strip():
+                    return articles_table_value([])
+                try:
+                    articles = manager.search_articles(collection_id, query, limit=20)
+                    return articles_table_value(articles)
+                except Exception as e:
+                    print(f"Error in semantic search: {str(e)}")
+                    print(traceback.format_exc())
+                    return articles_table_value([])
+
+            # Re-bind the callbacks with the updated functions
+            save_article_btn.click(handle_save_article, [collection_dropdown, selected_article_id, notes_box, tags_edit_box, rating_radio], [article_status, articles_df])
+            semantic_search_btn.click(handle_semantic_search, [collection_dropdown, semantic_search_box], [articles_df])
 
         with gr.TabItem("AI Copilot"):
             with gr.Row():
@@ -231,92 +408,23 @@ graph TD
             return []
         return list(collection.articles.values())
 
-    def handle_article_select(evt: gr.SelectData, collection_id):
-        try:
-            articles = get_articles_for_collection(collection_id)
-            rows = articles_to_df(articles)
-            if not evt.index or len(evt.index) == 0:
-                return "", "", None, "", "<i>No article selected</i>", "<i>No article selected</i>"
-            row_index = evt.index[0]
-            if row_index is None or row_index >= len(rows):
-                return "", "", None, "", "<i>No article selected</i>", "<i>No article selected</i>"
-            selected_article_id = rows.iloc[row_index]["ID"]  # Get ID from the row
-            article = None
-            for a in articles:
-                if a.id == selected_article_id:
-                    article = a
-                    break
-            if not article:
-                return "", "", None, "", "<i>No article selected</i>", "<i>No article selected</i>"
-            notes = getattr(article, 'notes', "")
-            tags = ", ".join(article.tags)
-            rating = article.rating
-            title_md = f"### {article.title}"
-            abstract_md = f"**Abstract:**<br>{article.abstract}" if article.abstract else "<i>No abstract available</i>"
-            return notes, tags, rating, selected_article_id, title_md, abstract_md
-        except Exception as e:
-            print(f"Error selecting article: {str(e)}")
-            print(traceback.format_exc())
-            return "", "", None, "", "<i>No article selected</i>", "<i>No article selected</i>"
+    # Bind callbacks for collections
+    create_btn.click(handle_create_collection, [name_box, desc_box, tags_box], [collections_df, status])
+    collections_df.select(handle_select_collection, None, [name_box, desc_box, tags_box, selected_collection_id])
+    update_btn.click(handle_update_collection, [selected_collection_id, name_box, desc_box, tags_box], [collections_df, status])
+    archive_btn.click(handle_archive_collection, [selected_collection_id], [collections_df, status])
 
-    def handle_save_article(collection_id, article_id, notes, tags_str, rating):
-        if not article_id:
-            return "**No article selected**", style_article_rows(articles_to_df(get_articles_for_collection(collection_id)))
-        try:
-            article = article_manager.get_article(collection_id, article_id)
-            if not article:
-                return "**Article not found**", style_article_rows(articles_to_df(get_articles_for_collection(collection_id)))
-            article.notes = notes
-            article.tags = [t.strip() for t in tags_str.split(",") if t.strip()]
-            article.rating = rating
-            updated = article_manager.update_article(collection_id, article)
-            status = "**Article updated**" if updated else "**Failed to update article**"
-            updated_articles = get_articles_for_collection(collection_id)
-            return status, style_article_rows(articles_to_df(updated_articles))
-        except Exception as e:
-            error_msg = f"**Error updating article: {str(e)}**"
-            print(error_msg)
-            print(traceback.format_exc())
-            updated_articles = get_articles_for_collection(collection_id)
-            return error_msg, style_article_rows(articles_to_df(updated_articles))
-
-    def handle_semantic_search(collection_id, query):
-        if not collection_id or not query.strip():
-            return style_article_rows(pd.DataFrame(columns=["ID", "Title", "Authors", "Rating", "Tags"]))
-        try:
-            articles = manager.search_articles(collection_id, query, limit=20)
-            return style_article_rows(articles_to_df(articles))
-        except Exception as e:
-            print(f"Error in semantic search: {str(e)}")
-            print(traceback.format_exc())
-            return style_article_rows(pd.DataFrame(columns=["ID", "Title", "Authors", "Rating", "Tags"]))
-
+    # Update tag filter dropdown
     def update_tag_filter_dropdown(collection_id):
         collection = manager.get_collection(collection_id)
         if not collection:
             return gr.update(choices=[])
         tag_names = [tag.name for tag in collection.tags.values()]
         return gr.update(choices=tag_names)
+    
+    collection_dropdown.change(update_tag_filter_dropdown, [collection_dropdown], [tag_filter_dropdown])
 
-    def handle_filter_articles(collection_id, search_text, selected_tags):
-        if not collection_id:
-            return style_article_rows(pd.DataFrame(columns=["ID", "Title", "Authors", "Rating", "Tags"]))
-        try:
-            # Get all articles for the collection
-            articles = get_articles_for_collection(collection_id)
-            # Filter by search text (title or abstract)
-            if search_text.strip():
-                search_lower = search_text.strip().lower()
-                articles = [a for a in articles if search_lower in a.title.lower() or search_lower in a.abstract.lower()]
-            # Filter by tags
-            if selected_tags:
-                articles = [a for a in articles if any(tag in a.tags for tag in selected_tags)]
-            return style_article_rows(articles_to_df(articles))
-        except Exception as e:
-            print(f"Error filtering articles: {str(e)}")
-            print(traceback.format_exc())
-            return style_article_rows(pd.DataFrame(columns=["ID", "Title", "Authors", "Rating", "Tags"]))
-
+    # Copilot functions
     def update_copilot_context(collection_id):
         if not collection_id:
             return "Copilot context: (select a collection for best results)"
@@ -340,6 +448,11 @@ graph TD
             messages.append({"role": "assistant", "content": bot})
         return messages, "", new_history
 
+    # Copilot tab bindings
+    collection_dropdown.change(update_copilot_context, [collection_dropdown], [copilot_context])
+    copilot_send_btn.click(handle_copilot_send, [copilot_input, collection_dropdown, copilot_chat_history], [copilot_chatbot, copilot_status, copilot_chat_history])
+
+    # PaperQA functions
     def handle_paperqa(collection_id, question):
         if not collection_id or not question.strip():
             return "Please select a collection and enter a question."
@@ -350,6 +463,7 @@ graph TD
         report = f"# PaperQA Report\n\n**Collection:** {collection.name}\n\n**Question:** {question}\n\n---\n\n## Mock Analysis\n\nThis is a detailed (mock) report for your question.\n\n- **Number of articles:** {len(collection.articles)}\n- **Tags:** {', '.join([t.name for t in collection.tags.values()])}\n\n### Example Section\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum.\n\n---\n\n*In a real implementation, this would be generated by an LLM.*"
         return report
 
+    # MindMap functions
     def handle_mindmap(collection_id):
         if not collection_id:
             return "Please select a collection."
@@ -362,29 +476,6 @@ graph TD
 graph TD\n    A[Collection: {collection.name}] --> B[Tag 1]\n    A --> C[Tag 2]\n    B --> D[Article 1]\n    C --> E[Article 2]\n```
 """
         return mermaid
-
-    # Auto-refresh articles table on collection, search, or tag filter change
-    def auto_refresh_articles(collection_id, search_text, selected_tags):
-        return handle_filter_articles(collection_id, search_text, selected_tags)
-    collection_dropdown.change(auto_refresh_articles, [collection_dropdown, search_box, tag_filter_dropdown], [articles_df])
-    search_box.change(auto_refresh_articles, [collection_dropdown, search_box, tag_filter_dropdown], [articles_df])
-    tag_filter_dropdown.change(auto_refresh_articles, [collection_dropdown, search_box, tag_filter_dropdown], [articles_df])
-
-    # Bind callbacks for collections
-    create_btn.click(handle_create_collection, [name_box, desc_box, tags_box], [collections_df, status])
-    collections_df.select(handle_select_collection, None, [name_box, desc_box, tags_box, selected_collection_id])
-    update_btn.click(handle_update_collection, [selected_collection_id, name_box, desc_box, tags_box], [collections_df, status])
-    archive_btn.click(handle_archive_collection, [selected_collection_id], [collections_df, status])
-
-    # Bind callbacks for articles
-    articles_df.select(handle_article_select, [collection_dropdown], [notes_box, tags_edit_box, rating_radio, selected_article_id, article_title_md, article_abstract_md])
-    save_article_btn.click(handle_save_article, [collection_dropdown, selected_article_id, notes_box, tags_edit_box, rating_radio], [article_status, articles_df])
-    semantic_search_btn.click(handle_semantic_search, [collection_dropdown, semantic_search_box], [articles_df])
-    collection_dropdown.change(update_tag_filter_dropdown, [collection_dropdown], [tag_filter_dropdown])
-
-    # Copilot tab bindings
-    collection_dropdown.change(update_copilot_context, [collection_dropdown], [copilot_context])
-    copilot_send_btn.click(handle_copilot_send, [copilot_input, collection_dropdown, copilot_chat_history], [copilot_chatbot, copilot_status, copilot_chat_history])
 
     # PaperQA tab bindings
     paperqa_collection_dropdown.change(handle_paperqa, [paperqa_collection_dropdown, paperqa_input], [paperqa_output])
