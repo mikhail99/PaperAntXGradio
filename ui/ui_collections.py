@@ -17,7 +17,7 @@ def collections_to_rows(collections):
     return rows
 
 def create_collections_tab(state):
-    with gr.TabItem("Collections Management"):
+    with gr.TabItem("📚 Collections"):
         collections_df = gr.Dataframe(
             headers=["ID", "Name", "Description", "Archived", "Tags"],
             value=collections_to_rows(manager.get_all_collections()),

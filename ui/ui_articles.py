@@ -34,7 +34,7 @@ def get_articles_for_collection(collection_id):
     return list(collection.articles.values())
 
 def create_articles_tab(state):
-    with gr.TabItem("Article Management"):
+    with gr.TabItem("📖 Articles"):
         # --- Toolbar Row ---
         collection_options = [(c.name, c.id) for c in manager.get_all_collections() if not c.archived]
         with gr.Row(equal_height=True):
