@@ -10,6 +10,11 @@ article_manager = ArticleManager(manager)
 
 # Helper for table
 filtered_articles = []
+
+def get_collection_description(collection_id):
+    c = manager.get_collection(collection_id)
+    return c.description if c else ""
+
 def articles_table_value(articles):
     global filtered_articles
     filtered_articles = articles  # Store for selection callback
@@ -38,20 +43,24 @@ def create_articles_tab(state):
         # --- Toolbar Row ---
         collection_options = [(c.name, c.id) for c in manager.get_all_collections() if not c.archived]
         with gr.Row(equal_height=True):
-            collection_dropdown = gr.Dropdown(
-                choices=collection_options,
-                label="Collection",
-                value=collection_options[0][1] if collection_options else None,
-                interactive=True,
-            )
-            search_box = gr.Textbox(label="🔍 Search articles...", placeholder="Title, Abstract", scale=2)
-            tag_filter_dropdown = gr.Dropdown(
-                choices=[],
-                multiselect=True,
-                label="🏷️ Filter by tags",
-            )
-            semantic_search_box = gr.Textbox(label="🧠 Semantic Search...", placeholder="Natural language query", scale=2)
-            semantic_search_btn = gr.Button("Semantic Search", elem_id="semantic-search-btn")
+            with gr.Column(scale=1):
+                collection_dropdown = gr.Dropdown(
+                    choices=collection_options,
+                    label="Collection",
+                    value=collection_options[0][1] if collection_options else None,
+                    interactive=True,
+                )
+                collection_desc_md = gr.Markdown("<i>Select a collection to see its description.</i>")
+            with gr.Column(scale=1):
+                search_box = gr.Textbox(label="🔍 Search articles...", placeholder="Title, Abstract", scale=2)
+                tag_filter_dropdown = gr.Dropdown(
+                    choices=[],
+                    multiselect=True,
+                    label="🏷️ Filter by tags",
+                )
+            with gr.Column(scale=2):
+                semantic_search_box = gr.Textbox(label="🧠 Semantic Search...", placeholder="Natural language query", scale=2)
+                semantic_search_btn = gr.Button("Semantic Search", elem_id="semantic-search-btn")
 
         # --- Articles Table ---
         articles_df = gr.Dataframe(
@@ -87,10 +96,11 @@ def create_articles_tab(state):
                     save_article_btn = gr.Button("Update Article Details", elem_classes=["primary"])
         article_status = gr.Markdown(visible=False)
 
-        # --- Add Article Row ---
-        with gr.Row():
-            add_id_box = gr.Textbox(label="➕ Add Article by ID", placeholder="DOI, arXiv ID, etc.")
-            fetch_add_btn = gr.Button("Fetch and Add Article")
+        # --- Article Import ---
+        with gr.Accordion("Article Import", open=False):
+            with gr.Row():
+                add_id_box = gr.Textbox(label="➕ Add Article by ID", placeholder="DOI, arXiv ID, etc.")
+                fetch_add_btn = gr.Button("Fetch and Add Article", elem_classes=["primary"])
 
         # --- Callbacks ---
         def handle_article_select(evt: gr.SelectData, collection_id):
@@ -157,10 +167,15 @@ def create_articles_tab(state):
                 print(f"Error in semantic search: {str(e)}")
                 return articles_table_value([])
 
+        def update_collection_desc(collection_id):
+            desc = get_collection_description(collection_id)
+            return desc or "<i>No description available.</i>"
+
         # Bind callbacks
         articles_df.select(handle_article_select, [collection_dropdown], [notes_box, tags_edit_box, rating_radio, state["selected_article_id"], article_title_md, article_abstract_md])
         save_article_btn.click(handle_save_article, [collection_dropdown, state["selected_article_id"], notes_box, tags_edit_box, rating_radio], [article_status, articles_df])
         semantic_search_btn.click(handle_semantic_search, [collection_dropdown, semantic_search_box], [articles_df])
+        collection_dropdown.change(update_collection_desc, collection_dropdown, collection_desc_md)
 
         def update_tag_filter_dropdown(collection_id):
             collection = manager.get_collection(collection_id)

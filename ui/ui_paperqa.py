@@ -28,7 +28,7 @@ def create_paperqa_tab(state):
                 ask_btn = gr.Button("Get Report")
         with gr.Row():
             with gr.Column(scale=2):
-                gr.Markdown("### Answer")
+                gr.Markdown("### Report")
                 answer_card = gr.Markdown("(Report will appear here)", elem_id="answer-card")
             with gr.Column(scale=1, elem_classes=["qa-history-card"]):
                 gr.Markdown("### Q&A History")
