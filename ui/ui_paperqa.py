@@ -1,7 +1,19 @@
 import gradio as gr
 from core.collections_manager import CollectionsManager
-from core.data_models import Collection
-import time
+from core.data_models import Article # Assuming Article is used or can be imported
+# import time # No longer needed
+import asyncio
+# import tempfile # No longer needed directly in UI
+# from pathlib import Path # No longer needed directly in UI
+import os
+import html
+
+# from paperqa import Docs, Settings # No longer needed directly in UI
+# from paperqa.settings import AgentSettings, IndexSettings # No longer needed directly in UI
+from core.paperqa_service import PaperQAService # Import the new service
+
+# --- Initialize PaperQA Service ---
+paperqa_service = PaperQAService()
 
 manager = CollectionsManager(persist_directory="data/chroma_db_store")
 
@@ -12,6 +24,15 @@ def get_collection_options():
 def get_collection_description(collection_id):
     c = manager.get_collection(collection_id)
     return c.description if c else ""
+
+def extract_pdf_path_from_notes(notes: str) -> str | None:
+    if not notes:
+        return None
+    lines = notes.splitlines()
+    for line in lines:
+        if line.startswith("Local PDF: "):
+            return line.replace("Local PDF: ", "").strip()
+    return None
 
 def create_paperqa_tab(state):
     with gr.TabItem("📝 PaperQA"):
@@ -35,57 +56,124 @@ def create_paperqa_tab(state):
                 history_radio = gr.Radio(choices=[], label="History", interactive=True, value=None, elem_classes=["qa-history-radio"])
         loading_md = gr.Markdown("", visible=False)
 
-        # State for Q&A history and selected Q&A
-        history_state = gr.State([])  # List of dicts: {q, a, evidence}
-        selected_history_value = gr.State(None)  # Store the selected question short text
+        history_state = gr.State([])
+        selected_history_value = gr.State(None)
 
-        # --- Callbacks ---
         def update_collection_desc(collection_id):
             desc = get_collection_description(collection_id)
             return desc or "<i>No description available.</i>"
 
-        def handle_ask(collection_id, question, history):
+        async def handle_ask(collection_id, question, current_history):
             if not collection_id or not question.strip():
-                # Defensive: radio should be updated with empty choices and None value
-                return gr.update(visible=False), "Please select a collection and enter a question.", history, None, gr.update(choices=[], value=None)
+                yield {
+                    loading_md: gr.update(visible=False),
+                    answer_card: "Please select a collection and enter a question.",
+                    history_state: current_history,
+                    selected_history_value: selected_history_value.value,
+                    history_radio: gr.update(choices=history_radio.choices, value=selected_history_value.value)
+                }
+                return
+            
             collection = manager.get_collection(collection_id)
             if not collection:
-                return gr.update(visible=False), "Collection not found.", history, None, gr.update(choices=[], value=None)
-            # Show loading
-            loading = gr.update(value="_Generating answer..._", visible=True)
-            # Simulate LLM delay
-            time.sleep(0.5)
-            # Mock LLM response
-            answer = f"**Q:** {question}\n\n**A:** This is a mock answer for your question about collection '{collection.name}'."
-            evidence = f"_Evidence: (mock)_ {len(collection.articles)} articles in this collection."
-            entry = {"q": question, "a": answer, "evidence": evidence}
-            new_history = (history or [])[:]
-            new_history.insert(0, entry)  # Most recent on top
-            # Prepare radio choices (short question text)
-            radio_choices = ["💬 " + (item["q"][:50] + ("..." if len(item["q"]) > 50 else "")) for item in new_history]
-            selected_value = radio_choices[0] if radio_choices else None
-            # Show most recent Q&A
-            answer_card_val = f"{answer}\n\n{evidence}"
-            # Use gr.update for atomic update
-            return gr.update(visible=False), answer_card_val, new_history, selected_value, gr.update(choices=radio_choices, value=selected_value)
+                yield {
+                    loading_md: gr.update(visible=False),
+                    answer_card: "Collection not found.",
+                    history_state: current_history,
+                    selected_history_value: selected_history_value.value,
+                    history_radio: gr.update(choices=history_radio.choices, value=selected_history_value.value)
+                }
+                return
 
-        def handle_history_click(selected_value, history):
-            if not history or not selected_value:
-                return "(No Q&A selected)", selected_value
-            # Find the entry with the matching short text (with emoji)
-            for entry in history:
-                short_text = "💬 " + (entry["q"][:50] + ("..." if len(entry["q"]) > 50 else ""))
-                if short_text == selected_value:
-                    return f"{entry['a']}\n\n{entry['evidence']}", selected_value
-            return "(No Q&A selected)", selected_value
+            # Build a list of Article objects with valid local PDFs
+            valid_articles = []
+            for article in collection.articles.values():
+                pdf_path = extract_pdf_path_from_notes(getattr(article, 'notes', ''))
+                if pdf_path and os.path.exists(pdf_path):
+                    valid_articles.append(article)
+                elif pdf_path:
+                    print(f"Warning: PDF path found ({pdf_path}) but file does not exist.")
 
-        # Bindings
+            if not valid_articles:
+                yield {
+                    loading_md: gr.update(visible=False),
+                    answer_card: "No valid PDF documents with existing files found in the selected collection.",
+                    history_state: current_history,
+                    selected_history_value: selected_history_value.value,
+                    history_radio: gr.update(choices=history_radio.choices, value=selected_history_value.value)
+                }
+                return
+            
+            yield {
+                loading_md: gr.update(value="_Processing with PaperQA... This may take a while._", visible=True),
+                answer_card: "Processing..."
+            }
+
+            # Pass the list of Article objects to the service
+            service_response = await paperqa_service.query_documents(valid_articles[:9], question) # HACK: Limit to 10 articles
+            print("HACK: Limit to 10 articles")
+            
+            new_history_list = list(current_history)
+            answer_text_to_store = ""
+            evidence_to_store = ""
+            final_answer_card_val = ""
+
+            if service_response["error"]:
+                error_message = html.escape(service_response["error"])
+                final_answer_card_val = f"**Error:**\n{error_message}"
+            else:
+                answer_text_raw = service_response["answer_text"]
+                evidence_raw = service_response["formatted_evidence"]
+                answer_text_to_store = html.escape(answer_text_raw)
+                evidence_to_store = "".join([
+                    f"\n{i + 1}. **Source:** {html.escape(line.split('(Score:')[0].split('Source:')[1].strip())} (Score: {html.escape(line.split('(Score:')[1].split(')')[0])})\n> {html.escape(line.split('>', 1)[1].strip() if '>' in line else line)}\n\n"
+                    if ">" in line and "Source:" in line and "(Score:" in line 
+                    else html.escape(line) + "\n" 
+                    for i, line_group in enumerate(evidence_raw.strip().split("\n\n"))
+                    for line in line_group.strip().split("\n") if line.strip()
+                ]) if evidence_raw.strip() else "_No specific evidence found by PaperQA._\n"
+
+                final_answer_card_val = f"**Q:** {html.escape(question)}\n\n**A:** {answer_text_to_store}\n\n**Evidence:**\n{evidence_to_store}"
+                entry = {"q": question, "a": answer_text_to_store, "evidence": evidence_to_store}
+                new_history_list.insert(0, entry)
+
+            current_radio_choices = [
+                f"💬 {item['q'][:50]}{'...' if len(item['q']) > 50 else ''}"
+                for item in new_history_list
+            ]
+            
+            current_selected_radio_val = selected_history_value.value
+            if service_response["error"]:
+                pass
+            elif current_radio_choices:
+                current_selected_radio_val = current_radio_choices[0]
+            
+            if not any(choice == current_selected_radio_val for choice in current_radio_choices):
+                 current_selected_radio_val = None
+
+            yield {
+                loading_md: gr.update(visible=False),
+                answer_card: final_answer_card_val,
+                history_state: new_history_list,
+                selected_history_value: current_selected_radio_val,
+                history_radio: gr.update(choices=current_radio_choices, value=current_selected_radio_val)
+            }
+
+        def handle_history_click(selected_q_short, hist_list):
+            if not hist_list or not selected_q_short:
+                return "(No Q&A selected)", selected_q_short
+            for entry in hist_list:
+                entry_q_display = f"💬 {entry['q'][:50]}{'...' if len(entry['q']) > 50 else ''}"
+                if entry_q_display == selected_q_short:
+                    return f"**Q:** {html.escape(entry['q'])}\n\n**A:** {entry['a']}\n\n**Evidence:**\n{entry['evidence']}", selected_q_short
+            return "(Error: Could not find selected history item)", selected_q_short
+
         collection_dropdown.change(update_collection_desc, collection_dropdown, collection_desc_md)
         ask_btn.click(
             handle_ask,
             [collection_dropdown, question_box, history_state],
             [loading_md, answer_card, history_state, selected_history_value, history_radio]
         ).then(
-            lambda: "", None, question_box  # Auto-clear question box
+            lambda: "", None, question_box
         )
         history_radio.change(handle_history_click, [history_radio, history_state], [answer_card, selected_history_value]) 
