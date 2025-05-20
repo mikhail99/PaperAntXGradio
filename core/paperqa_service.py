@@ -50,9 +50,12 @@ class PaperQAService:
                 if not pdf_path or not os.path.exists(pdf_path):
                     print(f"File does not exist, skipping: {pdf_path}")
                     continue
+                arxiv_id = getattr(article, 'id', None)
+                if arxiv_id and arxiv_id.endswith(('v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9')):
+                    arxiv_id = arxiv_id[:-2]
                 # Compose metadata and summary
                 metadata = {
-                    "arxiv_id": getattr(article, 'id', None),
+                    "arxiv_id": arxiv_id,
                     "title": getattr(article, 'title', None),
                     "authors": getattr(article, 'authors', None),
                     "tags": getattr(article, 'tags', None),
@@ -60,15 +63,20 @@ class PaperQAService:
                     "publication_date": str(getattr(article, 'publication_date', '')),
                 }
                 summary = article.abstract or article.title or ""
+                doi= f"10.48550/arXiv.{arxiv_id}"
                 try:
                     await docs.aadd(
                         pdf_path,
+                        citation=f"arXiv:{arxiv_id}",
+                        docname=f"arXiv:{arxiv_id}",
+                        dockey=f"arXiv:{arxiv_id}",
                         title=article.title,
                         authors=article.authors,
-                        summary=summary,
+                        doi=doi,
                         settings=my_settings,
                     )
                     print(f"Document added: {pdf_path}")
+                    
                     sleep(10)
                     print("HACK")
                     added_count += 1
@@ -84,15 +92,15 @@ class PaperQAService:
 
             print("PaperQA query finished.")
 
-            answer_text = response.answer if response and response.answer else "No answer found by PaperQA."
+            answer_text = response.formatted_answer if response and response.formatted_answer else "No answer found by PaperQA."
             
             contexts_md = ""
-            if response and response.contexts:
-                for i, ctx in enumerate(response.contexts):
-                    contexts_md += f"\n{i + 1}. **Source:** {ctx.citation} (Score: {ctx.score:.2f})\n"
-                    contexts_md += f"> {ctx.context}\n\n" # Raw context
-            else:
-                contexts_md += "_No specific evidence found by PaperQA._\n"
+            #if response and response.contexts:
+            #    for i, ctx in enumerate(response.contexts):
+            #        contexts_md += f"\n{i + 1}. **Source:** {ctx.citation} (Score: {ctx.score:.2f})\n"
+            #        contexts_md += f"> {ctx.context}\n\n" # Raw context
+            #else:
+            #    contexts_md += "_No specific evidence found by PaperQA._\n"
             
             return {"answer_text": answer_text, "formatted_evidence": contexts_md, "error": None}
 

@@ -110,7 +110,7 @@ def create_paperqa_tab(state):
             }
 
             # Pass the list of Article objects to the service
-            service_response = await paperqa_service.query_documents(valid_articles[:9], question) # HACK: Limit to 10 articles
+            service_response = await paperqa_service.query_documents(valid_articles[:10], question) # HACK: Limit to 10 articles
             print("HACK: Limit to 10 articles")
             
             new_history_list = list(current_history)

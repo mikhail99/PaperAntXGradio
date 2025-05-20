@@ -27,6 +27,8 @@ def get_local_llm_settings(llm_model, embedding_model) -> Settings:
 
     my_settings=Settings(
         llm=llm_model,
+        prompts={'use_json': False},
+        parsing={'use_doc_details': False},
         llm_config=local_llm_config,
         summary_llm=llm_model,
         summary_llm_config=local_llm_config,

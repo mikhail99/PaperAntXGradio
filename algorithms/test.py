@@ -7,7 +7,7 @@ from paperqa.agents.search import get_directory_index
 from paperqa.agents import build_index
 import os
 from time import sleep
-llm_model = "ollama/qwen3:32b" # "ollama/gemma3:27b"
+llm_model ="ollama/gemma3:27b"
 embedding_model = "ollama/nomic-embed-text:latest"
 
 from core.utils import get_local_llm_settings
@@ -65,6 +65,7 @@ async def main():
         pdf_path,
         summary="This is a test summary",
         metadata={"author": "John Doe"},
+        doi="10.48550/arXiv.2502.16111",
         settings=my_settings # Pass settings to aadd method
     )
     print("Document added.")
@@ -80,6 +81,7 @@ async def main():
         pdf_path,
         summary="This is a test summary",
         metadata={"author": "John Doe"},
+        doi="10.48550/arXiv.2502.16645",
         settings=my_settings # Pass settings to aadd method
     )
     print("Document added.")
