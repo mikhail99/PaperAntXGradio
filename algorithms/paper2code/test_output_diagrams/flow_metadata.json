@@ -1,0 +1,45 @@
+{
+  "processing_steps": [
+    {
+      "step": "pdf_input",
+      "status": "completed",
+      "timestamp": "2025-06-02T22:35:22.252197"
+    },
+    {
+      "step": "text_extraction",
+      "status": "completed",
+      "timestamp": "2025-06-02T22:35:22.252244"
+    },
+    {
+      "step": "structure_analysis",
+      "status": "completed",
+      "timestamp": "2025-06-02T22:35:22.252274"
+    },
+    {
+      "step": "implementation_analysis",
+      "status": "completed",
+      "timestamp": "2025-06-02T22:35:22.252295"
+    },
+    {
+      "step": "documentation_generation",
+      "status": "completed",
+      "timestamp": "2025-06-02T22:35:22.252315"
+    }
+  ],
+  "warnings": [
+    "PDF text extraction not yet implemented - using placeholder",
+    "Structure analysis not yet implemented - using placeholder sections",
+    "Implementation analysis not yet implemented - using placeholder data"
+  ],
+  "stats": {
+    "input_processing_time": 1748896522.25222,
+    "text_extraction_time": 1748896522.252256,
+    "text_length": 44,
+    "structure_analysis_time": 1748896522.252277,
+    "sections_identified": 5,
+    "implementation_analysis_time": 1748896522.2522979,
+    "algorithms_found": 1,
+    "documentation_generation_time": 1748896522.25256,
+    "output_files": 2
+  }
+}

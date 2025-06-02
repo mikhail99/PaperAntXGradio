@@ -1,0 +1,42 @@
+{
+  "processing_steps": [
+    {
+      "step": "pdf_input",
+      "status": "success",
+      "timestamp": "2025-06-02T23:00:54.113443"
+    },
+    {
+      "step": "text_extraction",
+      "word_count": 288,
+      "quality": "high",
+      "method": "PyMuPDF",
+      "timestamp": "2025-06-02T23:00:54.116844"
+    },
+    {
+      "step": "structure_analysis",
+      "sections_found": 1,
+      "complexity_score": 1.0,
+      "document_type": "document",
+      "timestamp": "2025-06-02T23:00:54.117517"
+    },
+    {
+      "step": "implementation_analysis",
+      "depth": "detailed",
+      "algorithms_analyzed": 5,
+      "estimated_effort": "15 hours",
+      "timestamp": "2025-06-02T23:00:54.117580"
+    },
+    {
+      "step": "documentation_generation",
+      "format": "markdown",
+      "files_generated": 2,
+      "quality_score": 75.0,
+      "timestamp": "2025-06-02T23:00:54.117636"
+    }
+  ],
+  "warnings": [],
+  "stats": {
+    "total_flow_time": 0.0066874027252197266
+  },
+  "flow_start_time": 1748898054.1113868
+}

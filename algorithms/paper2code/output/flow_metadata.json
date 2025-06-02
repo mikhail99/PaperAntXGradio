@@ -1,0 +1,40 @@
+{
+  "processing_steps": [
+    {
+      "step": "pdf_input",
+      "status": "success",
+      "timestamp": "2025-06-02T22:54:34.761755"
+    },
+    {
+      "step": "text_extraction",
+      "word_count": 5000,
+      "quality": "high",
+      "timestamp": "2025-06-02T22:54:34.761784"
+    },
+    {
+      "step": "structure_analysis",
+      "sections_found": 3,
+      "complexity_score": 7.5,
+      "timestamp": "2025-06-02T22:54:34.761808"
+    },
+    {
+      "step": "implementation_analysis",
+      "depth": "simplified",
+      "algorithms_analyzed": 2,
+      "estimated_effort": "20 hours",
+      "timestamp": "2025-06-02T22:54:34.761833"
+    },
+    {
+      "step": "documentation_generation",
+      "format": "markdown",
+      "files_generated": 1,
+      "quality_score": 85.0,
+      "timestamp": "2025-06-02T22:54:34.761861"
+    }
+  ],
+  "warnings": [],
+  "stats": {
+    "total_flow_time": 0.0003600120544433594
+  },
+  "flow_start_time": 1748897674.761708
+}
