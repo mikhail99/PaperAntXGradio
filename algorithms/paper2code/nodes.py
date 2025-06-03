@@ -16,6 +16,7 @@ from pocketflow import Node
 # Import our utilities
 from utils.pdf_processor import PDFProcessor
 from utils.section_detector import SectionDetector
+from utils.component_analyzer import ComponentAnalyzer
 
 # Assuming utils.call_llm might be used by some nodes later
 # from .utils.call_llm import call_llm 
@@ -223,11 +224,12 @@ class TextExtractionNode(Node):
 
 
 class StructureAnalysisNode(Node):
-    """Node for analyzing paper structure and identifying sections - now with real section detection"""
+    """Node for analyzing paper structure and identifying sections - now with advanced component analysis (Iteration 3)"""
     
-    def __init__(self, max_sections: int = 10, verbose: bool = False, **kwargs):
+    def __init__(self, max_sections: int = 10, enable_component_analysis: bool = True, verbose: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.max_sections = max_sections
+        self.enable_component_analysis = enable_component_analysis
         self.verbose = verbose
         self.logger = logging.getLogger(self.__class__.__name__)
         if self.verbose: 
@@ -235,17 +237,27 @@ class StructureAnalysisNode(Node):
         
         # Initialize section detector
         self.section_detector = SectionDetector(verbose=verbose)
-
-    def prep(self, shared: Dict[str, Any]) -> str:
-        """Prepare text for structure analysis."""
-        extracted_text = shared["extracted_text"]
-        return extracted_text["cleaned_text"]
-
-    def exec(self, prep_res: str) -> Dict[str, Any]:
-        """Execute structure analysis on the text using real section detection."""
-        text = prep_res
         
-        self.logger.info("📋 Analyzing paper structure...")
+        # Initialize component analyzer (new for Iteration 3)
+        if self.enable_component_analysis:
+            self.component_analyzer = ComponentAnalyzer(verbose=verbose)
+
+    def prep(self, shared: Dict[str, Any]) -> Dict[str, Any]:
+        """Prepare text and section data for enhanced structure analysis."""
+        extracted_text = shared["extracted_text"]
+        return {
+            "text": extracted_text["cleaned_text"],
+            "raw_text": extracted_text["raw_text"],
+            "extraction_quality": extracted_text["extraction_quality"]
+        }
+
+    def exec(self, prep_res: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute enhanced structure analysis with component identification."""
+        text = prep_res["text"]
+        raw_text = prep_res["raw_text"]
+        extraction_quality = prep_res["extraction_quality"]
+        
+        self.logger.info("📋 Analyzing paper structure with advanced component detection...")
         
         if not text or text.startswith("[PDF extraction failed"):
             # Handle failed extraction
@@ -261,9 +273,11 @@ class StructureAnalysisNode(Node):
                     "structure_quality": "failed",
                     "section_count": 0
                 },
+                "component_analysis": self._get_empty_component_analysis(),
                 "metadata": {
                     "processor": "StructureAnalysisNode",
                     "max_sections_limit": self.max_sections,
+                    "component_analysis_enabled": self.enable_component_analysis,
                     "timestamp": datetime.now().isoformat(),
                     "error": "Text extraction failed"
                 }
@@ -286,19 +300,34 @@ class StructureAnalysisNode(Node):
                         "end_position": section.end_position
                     })
                 
-                # Identify potential algorithms (simple heuristic)
-                algorithms = self._identify_algorithms(text, detected_sections)
+                # Enhanced component analysis (Iteration 3)
+                component_analysis = self._get_empty_component_analysis()
+                if self.enable_component_analysis:
+                    try:
+                        component_analysis = self.component_analyzer.analyze_components(sections, text)
+                        self.logger.info(f"🔬 Component analysis: {component_analysis['analysis_stats']['algorithms_found']} algorithms, "
+                                       f"{component_analysis['analysis_stats']['methodology_steps_found']} steps, "
+                                       f"{component_analysis['analysis_stats']['system_components_found']} components")
+                    except Exception as e:
+                        self.logger.warning(f"Component analysis failed: {str(e)}")
+                        component_analysis["analysis_stats"]["error"] = str(e)
+                
+                # Legacy algorithm identification (for backward compatibility)
+                legacy_algorithms = self._identify_algorithms_legacy(text, detected_sections)
                 
                 result = {
                     "sections": sections,
                     "document_type": structure_analysis["document_type"],
-                    "complexity_score": self._calculate_complexity_score(structure_analysis, text),
-                    "identified_algorithms": algorithms,
+                    "complexity_score": self._calculate_enhanced_complexity_score(structure_analysis, text, component_analysis),
+                    "identified_algorithms": legacy_algorithms,  # Keep for backward compatibility
                     "structure_analysis": structure_analysis,
+                    "component_analysis": component_analysis,  # New for Iteration 3
                     "metadata": {
                         "processor": "StructureAnalysisNode",
                         "max_sections_limit": self.max_sections,
                         "sections_found": len(sections),
+                        "component_analysis_enabled": self.enable_component_analysis,
+                        "extraction_quality": extraction_quality,
                         "timestamp": datetime.now().isoformat()
                     }
                 }
@@ -317,9 +346,11 @@ class StructureAnalysisNode(Node):
                         "structure_quality": "error",
                         "section_count": 1
                     },
+                    "component_analysis": self._get_empty_component_analysis(),
                     "metadata": {
                         "processor": "StructureAnalysisNode",
                         "max_sections_limit": self.max_sections,
+                        "component_analysis_enabled": self.enable_component_analysis,
                         "timestamp": datetime.now().isoformat(),
                         "error": str(e)
                     }
@@ -327,8 +358,27 @@ class StructureAnalysisNode(Node):
         
         return result
     
-    def _identify_algorithms(self, text: str, sections: List) -> List[str]:
-        """Simple heuristic to identify potential algorithms in the text."""
+    def _get_empty_component_analysis(self) -> Dict[str, Any]:
+        """Get empty component analysis structure for error cases."""
+        return {
+            "algorithms": [],
+            "math_formulations": [],
+            "methodology_steps": [],
+            "system_components": [],
+            "technical_terms": [],
+            "data_structures": [],
+            "dependencies": [],
+            "analysis_stats": {
+                "algorithms_found": 0,
+                "formulations_found": 0,
+                "methodology_steps_found": 0,
+                "system_components_found": 0,
+                "average_confidence": 0.0
+            }
+        }
+    
+    def _identify_algorithms_legacy(self, text: str, sections: List) -> List[str]:
+        """Legacy algorithm identification for backward compatibility."""
         algorithms = []
         
         # Look for algorithm-related keywords
@@ -353,8 +403,9 @@ class StructureAnalysisNode(Node):
         
         return algorithms[:5]  # Limit total algorithms
     
-    def _calculate_complexity_score(self, structure_analysis: Dict, text: str) -> float:
-        """Calculate a complexity score based on structure and content."""
+    def _calculate_enhanced_complexity_score(self, structure_analysis: Dict, text: str, component_analysis: Dict) -> float:
+        """Calculate enhanced complexity score using component analysis."""
+        # Base score from structure
         base_score = structure_analysis.get("structure_score", 0.5) * 5  # Scale to 0-5
         
         # Adjust based on document length
@@ -371,16 +422,35 @@ class StructureAnalysisNode(Node):
         elif quality == "good":
             base_score += 0.5
         
+        # New: Adjust based on component analysis
+        if component_analysis and "analysis_stats" in component_analysis:
+            stats = component_analysis["analysis_stats"]
+            
+            # More algorithms = higher complexity
+            base_score += min(stats.get("algorithms_found", 0) * 0.5, 2.0)
+            
+            # More math formulations = higher complexity
+            base_score += min(stats.get("formulations_found", 0) * 0.3, 1.5)
+            
+            # More methodology steps = higher complexity
+            base_score += min(stats.get("methodology_steps_found", 0) * 0.2, 1.0)
+            
+            # More system components = higher complexity
+            base_score += min(stats.get("system_components_found", 0) * 0.3, 1.5)
+        
         return min(base_score, 10.0)  # Cap at 10
 
-    def post(self, shared: Dict[str, Any], prep_res: str, exec_res: Dict[str, Any]) -> str:
-        """Store structure analysis results."""
+    def post(self, shared: Dict[str, Any], prep_res: Dict[str, Any], exec_res: Dict[str, Any]) -> str:
+        """Store enhanced structure analysis results."""
         shared["paper_structure"] = exec_res
         shared["metadata"]["processing_steps"].append({
             "step": "structure_analysis",
             "sections_found": len(exec_res["sections"]),
             "complexity_score": exec_res["complexity_score"],
             "document_type": exec_res["document_type"],
+            "component_analysis_enabled": self.enable_component_analysis,
+            "algorithms_found": exec_res["component_analysis"]["analysis_stats"]["algorithms_found"],
+            "methodology_steps_found": exec_res["component_analysis"]["analysis_stats"]["methodology_steps_found"],
             "timestamp": exec_res["metadata"]["timestamp"]
         })
         
@@ -389,13 +459,16 @@ class StructureAnalysisNode(Node):
             shared["metadata"]["warnings"].append(f"Structure analysis error: {exec_res['metadata']['error']}")
         
         if self.verbose:
-            self.logger.debug(f"✅ Structure analysis completed: {len(exec_res['sections'])} sections")
+            component_stats = exec_res["component_analysis"]["analysis_stats"]
+            self.logger.debug(f"✅ Enhanced structure analysis completed: {len(exec_res['sections'])} sections, "
+                            f"{component_stats['algorithms_found']} algorithms, "
+                            f"{component_stats['methodology_steps_found']} methodology steps")
         
         return "default"
 
 
 class ImplementationAnalysisNode(Node):
-    """Node for analyzing implementation details and generating implementation guide"""
+    """Node for analyzing implementation details and generating implementation guide - enhanced with component analysis"""
     
     def __init__(self, analysis_depth: str = "detailed", verbose: bool = False, **kwargs):
         super().__init__(**kwargs)
@@ -406,13 +479,14 @@ class ImplementationAnalysisNode(Node):
             self.logger.setLevel(logging.DEBUG)
 
     def prep(self, shared: Dict[str, Any]) -> Dict[str, Any]:
-        """Prepare paper structure for implementation analysis."""
+        """Prepare paper structure and component analysis for implementation analysis."""
         paper_structure = shared["paper_structure"]
         config = shared["config"]
         
         return {
             "sections": paper_structure["sections"],
             "algorithms": paper_structure["identified_algorithms"],
+            "component_analysis": paper_structure.get("component_analysis", {}),  # New for Iteration 3
             "analysis_depth": self.analysis_depth,
             "document_type": paper_structure["document_type"],
             "complexity_score": paper_structure["complexity_score"],
@@ -420,15 +494,16 @@ class ImplementationAnalysisNode(Node):
         }
 
     def exec(self, prep_res: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute implementation analysis."""
+        """Execute enhanced implementation analysis using component data."""
         sections = prep_res["sections"]
         algorithms = prep_res["algorithms"]
+        component_analysis = prep_res["component_analysis"]
         depth = prep_res["analysis_depth"]
         complexity_score = prep_res["complexity_score"]
         
-        self.logger.info(f"🔬 Performing {depth} implementation analysis...")
+        self.logger.info(f"🔬 Performing {depth} implementation analysis with component insights...")
         
-        # Enhanced analysis based on actual sections
+        # Enhanced analysis based on actual sections and components
         complexity_factor = 1.5 if depth == "detailed" else 1.0
         
         # Analyze methodology section for implementation details
@@ -437,56 +512,70 @@ class ImplementationAnalysisNode(Node):
             if section["type"] in ["methodology", "methods", "approach"]:
                 methodology_content += section["content"] + "\n"
         
-        # Extract implementation insights from methodology
-        impl_insights = self._extract_implementation_insights(methodology_content)
+        # Extract implementation insights from methodology and component analysis
+        impl_insights = self._extract_enhanced_implementation_insights(methodology_content, component_analysis)
+        
+        # Use component analysis data for better algorithm analysis
+        enhanced_algorithms = self._enhance_algorithms_with_components(algorithms, component_analysis)
         
         result = {
             "implementation_guide": {
-                "overview": f"Implementation guide for {len(algorithms)} algorithms (depth: {depth})",
+                "overview": f"Enhanced implementation guide for {len(enhanced_algorithms)} algorithms (depth: {depth})",
                 "architecture": {
                     "components": impl_insights.get("components", ["Data Loader", "Processor", "Output Manager"]),
                     "interfaces": impl_insights.get("interfaces", ["API Interface", "Config Interface"]),
-                    "data_flow": impl_insights.get("data_flow", "Input → Process → Validate → Output")
+                    "data_flow": impl_insights.get("data_flow", "Input → Process → Validate → Output"),
+                    "system_components": impl_insights.get("system_components", [])  # New from component analysis
                 },
-                "algorithms": [
-                    {
-                        "name": alg,
-                        "complexity": self._estimate_complexity(alg, methodology_content, complexity_factor),
-                        "implementation_steps": self._generate_implementation_steps(alg, methodology_content),
-                        "data_structures": impl_insights.get("data_structures", ["List", "Dictionary", "Graph"]),
-                        "dependencies": impl_insights.get("dependencies", ["numpy", "scipy", "torch"])
-                    } for alg in algorithms
-                ]
+                "algorithms": enhanced_algorithms,
+                "mathematical_formulations": impl_insights.get("math_formulations", []),  # New
+                "methodology_steps": impl_insights.get("methodology_steps", [])  # New
             },
-            "implementation_complexity": f"{depth}_complexity",
-            "estimated_effort": f"{len(algorithms) * int(complexity_factor * complexity_score * 2)} hours",
+            "implementation_complexity": f"{depth}_complexity_enhanced",
+            "estimated_effort": f"{len(enhanced_algorithms) * int(complexity_factor * complexity_score * 2)} hours",
             "implementation_insights": impl_insights,
+            "component_insights": self._extract_component_insights(component_analysis),  # New
             "metadata": {
                 "processor": "ImplementationAnalysisNode",
                 "analysis_depth": depth,
                 "methodology_analyzed": len(methodology_content) > 0,
+                "component_analysis_used": bool(component_analysis),
+                "algorithms_enhanced": len(enhanced_algorithms),
                 "timestamp": datetime.now().isoformat()
             }
         }
         
         return result
     
-    def _extract_implementation_insights(self, methodology_text: str) -> Dict[str, List[str]]:
-        """Extract implementation-relevant information from methodology text."""
+    def _extract_enhanced_implementation_insights(self, methodology_text: str, component_analysis: Dict) -> Dict[str, List[str]]:
+        """Extract enhanced implementation-relevant information using component analysis."""
         insights = {
             "components": [],
             "interfaces": [],
             "data_flow": "",
             "data_structures": [],
-            "dependencies": []
+            "dependencies": [],
+            "system_components": [],
+            "math_formulations": [],
+            "methodology_steps": []
         }
         
+        # Use component analysis data if available
+        if component_analysis:
+            # Extract from component analysis
+            insights["system_components"] = [comp["name"] for comp in component_analysis.get("system_components", [])]
+            insights["data_structures"] = component_analysis.get("data_structures", [])
+            insights["dependencies"] = component_analysis.get("dependencies", [])
+            insights["math_formulations"] = [form["formula"] for form in component_analysis.get("math_formulations", [])]
+            insights["methodology_steps"] = [step["title"] for step in component_analysis.get("methodology_steps", [])]
+        
+        # Fallback to text analysis if component analysis is empty or failed
         if not methodology_text:
             return insights
         
         import re
         
-        # Look for common components
+        # Look for common components (enhanced with component analysis)
         component_patterns = [
             r'(\w+)\s+(?:module|component|layer|network)',
             r'(?:using|with)\s+(\w+)\s+(?:architecture|framework)',
@@ -499,22 +588,28 @@ class ImplementationAnalysisNode(Node):
                 if len(match) > 2:
                     insights["components"].append(match.title())
         
-        # Look for data structures
-        data_structure_keywords = ['matrix', 'vector', 'graph', 'tree', 'array', 'list', 'dictionary', 'tensor']
-        for keyword in data_structure_keywords:
-            if keyword in methodology_text.lower():
-                insights["data_structures"].append(keyword.title())
+        # Merge with component analysis results
+        if insights["system_components"]:
+            insights["components"].extend(insights["system_components"][:3])
         
-        # Look for dependencies/frameworks
-        framework_keywords = ['tensorflow', 'pytorch', 'numpy', 'scipy', 'sklearn', 'pandas', 'opencv']
-        for keyword in framework_keywords:
-            if keyword in methodology_text.lower():
-                insights["dependencies"].append(keyword)
+        # Look for data structures (enhanced)
+        if not insights["data_structures"]:
+            data_structure_keywords = ['matrix', 'vector', 'graph', 'tree', 'array', 'list', 'dictionary', 'tensor']
+            for keyword in data_structure_keywords:
+                if keyword in methodology_text.lower():
+                    insights["data_structures"].append(keyword.title())
+        
+        # Look for dependencies/frameworks (enhanced)
+        if not insights["dependencies"]:
+            framework_keywords = ['tensorflow', 'pytorch', 'numpy', 'scipy', 'sklearn', 'pandas', 'opencv']
+            for keyword in framework_keywords:
+                if keyword in methodology_text.lower():
+                    insights["dependencies"].append(keyword)
         
         # Remove duplicates and limit
-        insights["components"] = list(set(insights["components"]))[:5]
-        insights["data_structures"] = list(set(insights["data_structures"]))[:5]
-        insights["dependencies"] = list(set(insights["dependencies"]))[:5]
+        insights["components"] = list(set(insights["components"]))[:8]
+        insights["data_structures"] = list(set(insights["data_structures"]))[:8]
+        insights["dependencies"] = list(set(insights["dependencies"]))[:8]
         
         # Set defaults if empty
         if not insights["components"]:
@@ -526,56 +621,122 @@ class ImplementationAnalysisNode(Node):
         
         return insights
     
-    def _estimate_complexity(self, algorithm_name: str, methodology_text: str, factor: float) -> str:
-        """Estimate algorithmic complexity based on methodology description."""
-        # Simple heuristics based on keywords in methodology
-        if any(keyword in methodology_text.lower() for keyword in ['neural', 'network', 'deep', 'learning']):
-            base = "O(n*m*k)"  # Neural network complexity
-        elif any(keyword in methodology_text.lower() for keyword in ['sort', 'search', 'tree']):
-            base = "O(n log n)"
-        elif any(keyword in methodology_text.lower() for keyword in ['matrix', 'linear', 'algebra']):
-            base = "O(n^2)"
-        else:
-            base = "O(n)"
+    def _enhance_algorithms_with_components(self, legacy_algorithms: List[str], component_analysis: Dict) -> List[Dict]:
+        """Enhance legacy algorithms with component analysis data."""
+        enhanced_algorithms = []
         
-        if factor > 1.0:
-            return f"{base} (detailed)"
-        return base
+        # Use component analysis algorithms if available
+        if component_analysis and component_analysis.get("algorithms"):
+            for alg_data in component_analysis["algorithms"]:
+                enhanced_algorithms.append({
+                    "name": alg_data["name"],
+                    "complexity": alg_data["complexity"],
+                    "implementation_steps": alg_data.get("steps", []),
+                    "data_structures": component_analysis.get("data_structures", ["Array", "Dictionary"]),
+                    "dependencies": component_analysis.get("dependencies", ["numpy", "scipy"]),
+                    "confidence": alg_data.get("confidence", 0.5),
+                    "description": alg_data.get("description", ""),
+                    "location": alg_data.get("location", "unknown")
+                })
+        
+        # Fallback to legacy algorithms if component analysis failed
+        if not enhanced_algorithms:
+            for alg_name in legacy_algorithms:
+                enhanced_algorithms.append({
+                    "name": alg_name,
+                    "complexity": "O(n)",
+                    "implementation_steps": [
+                        f"Step 1: Initialize {alg_name}",
+                        f"Step 2: Process input for {alg_name}",
+                        f"Step 3: Generate output for {alg_name}"
+                    ],
+                    "data_structures": ["Array", "Dictionary"],
+                    "dependencies": ["numpy", "scipy"],
+                    "confidence": 0.5,
+                    "description": f"Legacy algorithm: {alg_name}",
+                    "location": "unknown"
+                })
+        
+        return enhanced_algorithms
     
-    def _generate_implementation_steps(self, algorithm_name: str, methodology_text: str) -> List[str]:
-        """Generate implementation steps based on algorithm name and methodology."""
-        # Extract key verbs and nouns from methodology for more realistic steps
-        if methodology_text:
-            import re
-            action_words = re.findall(r'\b(?:compute|calculate|process|analyze|extract|generate|train|optimize)\b', 
-                                    methodology_text, re.IGNORECASE)
-            if action_words:
-                return [
-                    f"Step 1: Initialize {algorithm_name} parameters",
-                    f"Step 2: {action_words[0].title()} input data",
-                    f"Step 3: {action_words[-1].title()} final output" if len(action_words) > 1 else "Step 3: Generate output"
-                ]
+    def _extract_component_insights(self, component_analysis: Dict) -> Dict[str, Any]:
+        """Extract insights specifically from component analysis."""
+        if not component_analysis:
+            return {"status": "not_available"}
         
-        # Default steps
-        return [
-            f"Step 1: Initialize {algorithm_name}",
-            f"Step 2: Process input for {algorithm_name}",
-            f"Step 3: Generate output for {algorithm_name}"
-        ]
+        stats = component_analysis.get("analysis_stats", {})
+        
+        return {
+            "status": "available",
+            "summary": {
+                "algorithms_identified": stats.get("algorithms_found", 0),
+                "math_formulations": stats.get("formulations_found", 0),
+                "methodology_steps": stats.get("methodology_steps_found", 0),
+                "system_components": stats.get("system_components_found", 0),
+                "average_confidence": stats.get("average_confidence", 0.0)
+            },
+            "technical_terms": component_analysis.get("technical_terms", []),
+            "implementation_complexity": self._assess_implementation_complexity(component_analysis),
+            "recommended_approach": self._recommend_implementation_approach(component_analysis)
+        }
+    
+    def _assess_implementation_complexity(self, component_analysis: Dict) -> str:
+        """Assess implementation complexity based on component analysis."""
+        if not component_analysis:
+            return "medium"
+        
+        stats = component_analysis.get("analysis_stats", {})
+        total_components = (
+            stats.get("algorithms_found", 0) +
+            stats.get("methodology_steps_found", 0) +
+            stats.get("system_components_found", 0)
+        )
+        
+        if total_components >= 15:
+            return "very_high"
+        elif total_components >= 10:
+            return "high"
+        elif total_components >= 5:
+            return "medium"
+        else:
+            return "low"
+    
+    def _recommend_implementation_approach(self, component_analysis: Dict) -> str:
+        """Recommend implementation approach based on component analysis."""
+        if not component_analysis:
+            return "standard_approach"
+        
+        technical_terms = component_analysis.get("technical_terms", [])
+        algorithms = component_analysis.get("algorithms", [])
+        
+        # Check for ML/AI terms
+        ml_terms = ["neural network", "deep learning", "machine learning", "transformer", "attention"]
+        has_ml = any(term.lower() in " ".join(technical_terms).lower() for term in ml_terms)
+        
+        if has_ml:
+            return "ml_framework_approach"
+        elif len(algorithms) > 3:
+            return "modular_approach"
+        else:
+            return "standard_approach"
 
     def post(self, shared: Dict[str, Any], prep_res: Dict[str, Any], exec_res: Dict[str, Any]) -> str:
-        """Store implementation analysis results."""
+        """Store enhanced implementation analysis results."""
         shared["implementation_analysis"] = exec_res
         shared["metadata"]["processing_steps"].append({
             "step": "implementation_analysis",
             "depth": self.analysis_depth,
             "algorithms_analyzed": len(exec_res["implementation_guide"]["algorithms"]),
             "estimated_effort": exec_res["estimated_effort"],
+            "component_analysis_used": exec_res["metadata"]["component_analysis_used"],
+            "implementation_complexity": exec_res["component_insights"].get("implementation_complexity", "unknown"),
             "timestamp": exec_res["metadata"]["timestamp"]
         })
         
         if self.verbose:
-            self.logger.debug(f"✅ Implementation analysis completed: {exec_res['implementation_complexity']}")
+            component_status = exec_res["component_insights"]["status"]
+            self.logger.debug(f"✅ Enhanced implementation analysis completed: {exec_res['implementation_complexity']} "
+                            f"(component analysis: {component_status})")
         
         return "default"
 
@@ -641,8 +802,9 @@ class DocumentationGenerationNode(Node):
         return result
     
     def _generate_enhanced_documentation(self, analysis: Dict, structure: Dict) -> str:
-        """Generate enhanced documentation based on real analysis."""
+        """Generate enhanced documentation based on real analysis and component data."""
         guide = analysis["implementation_guide"]
+        component_analysis = structure.get("component_analysis", {})
         
         doc = f"""# Implementation Guide
 
@@ -668,6 +830,24 @@ class DocumentationGenerationNode(Node):
                 doc += f"- {section['title']} ({section['type']}) - Confidence: {confidence:.1f}\n"
             doc += "\n"
         
+        # Add component analysis summary (NEW for Iteration 3)
+        if component_analysis and component_analysis.get("analysis_stats"):
+            stats = component_analysis["analysis_stats"]
+            doc += f"""## Component Analysis Summary
+
+**Algorithms Identified**: {stats.get('algorithms_found', 0)}
+**Mathematical Formulations**: {stats.get('formulations_found', 0)}
+**Methodology Steps**: {stats.get('methodology_steps_found', 0)}
+**System Components**: {stats.get('system_components_found', 0)}
+**Average Confidence**: {stats.get('average_confidence', 0.0):.2f}
+
+"""
+            
+            # Add technical terms if available
+            technical_terms = component_analysis.get("technical_terms", [])
+            if technical_terms:
+                doc += f"**Technical Terms Identified**: {', '.join(technical_terms[:5])}\n\n"
+        
         doc += f"""## System Architecture
 
 ### Components
@@ -679,22 +859,56 @@ class DocumentationGenerationNode(Node):
 ### Interfaces
 {', '.join(guide['architecture']['interfaces'])}
 
-## Implementation Details
+"""
+        
+        # Add system components from component analysis
+        system_components = guide['architecture'].get('system_components', [])
+        if system_components:
+            doc += f"""### Identified System Components
+{', '.join(system_components)}
 
 """
         
-        # Add algorithms with enhanced details
+        doc += "## Implementation Details\n\n"
+        
+        # Add algorithms with enhanced details from component analysis
         for i, alg in enumerate(guide['algorithms'], 1):
             doc += f"""### {i}. {alg['name']}
 
 **Complexity**: {alg['complexity']}
 **Dependencies**: {', '.join(alg['dependencies'])}
 **Data Structures**: {', '.join(alg['data_structures'])}
-
-**Implementation Steps**:
 """
+            
+            # Add confidence and description if available (from component analysis)
+            if 'confidence' in alg:
+                doc += f"**Confidence**: {alg['confidence']:.2f}\n"
+            if 'description' in alg and alg['description']:
+                doc += f"**Description**: {alg['description'][:100]}...\n"
+            
+            doc += "\n**Implementation Steps**:\n"
             for step in alg['implementation_steps']:
                 doc += f"- {step}\n"
+            doc += "\n"
+        
+        # Add mathematical formulations if available (NEW)
+        math_formulations = guide.get('mathematical_formulations', [])
+        if math_formulations:
+            doc += f"""## Mathematical Formulations
+
+"""
+            for i, formula in enumerate(math_formulations[:5], 1):
+                doc += f"{i}. `{formula}`\n"
+            doc += "\n"
+        
+        # Add methodology steps if available (NEW)
+        methodology_steps = guide.get('methodology_steps', [])
+        if methodology_steps:
+            doc += f"""## Methodology Steps
+
+"""
+            for i, step in enumerate(methodology_steps[:8], 1):
+                doc += f"{i}. {step}\n"
             doc += "\n"
         
         # Add implementation insights if available
@@ -713,6 +927,23 @@ class DocumentationGenerationNode(Node):
 
 """
         
+        # Add component insights (NEW)
+        component_insights = analysis.get('component_insights', {})
+        if component_insights.get('status') == 'available':
+            summary = component_insights.get('summary', {})
+            doc += f"""## Component Analysis Insights
+
+**Implementation Complexity**: {component_insights.get('implementation_complexity', 'Unknown')}
+**Recommended Approach**: {component_insights.get('recommended_approach', 'Standard')}
+
+### Analysis Summary
+- Algorithms: {summary.get('algorithms_identified', 0)}
+- Math Formulations: {summary.get('math_formulations', 0)}
+- Methodology Steps: {summary.get('methodology_steps', 0)}
+- System Components: {summary.get('system_components', 0)}
+
+"""
+        
         doc += """## Implementation Roadmap
 
 1. **Phase 1**: Set up development environment and dependencies
@@ -722,7 +953,7 @@ class DocumentationGenerationNode(Node):
 5. **Phase 5**: Integration and deployment
 
 ---
-*Generated by Paper2ImplementationDoc (Iteration 2) - Now with real PDF processing*
+*Generated by Paper2ImplementationDoc (Iteration 3) - Now with advanced component analysis*
 """
         
         return doc

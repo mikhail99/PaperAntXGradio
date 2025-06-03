@@ -25,115 +25,111 @@ def setup_logging(verbose: bool = False):
     )
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Generate implementation documentation from academic papers using PocketFlow',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s --pdf paper.pdf --output ./docs --verbose
-  %(prog)s --pdf paper.pdf --analysis-depth simplified --include-diagrams
-  %(prog)s --arxiv 2301.07041 --output ./arxiv_docs
-        """
-    )
-    
-    # Input options
-    input_group = parser.add_mutually_exclusive_group(required=True)
-    input_group.add_argument('--pdf', type=str, help='Path to PDF file')
-    input_group.add_argument('--arxiv', type=str, help='ArXiv paper ID (e.g., 2301.07041)')
-    
-    # Output options
-    parser.add_argument('--output', type=str, default='./output',
-                       help='Output directory (default: ./output)')
-    
-    # Analysis options
-    parser.add_argument('--analysis-depth', choices=['simplified', 'detailed'], 
-                       default='detailed', help='Analysis depth (default: detailed)')
-    parser.add_argument('--output-format', choices=['markdown', 'latex', 'html'], 
-                       default='markdown', help='Output format (default: markdown)')
-    parser.add_argument('--include-diagrams', action='store_true',
-                       help='Include implementation diagrams')
-    parser.add_argument('--max-sections', type=int, default=10,
-                       help='Maximum sections to analyze (default: 10)')
-    
-    # System options
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
-    parser.add_argument('--version', action='version', version='%(prog)s 1.0.0 (PocketFlow Edition)')
+    """
+    Main entry point for Paper2ImplementationDoc (Iteration 3)
+    Enhanced with advanced component analysis
+    """
+    parser = argparse.ArgumentParser(description="Paper2ImplementationDoc - Convert academic papers to implementation guides")
+    parser.add_argument("input_source", help="PDF file path or ArXiv ID")
+    parser.add_argument("--input-type", choices=["pdf", "arxiv"], default="pdf", help="Input type")
+    parser.add_argument("--output-dir", default="./output", help="Output directory")
+    parser.add_argument("--analysis-depth", choices=["simple", "detailed"], default="detailed", help="Analysis depth")
+    parser.add_argument("--output-format", choices=["markdown", "html", "latex"], default="markdown", help="Output format")
+    parser.add_argument("--include-diagrams", action="store_true", help="Include Mermaid diagrams")
+    parser.add_argument("--max-sections", type=int, default=10, help="Maximum sections to detect")
+    parser.add_argument("--disable-component-analysis", action="store_true", help="Disable advanced component analysis")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
     
     args = parser.parse_args()
     
     # Setup logging
-    setup_logging(args.verbose)
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
     logger = logging.getLogger(__name__)
+    logger.info("🚀 Starting Paper2ImplementationDoc (Iteration 3) - Enhanced Component Analysis")
     
-    # Determine input
-    if args.pdf:
-        input_source = args.pdf
-        input_type = "pdf"
-    else:
-        input_source = args.arxiv
-        input_type = "arxiv"
+    # Create configuration
+    config = {
+        "analysis_depth": args.analysis_depth,
+        "output_format": args.output_format,
+        "include_diagrams": args.include_diagrams,
+        "max_sections": args.max_sections,
+        "enable_component_analysis": not args.disable_component_analysis,
+        "verbose": args.verbose
+    }
     
-    logger.info(f"🚀 Starting Paper2ImplementationDoc...")
-    logger.info(f"   Input: {input_source} ({input_type})")
-    logger.info(f"   Output: {args.output}")
+    # Initialize shared store
+    shared = {
+        "input_source": args.input_source,
+        "input_type": args.input_type,
+        "output_dir": args.output_dir,
+        "config": config,
+        "metadata": {
+            "start_time": time.time(),
+            "processing_steps": [],
+            "warnings": [],
+            "iteration": "3"
+        }
+    }
     
     try:
-        # Create the PocketFlow pipeline
-        flow = create_paper2doc_flow(
-            analysis_depth=args.analysis_depth,
-            output_format=args.output_format,
-            include_diagrams=args.include_diagrams,
-            max_sections=args.max_sections,
-            verbose=args.verbose
-        )
+        # Create and run the enhanced flow
+        flow = create_paper2doc_flow(config)
         
-        # Initialize shared data store
-        shared = {
-            "input_source": input_source,
-            "input_type": input_type,
-            "output_dir": args.output,
-            "config": {
-                "analysis_depth": args.analysis_depth,
-                "output_format": args.output_format,
-                "include_diagrams": args.include_diagrams,
-                "max_sections": args.max_sections,
-                "verbose": args.verbose
-            },
-            "metadata": {
-                "processing_steps": [],
-                "warnings": [],
-                "stats": {},
-                "flow_start_time": time.time()
-            }
-        }
+        logger.info(f"📄 Processing {args.input_type}: {args.input_source}")
+        logger.info(f"🔬 Component analysis: {'enabled' if config['enable_component_analysis'] else 'disabled'}")
         
-        # Run the PocketFlow pipeline
-        logger.info("🔄 Running PocketFlow pipeline...")
+        # Execute the flow
         flow.run(shared)
         
-        # Post-processing
-        shared["metadata"]["stats"]["total_flow_time"] = time.time() - shared["metadata"]["flow_start_time"]
+        # Calculate processing time
+        processing_time = time.time() - shared["metadata"]["start_time"]
         
-        # Show results
-        logger.info("🎉 Processing completed successfully!")
+        # Display results
+        logger.info("✅ Processing completed successfully!")
+        logger.info(f"⏱️  Total processing time: {processing_time:.3f} seconds")
+        logger.info(f"📊 Quality score: {shared.get('quality_score', 0):.1f}%")
+        
+        # Display component analysis results if enabled
+        if config['enable_component_analysis'] and 'paper_structure' in shared:
+            component_stats = shared['paper_structure'].get('component_analysis', {}).get('analysis_stats', {})
+            logger.info(f"🔬 Component analysis results:")
+            logger.info(f"   - Algorithms found: {component_stats.get('algorithms_found', 0)}")
+            logger.info(f"   - Math formulations: {component_stats.get('formulations_found', 0)}")
+            logger.info(f"   - Methodology steps: {component_stats.get('methodology_steps_found', 0)}")
+            logger.info(f"   - System components: {component_stats.get('system_components_found', 0)}")
+            logger.info(f"   - Average confidence: {component_stats.get('average_confidence', 0.0):.2f}")
+        
+        # Display output files
         if "output_files" in shared:
-            logger.info(f"📄 Generated files: {shared['output_files']}")
-        if "quality_score" in shared:
-            logger.info(f"📊 Quality score: {shared['quality_score']}")
+            logger.info("📁 Generated files:")
+            for file_path in shared["output_files"]:
+                logger.info(f"   - {file_path}")
         
-        # Save metadata
-        output_dir = Path(args.output)
-        output_dir.mkdir(parents=True, exist_ok=True)
+        # Display warnings if any
+        if shared["metadata"]["warnings"]:
+            logger.warning("⚠️  Warnings encountered:")
+            for warning in shared["metadata"]["warnings"]:
+                logger.warning(f"   - {warning}")
         
-        import json
-        metadata_file = output_dir / "flow_metadata.json"
-        with open(metadata_file, "w") as f:
-            json.dump(shared["metadata"], f, indent=2, default=str)
-        logger.info(f"💾 Metadata saved to {metadata_file}")
+        # Display processing steps summary
+        if args.verbose:
+            logger.debug("📋 Processing steps summary:")
+            for step in shared["metadata"]["processing_steps"]:
+                logger.debug(f"   - {step['step']}: {step.get('status', 'completed')}")
         
     except Exception as e:
-        logger.error(f"❌ Processing failed: {str(e)}", exc_info=True)
-        sys.exit(1)
+        logger.error(f"❌ Processing failed: {str(e)}")
+        if args.verbose:
+            import traceback
+            logger.error(traceback.format_exc())
+        return 1
+    
+    return 0
 
 if __name__ == "__main__":
     main() 
