@@ -7,7 +7,7 @@ import logging
 import re
 from typing import Dict, List, Tuple, Any, Optional
 from pathlib import Path
-import fitz  # PyMuPDF
+import pymupdf
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class PDFProcessor:
         doc = None
         try:
             # Open PDF
-            doc = fitz.open(pdf_path)
+            doc = pymupdf.open(pdf_path)
             
             # Extract text from all pages
             full_text = ""
@@ -148,7 +148,7 @@ class PDFProcessor:
         doc = None
         try:
             # Try to open with PyMuPDF
-            doc = fitz.open(pdf_path)
+            doc = pymupdf.open(pdf_path)
             page_count = len(doc)
             file_size = pdf_file.stat().st_size
             

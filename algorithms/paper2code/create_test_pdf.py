@@ -1,50 +1,213 @@
-#!/usr/bin/env python3
 """
-Create a test PDF for testing our PDF processing pipeline
+Create a simple test PDF with sample academic content
 """
 
-import fitz  # PyMuPDF
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
 
-def create_test_pdf():
-    # Create new PDF
-    doc = fitz.open()
-    page = doc.new_page()
+def create_test_pdf(filename="test_paper.pdf"):
+    """
+    Create a simple test PDF with sample academic paper content.
+    """
+    doc = SimpleDocTemplate(filename, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
     
-    # Add realistic academic paper content with proper formatting
-    text_sections = [
-        ("ABSTRACT", "This paper presents a novel approach to automated document processing using machine learning techniques.\nWe introduce a three-stage pipeline that achieves state-of-the-art performance on benchmark datasets."),
-        
-        ("1. INTRODUCTION", "Document processing has become increasingly important in the digital age. Traditional methods rely on\nrule-based systems, but our approach leverages deep learning to extract meaningful information from\ncomplex documents. This work builds upon recent advances in transformer architectures."),
-        
-        ("2. METHODOLOGY", "We propose a three-stage pipeline:\n1. Text extraction using optical character recognition (OCR)\n2. Structure analysis using convolutional neural networks\n3. Content classification using transformer models\n\nThe methodology involves training a deep convolutional neural network on a dataset of 10,000 labeled\ndocuments. We use a ResNet-50 architecture with custom attention mechanisms for improved performance.\n\nOur approach processes documents through the following algorithm:\n- Algorithm 1: Document preprocessing\n- Algorithm 2: Feature extraction\n- Algorithm 3: Classification and ranking"),
-        
-        ("3. RESULTS", "Our approach achieved 95.2% accuracy on the test dataset, significantly outperforming baseline methods:\n- Baseline SVM: 78.3%\n- Random Forest: 82.1%\n- BERT baseline: 91.4%\n- Our method: 95.2%\n\nThe methodology was evaluated on three different document types: academic papers, technical reports,\nand legal documents."),
-        
-        ("4. DISCUSSION", "The results demonstrate the effectiveness of our proposed methodology for automated document processing.\nThe attention mechanism proves particularly useful for handling complex document layouts."),
-        
-        ("5. CONCLUSION", "This work demonstrates the effectiveness of our proposed methodology for automated document processing.\nFuture work will focus on extending the approach to multilingual documents and real-time processing."),
-        
-        ("REFERENCES", "[1] Smith, J. (2020). Document Analysis Techniques. Journal of AI Research, 15(3), 123-145.\n[2] Brown, A. et al. (2021). Transformer Models for Document Processing. ICML 2021.\n[3] Wilson, K. (2019). Deep Learning in Document Analysis. Nature Machine Intelligence.")
-    ]
+    # Title
+    title = Paragraph("A Novel Approach to Machine Learning Optimization", styles['Title'])
+    story.append(title)
+    story.append(Spacer(1, 0.2*inch))
     
-    # Insert text sections with proper spacing
-    y_position = 50
-    for header, content in text_sections:
-        # Insert header
-        page.insert_text((50, y_position), header, fontsize=12, color=(0, 0, 0))
-        y_position += 25
-        
-        # Insert content
-        page.insert_text((50, y_position), content, fontsize=10, color=(0, 0, 0))
-        y_position += len(content.split('\n')) * 15 + 20  # Adjust for line breaks and spacing
+    # Authors
+    authors = Paragraph("John Doe<sup>1</sup>, Jane Smith<sup>2</sup>", styles['Normal'])
+    story.append(authors)
+    story.append(Spacer(1, 0.1*inch))
     
-    # Save PDF
-    filename = 'test_research_paper_formatted.pdf'
-    doc.save(filename)
-    doc.close()
+    # Affiliations
+    affil = Paragraph("<sup>1</sup>Department of Computer Science, University A<br/><sup>2</sup>Institute of Technology, University B", styles['Normal'])
+    story.append(affil)
+    story.append(Spacer(1, 0.3*inch))
     
-    print(f'Created {filename}')
+    # Abstract
+    abstract_title = Paragraph("Abstract", styles['Heading1'])
+    story.append(abstract_title)
+    
+    abstract_text = """
+    This paper presents a novel optimization algorithm for machine learning models.
+    Our approach combines gradient descent with adaptive learning rates to achieve
+    faster convergence and better performance. We evaluate our method on several
+    benchmark datasets and demonstrate significant improvements over existing
+    techniques. The proposed algorithm reduces training time by 30% while
+    maintaining or improving accuracy.
+    """
+    abstract_para = Paragraph(abstract_text, styles['Normal'])
+    story.append(abstract_para)
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Keywords
+    keywords = Paragraph("<b>Keywords:</b> machine learning, optimization, gradient descent, adaptive learning", styles['Normal'])
+    story.append(keywords)
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Introduction
+    intro_title = Paragraph("1. Introduction", styles['Heading1'])
+    story.append(intro_title)
+    
+    intro_text = """
+    Machine learning optimization is a fundamental challenge in artificial intelligence.
+    Traditional gradient descent methods often suffer from slow convergence and local
+    minima problems. Recent advances in adaptive learning rate algorithms have shown
+    promise, but still face limitations in complex optimization landscapes.
+    
+    In this work, we propose AdaptiveGrad, a novel optimization algorithm that
+    dynamically adjusts learning rates based on gradient history and curvature
+    information. Our method addresses the key limitations of existing approaches
+    while maintaining computational efficiency.
+    """
+    intro_para = Paragraph(intro_text, styles['Normal'])
+    story.append(intro_para)
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Methodology
+    method_title = Paragraph("2. Methodology", styles['Heading1'])
+    story.append(method_title)
+    
+    method_text = """
+    Our proposed AdaptiveGrad algorithm consists of three main components:
+    
+    1. Gradient History Tracking: We maintain a moving average of recent gradients
+       to capture momentum information.
+    
+    2. Curvature Estimation: We use second-order information to estimate the
+       local curvature of the loss surface.
+    
+    3. Adaptive Rate Adjustment: We combine gradient history and curvature
+       information to dynamically adjust the learning rate for each parameter.
+    
+    The algorithm can be formally described as follows:
+    θ(t+1) = θ(t) - α(t) * ∇L(θ(t))
+    
+    where α(t) is the adaptive learning rate computed using our proposed method.
+    """
+    method_para = Paragraph(method_text, styles['Normal'])
+    story.append(method_para)
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Results
+    results_title = Paragraph("3. Experimental Results", styles['Heading1'])
+    story.append(results_title)
+    
+    results_text = """
+    We evaluated AdaptiveGrad on three benchmark datasets: MNIST, CIFAR-10, and
+    ImageNet. Our experiments show consistent improvements in both convergence
+    speed and final accuracy compared to baseline methods.
+    
+    Key findings:
+    - 30% faster convergence on average
+    - 2-3% improvement in final accuracy
+    - Better stability across different network architectures
+    - Reduced sensitivity to hyperparameter choices
+    """
+    results_para = Paragraph(results_text, styles['Normal'])
+    story.append(results_para)
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Conclusion
+    conclusion_title = Paragraph("4. Conclusion", styles['Heading1'])
+    story.append(conclusion_title)
+    
+    conclusion_text = """
+    We have presented AdaptiveGrad, a novel optimization algorithm that significantly
+    improves upon existing methods. Our approach demonstrates the importance of
+    combining gradient history with curvature information for effective optimization.
+    Future work will explore applications to other domains and investigate theoretical
+    convergence guarantees.
+    """
+    conclusion_para = Paragraph(conclusion_text, styles['Normal'])
+    story.append(conclusion_para)
+    
+    # Build PDF
+    doc.build(story)
+    print(f"Test PDF created: {filename}")
     return filename
 
 if __name__ == "__main__":
-    create_test_pdf() 
+    try:
+        create_test_pdf()
+    except ImportError:
+        print("Error: reportlab library not found. Install with: pip install reportlab")
+        print("Creating a simple text file instead...")
+        
+        # Fallback: create a simple text file that can be manually converted to PDF
+        with open("test_paper_content.txt", "w") as f:
+            f.write("""A Novel Approach to Machine Learning Optimization
+
+John Doe¹, Jane Smith²
+¹Department of Computer Science, University A
+²Institute of Technology, University B
+
+Abstract
+
+This paper presents a novel optimization algorithm for machine learning models.
+Our approach combines gradient descent with adaptive learning rates to achieve
+faster convergence and better performance. We evaluate our method on several
+benchmark datasets and demonstrate significant improvements over existing
+techniques. The proposed algorithm reduces training time by 30% while
+maintaining or improving accuracy.
+
+Keywords: machine learning, optimization, gradient descent, adaptive learning
+
+1. Introduction
+
+Machine learning optimization is a fundamental challenge in artificial intelligence.
+Traditional gradient descent methods often suffer from slow convergence and local
+minima problems. Recent advances in adaptive learning rate algorithms have shown
+promise, but still face limitations in complex optimization landscapes.
+
+In this work, we propose AdaptiveGrad, a novel optimization algorithm that
+dynamically adjusts learning rates based on gradient history and curvature
+information. Our method addresses the key limitations of existing approaches
+while maintaining computational efficiency.
+
+2. Methodology
+
+Our proposed AdaptiveGrad algorithm consists of three main components:
+
+1. Gradient History Tracking: We maintain a moving average of recent gradients
+   to capture momentum information.
+
+2. Curvature Estimation: We use second-order information to estimate the
+   local curvature of the loss surface.
+
+3. Adaptive Rate Adjustment: We combine gradient history and curvature
+   information to dynamically adjust the learning rate for each parameter.
+
+The algorithm can be formally described as follows:
+θ(t+1) = θ(t) - α(t) * ∇L(θ(t))
+
+where α(t) is the adaptive learning rate computed using our proposed method.
+
+3. Experimental Results
+
+We evaluated AdaptiveGrad on three benchmark datasets: MNIST, CIFAR-10, and
+ImageNet. Our experiments show consistent improvements in both convergence
+speed and final accuracy compared to baseline methods.
+
+Key findings:
+- 30% faster convergence on average
+- 2-3% improvement in final accuracy
+- Better stability across different network architectures
+- Reduced sensitivity to hyperparameter choices
+
+4. Conclusion
+
+We have presented AdaptiveGrad, a novel optimization algorithm that significantly
+improves upon existing methods. Our approach demonstrates the importance of
+combining gradient history with curvature information for effective optimization.
+Future work will explore applications to other domains and investigate theoretical
+convergence guarantees.
+""")
+        print("Text content saved to: test_paper_content.txt")
+        print("You can convert this to PDF using any online converter or LibreOffice.") 

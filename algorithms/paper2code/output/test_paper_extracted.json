@@ -1,0 +1,23 @@
+{
+  "pdf_path": "test_paper.pdf",
+  "raw_text": "Enhanced Machine Learning Algorithm for Data Processing\nAbstract\nThis paper presents a novel neural network approach for data processing.\nOur method uses deep learning techniques with transformer architecture.\n1. Introduction\nMachine learning has revolutionized data processing. We propose a new\nalgorithm that combines convolutional neural networks with attention mechanisms.\n2. Methodology\nStep 1: Data preprocessing using matrix operations\nStep 2: Feature extraction with CNN layers\nStep 3: Attention mechanism for sequence processing\nThe algorithm complexity is O(n log n) for the preprocessing phase.\n3. Mathematical Formulation\nThe loss function is defined as: L = sum(y_pred - y_true)^2\nWhere y_pred represents predicted values and y_true are ground truth.\n4. System Architecture\nThe system consists of three main components:\n- Input module for data ingestion\n- Processing network with multiple layers\n- Output component for result generation\n5. Implementation\nOur approach uses PyTorch framework with NumPy for numerical operations.\nThe implementation requires TensorFlow for certain optimization procedures.\n\n\n",
+  "cleaned_text": "Enhanced Machine Learning Algorithm for Data Processing Abstract This paper presents a novel neural network approach for data processing. Our method uses deep learning techniques with transformer architecture. 1. Introduction Machine learning has revolutionized data processing. We propose a new algorithm that combines convolutional neural networks with attention mechanisms. 2. Methodology Step 1: Data preprocessing using matrix operations Step 2: Feature extraction with CNN layers Step 3: Attention mechanism for sequence processing The algorithm complexity is O(n log n) for the preprocessing phase. 3. Mathematical Formulation The loss function is defined as: L = sum(y_pred - y_true)^2 Where y_pred represents predicted values and y_true are ground truth. 4. System Architecture The system consists of three main components: - Input module for data ingestion - Processing network with multiple layers - Output component for result generation 5. Implementation Our approach uses PyTorch framework with NumPy for numerical operations. The implementation requires TensorFlow for certain optimization procedures.",
+  "page_texts": [
+    {
+      "page_number": 1,
+      "text": "Enhanced Machine Learning Algorithm for Data Processing\nAbstract\nThis paper presents a novel neural network approach for data processing.\nOur method uses deep learning techniques with transformer architecture.\n1. Introduction\nMachine learning has revolutionized data processing. We propose a new\nalgorithm that combines convolutional neural networks with attention mechanisms.\n2. Methodology\nStep 1: Data preprocessing using matrix operations\nStep 2: Feature extraction with CNN layers\nStep 3: Attention mechanism for sequence processing\nThe algorithm complexity is O(n log n) for the preprocessing phase.\n3. Mathematical Formulation\nThe loss function is defined as: L = sum(y_pred - y_true)^2\nWhere y_pred represents predicted values and y_true are ground truth.\n4. System Architecture\nThe system consists of three main components:\n- Input module for data ingestion\n- Processing network with multiple layers\n- Output component for result generation\n5. Implementation\nOur approach uses PyTorch framework with NumPy for numerical operations.\nThe implementation requires TensorFlow for certain optimization procedures.\n",
+      "char_count": 1117
+    }
+  ],
+  "pdf_metadata": {
+    "page_count": 1,
+    "file_size_mb": 0.0,
+    "validated": true
+  },
+  "text_stats": {
+    "word_count": 155,
+    "char_count": 1116,
+    "extraction_quality": "high",
+    "extraction_method": "PyMuPDF"
+  }
+}

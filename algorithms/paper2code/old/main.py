@@ -11,7 +11,7 @@ from pathlib import Path
 import logging
 import time
 
-from flow import create_paper2doc_flow
+from algorithms.paper2code.old.flow import create_paper2doc_flow
 
 def setup_logging(verbose: bool = False):
     """Setup logging configuration"""

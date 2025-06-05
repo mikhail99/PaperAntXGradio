@@ -1,0 +1,52 @@
+============================================================
+ITERATION 2 VALIDATION REPORT
+============================================================
+
+Overall Status: ✅ PASSED
+
+Input Text Information:
+  - Word Count: 155
+  - Character Count: 1116
+  - Quality: high
+
+Section Detection:
+  - Total Sections Detected: 6
+  - Section Types:
+    • abstract: 1
+    • introduction: 1
+    • methodology: 1
+    • section: 3
+
+Section Selection:
+  - Total Sections Selected: 4
+  - Selected Sections:
+    1. [1] abstract: Abstract
+    2. [2] methodology: 2. Methodology
+    3. [3] introduction: 1. Introduction
+    4. [4] section: Implementation
+
+Planning Summary:
+  - Selection Method: heuristic_fallback
+  - Selection Criteria: Type priority + technical keyword density
+
+Output Files:
+  - Planning Results: output/planning_results.json
+
+Validation Checks:
+  ✅ Section Detection: Should detect at least one section
+  ✅ Section Structure: All sections should have title and content
+  ✅ Section Types: Should detect common academic section types
+  ✅ Section Selection: Should select at least one section
+  ✅ Selected Section Structure: All selected sections should have title and selection reason
+  ✅ Selection Priorities: All selected sections should have numeric priorities
+  ✅ Reasonable Selection Count: Should select between 1-8 sections
+  ✅ Planning Summary: Should generate planning summary
+  ✅ Planning Output File: Should create planning output file
+  ✅ Output File Content: Output file should contain selected sections and planning summary
+
+Sample Selected Content:
+  Section: Abstract
+  Content: This paper presents a novel neural network approach for data processing.
+Our method uses deep learning techniques with transformer architecture.
+
+============================================================

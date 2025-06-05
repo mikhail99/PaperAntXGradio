@@ -1,0 +1,72 @@
+# Paper2ImplementationDoc Requirements
+# Basic dependencies for Iteration 1
+
+# Core Python libraries
+pathlib2>=2.3.0  # For Python < 3.4 compatibility (if needed)
+
+# PDF processing (for future iterations)
+PyMuPDF>=1.23.0  # For PDF text extraction
+pdfplumber>=0.9.0  # Alternative PDF processing
+
+# Text processing
+nltk>=3.8.0  # Natural language processing
+spacy>=3.6.0  # Advanced NLP
+beautifulsoup4>=4.12.0  # HTML/XML parsing
+
+# LLM integration (for future iterations)
+openai>=1.0.0  # OpenAI API
+anthropic>=0.8.0  # Anthropic Claude API
+google-generativeai>=0.3.0  # Google Gemini API
+
+# ArXiv integration (for future iterations) 
+arxiv>=1.4.0  # ArXiv API access
+requests>=2.31.0  # HTTP requests
+
+# Data processing
+pandas>=2.0.0  # Data manipulation
+numpy>=1.24.0  # Numerical computing
+
+# Output generation
+markdown>=3.5.0  # Markdown processing
+jinja2>=3.1.0  # Template engine for HTML generation
+
+# Utilities
+python-dotenv>=1.0.0  # Environment variable management
+pyyaml>=6.0.0  # YAML configuration files
+click>=8.1.0  # Alternative CLI framework
+
+# Development and testing
+pytest>=7.0.0  # Testing framework
+black>=23.0.0  # Code formatting
+flake8>=6.0.0  # Linting
+
+# Optional: For advanced features
+# transformers>=4.30.0  # HuggingFace transformers
+# torch>=2.0.0  # PyTorch for ML models
+# sentence-transformers>=2.2.0  # Sentence embeddings 
+
+# Core PocketFlow dependencies
+# (PocketFlow library is included locally in pocketflow/)
+
+# PDF Processing
+PyMuPDF>=1.23.0              # PDF text extraction and parsing
+fitz                          # Alternative name for PyMuPDF
+
+# Text Processing & Analysis
+nltk>=3.8                     # Natural language processing
+spacy>=3.7.0                  # Advanced NLP (optional)
+regex>=2023.0.0               # Enhanced regex support for pattern matching
+
+# Data Handling
+pandas>=2.0.0                 # Data manipulation
+numpy>=1.24.0                 # Numerical operations
+
+# Optional: LLM Integration (for future iterations)
+# openai>=1.0.0               # OpenAI API client
+# anthropic>=0.7.0            # Anthropic Claude API client
+# requests>=2.31.0            # HTTP requests for API calls
+
+# Development & Testing
+pytest>=7.4.0                # Testing framework
+black>=23.0.0                 # Code formatting
+flake8>=6.0.0                 # Linting 

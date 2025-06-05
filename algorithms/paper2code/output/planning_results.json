@@ -1,0 +1,49 @@
+{
+  "selected_sections": [
+    {
+      "title": "Abstract",
+      "content": "This paper presents a novel neural network approach for data processing.\nOur method uses deep learning techniques with transformer architecture.",
+      "section_type": "abstract",
+      "selection_reason": "Selected by heuristic (score: 0.5)",
+      "priority": 1
+    },
+    {
+      "title": "2. Methodology",
+      "content": "Step 1: Data preprocessing using matrix operations\nStep 2: Feature extraction with CNN layers\nStep 3: Attention mechanism for sequence processing\nThe algorithm complexity is O(n log n) for the preprocessing phase.",
+      "section_type": "methodology",
+      "selection_reason": "Selected by heuristic (score: 0.5)",
+      "priority": 2
+    },
+    {
+      "title": "1. Introduction",
+      "content": "Machine learning has revolutionized data processing. We propose a new\nalgorithm that combines convolutional neural networks with attention mechanisms.",
+      "section_type": "introduction",
+      "selection_reason": "Selected by heuristic (score: 2.5)",
+      "priority": 3
+    },
+    {
+      "title": "Implementation",
+      "content": "Our approach uses PyTorch framework with NumPy for numerical operations.\nThe implementation requires TensorFlow for certain optimization procedures.",
+      "section_type": "section",
+      "selection_reason": "Selected by heuristic (score: 4.0)",
+      "priority": 4
+    }
+  ],
+  "planning_summary": {
+    "total_sections_analyzed": 6,
+    "selection_method": "heuristic_fallback",
+    "selection_criteria": "Type priority + technical keyword density"
+  },
+  "total_sections_detected": 6,
+  "pdf_metadata": {
+    "page_count": 1,
+    "file_size_mb": 0.0,
+    "validated": true
+  },
+  "text_stats": {
+    "word_count": 155,
+    "char_count": 1116,
+    "extraction_quality": "high",
+    "extraction_method": "PyMuPDF"
+  }
+}
