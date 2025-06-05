@@ -1,0 +1,137 @@
+INFO: Prepared 4 sections for abstraction detection
+INFO: Detecting abstractions in section: Abstract
+INFO: Found 4 abstractions in Abstract
+INFO: Detecting abstractions in section: 2. Methodology
+INFO: Found 5 abstractions in 2. Methodology
+INFO: Detecting abstractions in section: 1. Introduction
+INFO: Found 3 abstractions in 1. Introduction
+INFO: Detecting abstractions in section: Implementation
+INFO: Found 3 abstractions in Implementation
+INFO: Total abstractions detected: 15
+INFO: Stored 15 raw abstractions in shared state
+INFO: Prepared 4 sections for abstraction detection
+INFO: Detecting abstractions in section: Abstract
+INFO: Found 4 abstractions in Abstract
+INFO: Detecting abstractions in section: 2. Methodology
+INFO: Found 5 abstractions in 2. Methodology
+INFO: Detecting abstractions in section: 1. Introduction
+INFO: Found 3 abstractions in 1. Introduction
+INFO: Detecting abstractions in section: Implementation
+INFO: Found 3 abstractions in Implementation
+INFO: Total abstractions detected: 15
+INFO: Stored 15 raw abstractions in shared state
+INFO: Preparing 15 abstractions for categorization
+INFO: Categorized 15 abstractions
+INFO: Categorized 15 abstractions with summary statistics
+INFO: Prepared 4 sections for abstraction detection
+INFO: Detecting abstractions in section: Abstract
+INFO: Found 4 abstractions in Abstract
+INFO: Detecting abstractions in section: 2. Methodology
+INFO: Found 5 abstractions in 2. Methodology
+INFO: Detecting abstractions in section: 1. Introduction
+INFO: Found 3 abstractions in 1. Introduction
+INFO: Detecting abstractions in section: Implementation
+INFO: Found 3 abstractions in Implementation
+INFO: Total abstractions detected: 15
+INFO: Stored 15 raw abstractions in shared state
+INFO: Preparing 15 abstractions for categorization
+INFO: Categorized 15 abstractions
+INFO: Categorized 15 abstractions with summary statistics
+INFO: Prepared abstraction planning data with 15 categorized abstractions
+INFO: Saved abstraction planning results to test_output/abstraction_plan.json (25012 bytes)
+INFO: Successfully saved 15 categorized abstractions
+INFO: Initialized abstraction planning flow with mock_llm=True
+INFO: 🚀 Starting abstraction planning flow
+INFO: Processing 4 selected sections for abstraction detection
+INFO: Prepared 4 sections for abstraction detection
+INFO: Detecting abstractions in section: Abstract
+INFO: Found 4 abstractions in Abstract
+INFO: Detecting abstractions in section: 2. Methodology
+INFO: Found 5 abstractions in 2. Methodology
+INFO: Detecting abstractions in section: 1. Introduction
+INFO: Found 3 abstractions in 1. Introduction
+INFO: Detecting abstractions in section: Implementation
+INFO: Found 3 abstractions in Implementation
+INFO: Total abstractions detected: 15
+INFO: Stored 15 raw abstractions in shared state
+INFO: Preparing 15 abstractions for categorization
+INFO: Categorized 15 abstractions
+INFO: Categorized 15 abstractions with summary statistics
+INFO: Prepared abstraction planning data with 15 categorized abstractions
+INFO: Saved abstraction planning results to test_output/abstraction_plan.json (25012 bytes)
+INFO: Successfully saved 15 categorized abstractions
+INFO: ✅ Abstraction planning completed successfully
+INFO: 📊 Results: 15 abstractions found, 15 categorized
+INFO: Loaded section planning results: 4 sections
+INFO: Prepared 4 sections for abstraction detection
+INFO: Detecting abstractions in section: Abstract
+INFO: Found 4 abstractions in Abstract
+INFO: Detecting abstractions in section: 2. Methodology
+INFO: Found 5 abstractions in 2. Methodology
+INFO: Detecting abstractions in section: 1. Introduction
+INFO: Found 2 abstractions in 1. Introduction
+INFO: Detecting abstractions in section: Implementation
+INFO: Found 3 abstractions in Implementation
+INFO: Total abstractions detected: 14
+INFO: Stored 14 raw abstractions in shared state
+🧪 Starting Iteration 3: Abstraction Planning Tests
+============================================================
+🔍 Test 1: AbstractionDetector
+  ✓ Rule-based: Found 5 abstractions
+  ✓ LLM (mock): Found 7 abstractions
+  ✓ Hybrid: Found 5 unique abstractions
+  ✓ Targeted detection: Found 4 abstractions of specified types
+✅ Test 1 passed
+
+🔍 Test 2: IdentifyAbstractionsNode
+  ✓ Identified 15 raw abstractions
+  ✓ Abstraction structure validated
+✅ Test 2 passed
+
+📂 Test 3: CategorizeAbstractionsNode
+  ✓ Categorized 15 abstractions
+  ✓ Summary: 15 total
+  ✓ Categorization structure validated
+✅ Test 3 passed
+
+💾 Test 4: SaveAbstractionsNode
+  ✓ Saved to test_output/abstraction_plan.json
+  ✓ File size: 25012 bytes
+✅ Test 4 passed
+
+🚀 Test 5: Complete AbstractionPlanningFlow
+  ✓ Flow completed successfully
+  ✓ Found 15 abstractions
+  ✓ Categorized 15 abstractions
+✅ Test 5 passed
+
+📂 Test 6: Load Section Planning Results
+  ✓ Loaded 4 sections from output/planning_results.json
+✅ Test 6 passed
+
+🎯 Test 7: Parameterizable Abstraction Types
+  ✓ Target types: ['algorithm', 'architecture']
+  ✓ Found types: ['technique', 'workflow', 'architecture', 'algorithm', 'method']
+  ✓ Parameterizable types working (found 14 abstractions)
+✅ Test 7 passed
+
+🔀 Test 8: Hybrid Approach Benefits
+  ✓ Rule-based: 3 abstractions
+  ✓ LLM: 4 abstractions
+  ✓ Hybrid: 4 abstractions
+  ✓ Detection methods in hybrid: {'llm', 'hybrid', 'rule-based'}
+✅ Test 8 passed
+
+📋 Test 9: Output File Structure
+  ✓ Output file structure validated
+  ✓ Contains 15 categorized abstractions
+✅ Test 9 passed
+
+🛡️  Test 10: Error Handling
+  ✓ Correctly handled missing sections: No selected sections found. Run section planning f...
+  ⚠️  Unexpected error with empty sections: No selected sections found. Run section planning first.
+✅ Test 10 passed
+
+============================================================
+🎯 Test Results: 10 passed, 0 failed
+🎉 All tests passed! Iteration 3 implementation is successful.
