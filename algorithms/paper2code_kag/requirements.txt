@@ -1,0 +1,17 @@
+paper-qa==4.2.0
+# From original requirements.txt
+aiofiles==23.2.1
+anyio==4.3.0
+black==24.4.2
+langchain==0.1.20
+langchain-community==0.0.38
+langchain-core==0.1.52
+langchain-text-splitters==0.0.1
+ollama==0.2.0
+# paper-qa uses pypdf, so PyMuPDF may not be needed for KAG,
+# but keeping it for compatibility with old scripts.
+PyMuPDF==1.24.1
+pydantic==2.7.1
+PyYAML==6.0.1
+rich==13.7.1
+tenacity==8.2.3 

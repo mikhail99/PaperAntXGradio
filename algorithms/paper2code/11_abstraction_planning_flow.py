@@ -10,7 +10,7 @@ from pocketflow import Flow
 from typing import Dict, Any
 
 # Import abstraction planning nodes
-from abstraction_planning_nodes import (
+from algorithms.paper2code.abstraction_planning_nodes import (
     IdentifyAbstractionsNode,
     CategorizeAbstractionsNode,
     SaveAbstractionsNode,

@@ -1,0 +1,822 @@
+{
+  "connection_planning_results": {
+    "detected_connections": [
+      {
+        "source_id": "abs_0_transformer_abstract",
+        "target_id": "abs_3_algorithm_from_2._methodology",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "transformer_abstract architecture contains algorithm_from_2. Methodology",
+        "evidence": [
+          "LLM analysis: transformer_abstract -> algorithm_from_2. methodology"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_0_transformer_abstract",
+        "target_id": "abs_4_algorithm_1._introduction",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "transformer_abstract architecture contains algorithm_1. introduction",
+        "evidence": [
+          "LLM analysis: transformer_abstract -> algorithm_1. introduction"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_0_transformer_abstract",
+        "target_id": "abs_5_deep_learning_abstract",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "transformer_abstract architecture contains deep_learning_abstract",
+        "evidence": [
+          "LLM analysis: transformer_abstract -> deep_learning_abstract"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_0_transformer_abstract",
+        "target_id": "abs_10_matrix_operations_2._methodology",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "transformer_abstract architecture contains matrix_operations_2. methodology",
+        "evidence": [
+          "LLM analysis: transformer_abstract -> matrix_operations_2. methodology"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_0_transformer_abstract",
+        "target_id": "abs_11_algorithm_from_abstract",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "transformer_abstract architecture contains algorithm_from_Abstract",
+        "evidence": [
+          "LLM analysis: transformer_abstract -> algorithm_from_abstract"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_0_transformer_abstract",
+        "target_id": "abs_13_method_from_implementation",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "transformer_abstract architecture contains method_from_Implementation",
+        "evidence": [
+          "LLM analysis: transformer_abstract -> method_from_implementation"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_0_transformer_abstract",
+        "target_id": "abs_14_algorithm_from_implementation",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "transformer_abstract architecture contains algorithm_from_Implementation",
+        "evidence": [
+          "LLM analysis: transformer_abstract -> algorithm_from_implementation"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_1_cnn_2._methodology",
+        "target_id": "abs_3_algorithm_from_2._methodology",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "cnn_2. methodology architecture contains algorithm_from_2. Methodology",
+        "evidence": [
+          "LLM analysis: cnn_2. methodology -> algorithm_from_2. methodology"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_1_cnn_2._methodology",
+        "target_id": "abs_4_algorithm_1._introduction",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "cnn_2. methodology architecture contains algorithm_1. introduction",
+        "evidence": [
+          "LLM analysis: cnn_2. methodology -> algorithm_1. introduction"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_1_cnn_2._methodology",
+        "target_id": "abs_5_deep_learning_abstract",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "cnn_2. methodology architecture contains deep_learning_abstract",
+        "evidence": [
+          "LLM analysis: cnn_2. methodology -> deep_learning_abstract"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_1_cnn_2._methodology",
+        "target_id": "abs_10_matrix_operations_2._methodology",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "cnn_2. methodology architecture contains matrix_operations_2. methodology",
+        "evidence": [
+          "LLM analysis: cnn_2. methodology -> matrix_operations_2. methodology"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_1_cnn_2._methodology",
+        "target_id": "abs_11_algorithm_from_abstract",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "cnn_2. methodology architecture contains algorithm_from_Abstract",
+        "evidence": [
+          "LLM analysis: cnn_2. methodology -> algorithm_from_abstract"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_1_cnn_2._methodology",
+        "target_id": "abs_13_method_from_implementation",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "cnn_2. methodology architecture contains method_from_Implementation",
+        "evidence": [
+          "LLM analysis: cnn_2. methodology -> method_from_implementation"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_1_cnn_2._methodology",
+        "target_id": "abs_14_algorithm_from_implementation",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "cnn_2. methodology architecture contains algorithm_from_Implementation",
+        "evidence": [
+          "LLM analysis: cnn_2. methodology -> algorithm_from_implementation"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_2_neural_network_1._introduction",
+        "target_id": "abs_3_algorithm_from_2._methodology",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "neural_network_1. introduction architecture contains algorithm_from_2. Methodology",
+        "evidence": [
+          "LLM analysis: neural_network_1. introduction -> algorithm_from_2. methodology"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_2_neural_network_1._introduction",
+        "target_id": "abs_4_algorithm_1._introduction",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "neural_network_1. introduction architecture contains algorithm_1. introduction",
+        "evidence": [
+          "LLM analysis: neural_network_1. introduction -> algorithm_1. introduction"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_2_neural_network_1._introduction",
+        "target_id": "abs_5_deep_learning_abstract",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "neural_network_1. introduction architecture contains deep_learning_abstract",
+        "evidence": [
+          "LLM analysis: neural_network_1. introduction -> deep_learning_abstract"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_2_neural_network_1._introduction",
+        "target_id": "abs_6_attention_2._methodology",
+        "connection_type": "dependency",
+        "confidence": 0.8,
+        "description": "neural_network_1. introduction requires attention_2. methodology",
+        "evidence": [
+          "LLM analysis: neural_network_1. introduction -> attention_2. methodology"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_2_neural_network_1._introduction",
+        "target_id": "abs_9_attention_1._introduction",
+        "connection_type": "dependency",
+        "confidence": 0.8,
+        "description": "neural_network_1. introduction requires attention_1. introduction",
+        "evidence": [
+          "LLM analysis: neural_network_1. introduction -> attention_1. introduction"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_2_neural_network_1._introduction",
+        "target_id": "abs_10_matrix_operations_2._methodology",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "neural_network_1. introduction architecture contains matrix_operations_2. methodology",
+        "evidence": [
+          "LLM analysis: neural_network_1. introduction -> matrix_operations_2. methodology"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_2_neural_network_1._introduction",
+        "target_id": "abs_11_algorithm_from_abstract",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "neural_network_1. introduction architecture contains algorithm_from_Abstract",
+        "evidence": [
+          "LLM analysis: neural_network_1. introduction -> algorithm_from_abstract"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_2_neural_network_1._introduction",
+        "target_id": "abs_13_method_from_implementation",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "neural_network_1. introduction architecture contains method_from_Implementation",
+        "evidence": [
+          "LLM analysis: neural_network_1. introduction -> method_from_implementation"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_2_neural_network_1._introduction",
+        "target_id": "abs_14_algorithm_from_implementation",
+        "connection_type": "composition",
+        "confidence": 0.7,
+        "description": "neural_network_1. introduction architecture contains algorithm_from_Implementation",
+        "evidence": [
+          "LLM analysis: neural_network_1. introduction -> algorithm_from_implementation"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_3_algorithm_from_2._methodology",
+        "target_id": "abs_5_deep_learning_abstract",
+        "connection_type": "dependency",
+        "confidence": 0.8,
+        "description": "algorithm_from_2. Methodology algorithm uses deep_learning_abstract method",
+        "evidence": [
+          "LLM analysis: algorithm_from_2. methodology -> deep_learning_abstract"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_3_algorithm_from_2._methodology",
+        "target_id": "abs_10_matrix_operations_2._methodology",
+        "connection_type": "dependency",
+        "confidence": 0.8,
+        "description": "algorithm_from_2. Methodology algorithm uses matrix_operations_2. methodology method",
+        "evidence": [
+          "LLM analysis: algorithm_from_2. methodology -> matrix_operations_2. methodology"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_3_algorithm_from_2._methodology",
+        "target_id": "abs_13_method_from_implementation",
+        "connection_type": "dependency",
+        "confidence": 0.8,
+        "description": "algorithm_from_2. Methodology algorithm uses method_from_Implementation method",
+        "evidence": [
+          "LLM analysis: algorithm_from_2. methodology -> method_from_implementation"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_4_algorithm_1._introduction",
+        "target_id": "abs_5_deep_learning_abstract",
+        "connection_type": "dependency",
+        "confidence": 0.8,
+        "description": "algorithm_1. introduction algorithm uses deep_learning_abstract method",
+        "evidence": [
+          "LLM analysis: algorithm_1. introduction -> deep_learning_abstract"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_4_algorithm_1._introduction",
+        "target_id": "abs_10_matrix_operations_2._methodology",
+        "connection_type": "dependency",
+        "confidence": 0.8,
+        "description": "algorithm_1. introduction algorithm uses matrix_operations_2. methodology method",
+        "evidence": [
+          "LLM analysis: algorithm_1. introduction -> matrix_operations_2. methodology"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_4_algorithm_1._introduction",
+        "target_id": "abs_13_method_from_implementation",
+        "connection_type": "dependency",
+        "confidence": 0.8,
+        "description": "algorithm_1. introduction algorithm uses method_from_Implementation method",
+        "evidence": [
+          "LLM analysis: algorithm_1. introduction -> method_from_implementation"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      },
+      {
+        "source_id": "abs_11_algorithm_from_abstract",
+        "target_id": "abs_13_method_from_implementation",
+        "connection_type": "dependency",
+        "confidence": 0.8,
+        "description": "algorithm_from_Abstract algorithm uses method_from_Implementation method",
+        "evidence": [
+          "LLM analysis: algorithm_from_abstract -> method_from_implementation"
+        ],
+        "detection_method": "llm",
+        "bidirectional": false
+      }
+    ],
+    "dependency_chains": [
+      {
+        "chain_id": "dep_chain_0",
+        "abstractions": [
+          "abs_2_neural_network_1._introduction",
+          "abs_6_attention_2._methodology"
+        ],
+        "chain_type": "linear",
+        "description": "Dependency chain: abs_2_neural_network_1._introduction -> abs_6_attention_2._methodology"
+      },
+      {
+        "chain_id": "dep_chain_1",
+        "abstractions": [
+          "abs_3_algorithm_from_2._methodology",
+          "abs_5_deep_learning_abstract"
+        ],
+        "chain_type": "linear",
+        "description": "Dependency chain: abs_3_algorithm_from_2._methodology -> abs_5_deep_learning_abstract"
+      },
+      {
+        "chain_id": "dep_chain_2",
+        "abstractions": [
+          "abs_4_algorithm_1._introduction",
+          "abs_5_deep_learning_abstract"
+        ],
+        "chain_type": "linear",
+        "description": "Dependency chain: abs_4_algorithm_1._introduction -> abs_5_deep_learning_abstract"
+      },
+      {
+        "chain_id": "dep_chain_3",
+        "abstractions": [
+          "abs_11_algorithm_from_abstract",
+          "abs_13_method_from_implementation"
+        ],
+        "chain_type": "linear",
+        "description": "Dependency chain: abs_11_algorithm_from_abstract -> abs_13_method_from_implementation"
+      }
+    ],
+    "workflow_sequences": [],
+    "connection_matrix": {
+      "abs_0_transformer_abstract": [
+        "abs_3_algorithm_from_2._methodology:composition",
+        "abs_4_algorithm_1._introduction:composition",
+        "abs_5_deep_learning_abstract:composition",
+        "abs_10_matrix_operations_2._methodology:composition",
+        "abs_11_algorithm_from_abstract:composition",
+        "abs_13_method_from_implementation:composition",
+        "abs_14_algorithm_from_implementation:composition"
+      ],
+      "abs_1_cnn_2._methodology": [
+        "abs_3_algorithm_from_2._methodology:composition",
+        "abs_4_algorithm_1._introduction:composition",
+        "abs_5_deep_learning_abstract:composition",
+        "abs_10_matrix_operations_2._methodology:composition",
+        "abs_11_algorithm_from_abstract:composition",
+        "abs_13_method_from_implementation:composition",
+        "abs_14_algorithm_from_implementation:composition"
+      ],
+      "abs_2_neural_network_1._introduction": [
+        "abs_3_algorithm_from_2._methodology:composition",
+        "abs_4_algorithm_1._introduction:composition",
+        "abs_5_deep_learning_abstract:composition",
+        "abs_6_attention_2._methodology:dependency",
+        "abs_9_attention_1._introduction:dependency",
+        "abs_10_matrix_operations_2._methodology:composition",
+        "abs_11_algorithm_from_abstract:composition",
+        "abs_13_method_from_implementation:composition",
+        "abs_14_algorithm_from_implementation:composition"
+      ],
+      "abs_3_algorithm_from_2._methodology": [
+        "abs_5_deep_learning_abstract:dependency",
+        "abs_10_matrix_operations_2._methodology:dependency",
+        "abs_13_method_from_implementation:dependency"
+      ],
+      "abs_4_algorithm_1._introduction": [
+        "abs_5_deep_learning_abstract:dependency",
+        "abs_10_matrix_operations_2._methodology:dependency",
+        "abs_13_method_from_implementation:dependency"
+      ],
+      "abs_5_deep_learning_abstract": [],
+      "abs_6_attention_2._methodology": [],
+      "abs_7_workflow_from_2._methodology": [],
+      "abs_8_pytorch_implementation": [],
+      "abs_9_attention_1._introduction": [],
+      "abs_10_matrix_operations_2._methodology": [],
+      "abs_11_algorithm_from_abstract": [
+        "abs_13_method_from_implementation:dependency"
+      ],
+      "abs_12_technique_from_abstract": [],
+      "abs_13_method_from_implementation": [],
+      "abs_14_algorithm_from_implementation": []
+    },
+    "workflow_graph": {
+      "nodes": {
+        "abs_0_transformer_abstract": {
+          "id": "abs_0_transformer_abstract",
+          "name": "transformer_abstract",
+          "type": "architecture",
+          "category": "unknown"
+        },
+        "abs_1_cnn_2._methodology": {
+          "id": "abs_1_cnn_2._methodology",
+          "name": "cnn_2. methodology",
+          "type": "architecture",
+          "category": "unknown"
+        },
+        "abs_2_neural_network_1._introduction": {
+          "id": "abs_2_neural_network_1._introduction",
+          "name": "neural_network_1. introduction",
+          "type": "architecture",
+          "category": "unknown"
+        },
+        "abs_3_algorithm_from_2._methodology": {
+          "id": "abs_3_algorithm_from_2._methodology",
+          "name": "algorithm_from_2. Methodology",
+          "type": "algorithm",
+          "category": "unknown"
+        },
+        "abs_4_algorithm_1._introduction": {
+          "id": "abs_4_algorithm_1._introduction",
+          "name": "algorithm_1. introduction",
+          "type": "algorithm",
+          "category": "unknown"
+        },
+        "abs_5_deep_learning_abstract": {
+          "id": "abs_5_deep_learning_abstract",
+          "name": "deep_learning_abstract",
+          "type": "method",
+          "category": "unknown"
+        },
+        "abs_6_attention_2._methodology": {
+          "id": "abs_6_attention_2._methodology",
+          "name": "attention_2. methodology",
+          "type": "technique",
+          "category": "unknown"
+        },
+        "abs_7_workflow_from_2._methodology": {
+          "id": "abs_7_workflow_from_2._methodology",
+          "name": "workflow_from_2. Methodology",
+          "type": "workflow",
+          "category": "unknown"
+        },
+        "abs_8_pytorch_implementation": {
+          "id": "abs_8_pytorch_implementation",
+          "name": "pytorch_implementation",
+          "type": "technique",
+          "category": "unknown"
+        },
+        "abs_9_attention_1._introduction": {
+          "id": "abs_9_attention_1._introduction",
+          "name": "attention_1. introduction",
+          "type": "technique",
+          "category": "unknown"
+        },
+        "abs_10_matrix_operations_2._methodology": {
+          "id": "abs_10_matrix_operations_2._methodology",
+          "name": "matrix_operations_2. methodology",
+          "type": "method",
+          "category": "unknown"
+        },
+        "abs_11_algorithm_from_abstract": {
+          "id": "abs_11_algorithm_from_abstract",
+          "name": "algorithm_from_Abstract",
+          "type": "algorithm",
+          "category": "unknown"
+        },
+        "abs_12_technique_from_abstract": {
+          "id": "abs_12_technique_from_abstract",
+          "name": "technique_from_Abstract",
+          "type": "technique",
+          "category": "unknown"
+        },
+        "abs_13_method_from_implementation": {
+          "id": "abs_13_method_from_implementation",
+          "name": "method_from_Implementation",
+          "type": "method",
+          "category": "unknown"
+        },
+        "abs_14_algorithm_from_implementation": {
+          "id": "abs_14_algorithm_from_implementation",
+          "name": "algorithm_from_Implementation",
+          "type": "algorithm",
+          "category": "unknown"
+        }
+      },
+      "edges": [
+        {
+          "source": "abs_0_transformer_abstract",
+          "target": "abs_3_algorithm_from_2._methodology",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "transformer_abstract architecture contains algorithm_from_2. Methodology"
+        },
+        {
+          "source": "abs_0_transformer_abstract",
+          "target": "abs_4_algorithm_1._introduction",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "transformer_abstract architecture contains algorithm_1. introduction"
+        },
+        {
+          "source": "abs_0_transformer_abstract",
+          "target": "abs_5_deep_learning_abstract",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "transformer_abstract architecture contains deep_learning_abstract"
+        },
+        {
+          "source": "abs_0_transformer_abstract",
+          "target": "abs_10_matrix_operations_2._methodology",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "transformer_abstract architecture contains matrix_operations_2. methodology"
+        },
+        {
+          "source": "abs_0_transformer_abstract",
+          "target": "abs_11_algorithm_from_abstract",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "transformer_abstract architecture contains algorithm_from_Abstract"
+        },
+        {
+          "source": "abs_0_transformer_abstract",
+          "target": "abs_13_method_from_implementation",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "transformer_abstract architecture contains method_from_Implementation"
+        },
+        {
+          "source": "abs_0_transformer_abstract",
+          "target": "abs_14_algorithm_from_implementation",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "transformer_abstract architecture contains algorithm_from_Implementation"
+        },
+        {
+          "source": "abs_1_cnn_2._methodology",
+          "target": "abs_3_algorithm_from_2._methodology",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "cnn_2. methodology architecture contains algorithm_from_2. Methodology"
+        },
+        {
+          "source": "abs_1_cnn_2._methodology",
+          "target": "abs_4_algorithm_1._introduction",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "cnn_2. methodology architecture contains algorithm_1. introduction"
+        },
+        {
+          "source": "abs_1_cnn_2._methodology",
+          "target": "abs_5_deep_learning_abstract",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "cnn_2. methodology architecture contains deep_learning_abstract"
+        },
+        {
+          "source": "abs_1_cnn_2._methodology",
+          "target": "abs_10_matrix_operations_2._methodology",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "cnn_2. methodology architecture contains matrix_operations_2. methodology"
+        },
+        {
+          "source": "abs_1_cnn_2._methodology",
+          "target": "abs_11_algorithm_from_abstract",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "cnn_2. methodology architecture contains algorithm_from_Abstract"
+        },
+        {
+          "source": "abs_1_cnn_2._methodology",
+          "target": "abs_13_method_from_implementation",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "cnn_2. methodology architecture contains method_from_Implementation"
+        },
+        {
+          "source": "abs_1_cnn_2._methodology",
+          "target": "abs_14_algorithm_from_implementation",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "cnn_2. methodology architecture contains algorithm_from_Implementation"
+        },
+        {
+          "source": "abs_2_neural_network_1._introduction",
+          "target": "abs_3_algorithm_from_2._methodology",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "neural_network_1. introduction architecture contains algorithm_from_2. Methodology"
+        },
+        {
+          "source": "abs_2_neural_network_1._introduction",
+          "target": "abs_4_algorithm_1._introduction",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "neural_network_1. introduction architecture contains algorithm_1. introduction"
+        },
+        {
+          "source": "abs_2_neural_network_1._introduction",
+          "target": "abs_5_deep_learning_abstract",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "neural_network_1. introduction architecture contains deep_learning_abstract"
+        },
+        {
+          "source": "abs_2_neural_network_1._introduction",
+          "target": "abs_6_attention_2._methodology",
+          "type": "dependency",
+          "confidence": 0.8,
+          "description": "neural_network_1. introduction requires attention_2. methodology"
+        },
+        {
+          "source": "abs_2_neural_network_1._introduction",
+          "target": "abs_9_attention_1._introduction",
+          "type": "dependency",
+          "confidence": 0.8,
+          "description": "neural_network_1. introduction requires attention_1. introduction"
+        },
+        {
+          "source": "abs_2_neural_network_1._introduction",
+          "target": "abs_10_matrix_operations_2._methodology",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "neural_network_1. introduction architecture contains matrix_operations_2. methodology"
+        },
+        {
+          "source": "abs_2_neural_network_1._introduction",
+          "target": "abs_11_algorithm_from_abstract",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "neural_network_1. introduction architecture contains algorithm_from_Abstract"
+        },
+        {
+          "source": "abs_2_neural_network_1._introduction",
+          "target": "abs_13_method_from_implementation",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "neural_network_1. introduction architecture contains method_from_Implementation"
+        },
+        {
+          "source": "abs_2_neural_network_1._introduction",
+          "target": "abs_14_algorithm_from_implementation",
+          "type": "composition",
+          "confidence": 0.7,
+          "description": "neural_network_1. introduction architecture contains algorithm_from_Implementation"
+        },
+        {
+          "source": "abs_3_algorithm_from_2._methodology",
+          "target": "abs_5_deep_learning_abstract",
+          "type": "dependency",
+          "confidence": 0.8,
+          "description": "algorithm_from_2. Methodology algorithm uses deep_learning_abstract method"
+        },
+        {
+          "source": "abs_3_algorithm_from_2._methodology",
+          "target": "abs_10_matrix_operations_2._methodology",
+          "type": "dependency",
+          "confidence": 0.8,
+          "description": "algorithm_from_2. Methodology algorithm uses matrix_operations_2. methodology method"
+        },
+        {
+          "source": "abs_3_algorithm_from_2._methodology",
+          "target": "abs_13_method_from_implementation",
+          "type": "dependency",
+          "confidence": 0.8,
+          "description": "algorithm_from_2. Methodology algorithm uses method_from_Implementation method"
+        },
+        {
+          "source": "abs_4_algorithm_1._introduction",
+          "target": "abs_5_deep_learning_abstract",
+          "type": "dependency",
+          "confidence": 0.8,
+          "description": "algorithm_1. introduction algorithm uses deep_learning_abstract method"
+        },
+        {
+          "source": "abs_4_algorithm_1._introduction",
+          "target": "abs_10_matrix_operations_2._methodology",
+          "type": "dependency",
+          "confidence": 0.8,
+          "description": "algorithm_1. introduction algorithm uses matrix_operations_2. methodology method"
+        },
+        {
+          "source": "abs_4_algorithm_1._introduction",
+          "target": "abs_13_method_from_implementation",
+          "type": "dependency",
+          "confidence": 0.8,
+          "description": "algorithm_1. introduction algorithm uses method_from_Implementation method"
+        },
+        {
+          "source": "abs_11_algorithm_from_abstract",
+          "target": "abs_13_method_from_implementation",
+          "type": "dependency",
+          "confidence": 0.8,
+          "description": "algorithm_from_Abstract algorithm uses method_from_Implementation method"
+        }
+      ],
+      "metadata": {
+        "node_count": 15,
+        "edge_count": 30,
+        "graph_type": "directed"
+      }
+    },
+    "connection_summary": {
+      "total_connections": 30,
+      "total_dependency_chains": 4,
+      "total_workflow_sequences": 0,
+      "connection_type_distribution": {
+        "composition": 21,
+        "dependency": 9
+      },
+      "detection_method_distribution": {
+        "llm": 30
+      },
+      "average_confidence": 0.73,
+      "workflow_complexity": "high",
+      "longest_sequence_length": 0
+    },
+    "workflow_insights": {
+      "total_sequences": 0,
+      "longest_sequence_length": 0,
+      "average_sequence_length": 0,
+      "total_dependency_chains": 4,
+      "workflow_complexity": "high"
+    },
+    "connection_patterns": {
+      "most_connected_abstractions": {
+        "abs_0_transformer_abstract": 7,
+        "abs_3_algorithm_from_2._methodology": 6,
+        "abs_4_algorithm_1._introduction": 6,
+        "abs_5_deep_learning_abstract": 5,
+        "abs_10_matrix_operations_2._methodology": 5,
+        "abs_11_algorithm_from_abstract": 4,
+        "abs_13_method_from_implementation": 6,
+        "abs_14_algorithm_from_implementation": 3,
+        "abs_1_cnn_2._methodology": 7,
+        "abs_2_neural_network_1._introduction": 9,
+        "abs_6_attention_2._methodology": 1,
+        "abs_9_attention_1._introduction": 1
+      },
+      "connection_type_frequency": {
+        "composition": 21,
+        "dependency": 9
+      },
+      "bidirectional_connections": 0,
+      "circular_references": []
+    },
+    "analysis_metadata": {
+      "total_connections_analyzed": 30,
+      "analysis_method": "hybrid",
+      "analysis_timestamp": "2025-06-05T13:52:32.567107"
+    }
+  },
+  "previous_planning": {
+    "section_planning": "Available in planning_results.json",
+    "abstraction_planning": "Available in abstraction_plan.json"
+  }
+}

@@ -1,0 +1,7 @@
+This is a test document for the Knowledge-Augmented Generation (KAG) system.
+
+The primary topic is self-attention mechanisms in transformers.
+Self-attention, sometimes called intra-attention, is an attention mechanism relating different positions of a single sequence in order to compute a representation of the sequence. It has been shown to be very successful in machine translation and other language understanding tasks.
+
+A secondary topic is the concept of Mixture of Experts (MoE).
+MoE models use a gating network to select which experts (sub-networks) to use for a given input. This allows models to scale without a proportional increase in computation. 

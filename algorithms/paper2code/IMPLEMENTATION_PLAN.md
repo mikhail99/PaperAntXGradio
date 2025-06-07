@@ -35,11 +35,11 @@ The plan follows a **two-stage architecture**: Extended Planning (Stages 1-3) an
 ## Iteration 3: Abstraction Planning ✅ COMPLETED
 
 -[x] Implement `utils/abstraction_detector.py` for hybrid rule-based + LLM abstraction detection
--[x] Create `abstraction_planning_nodes.py` with nodes for:
+-[x] Create `1.1_abstraction_planning_nodes.py` with nodes for:
     -[x] `IdentifyAbstractionsNode`: Detect algorithms, methods, datasets, workflows
     -[x] `CategorizeAbstractionsNode`: Classify abstractions by type with structured output
     -[x] `SaveAbstractionsNode`: Save abstraction plan with metadata
--[x] Create `abstraction_planning_flow.py` to orchestrate abstraction planning
+-[x] Create `1.1_abstraction_planning_flow.py` to orchestrate abstraction planning
 -[x] **Validation:**
     -[x] Check that abstractions are correctly identified and categorized
     -[x] Save abstraction plan to `output/abstraction_plan.json`
@@ -49,18 +49,20 @@ The plan follows a **two-stage architecture**: Extended Planning (Stages 1-3) an
 
 ---
 
-## Iteration 4: Connection Planning
+## Iteration 4: Connection Planning ✅ COMPLETED
 
--[ ] Implement `utils/connection_mapper.py` for dependency and relationship analysis
--[ ] Create `3_connection_planning_nodes.py` with nodes for:
-    -[ ] `AnalyzeDependenciesNode`: Map dependencies between abstractions
-    -[ ] `MapConnectionsNode`: Identify workflow connections and relationships
-    -[ ] `SaveConnectionsNode`: Save connection plan with metadata
--[ ] Create `3_connection_planning_flow.py` to orchestrate connection planning
--[ ] **Validation:**
-    -[ ] Check that relationships and dependencies are correctly mapped
-    -[ ] Save connection plan to `output/connection_plan.json`
-    -[ ] Verify planning artifacts are complete and usable
+-[x] Implement `utils/connection_mapper.py` for dependency and relationship analysis
+-[x] Create `connection_planning_nodes.py` with nodes for:
+    -[x] `AnalyzeDependenciesNode`: Map dependencies between abstractions
+    -[x] `MapConnectionsNode`: Identify workflow connections and relationships
+    -[x] `SaveConnectionsNode`: Save connection plan with metadata
+-[x] Create `connection_planning_flow.py` to orchestrate connection planning
+-[x] **Validation:**
+    -[x] Check that relationships and dependencies are correctly mapped
+    -[x] Save connection plan to `output/connection_plan.json`
+    -[x] Verify planning artifacts are complete and usable
+
+**Results:** Successfully implemented hybrid connection detection (rule-based + mock LLM) with 6 connection types (dependency, workflow, composition, alternative, semantic, implementation). Analyzed 15 abstractions from Iteration 3 and detected 30 connections with 4 dependency chains. Generated comprehensive `connection_plan.json` (32KB) with workflow insights and pattern analysis. All 14 validation tests passed (100% success rate). **Extended Planning phase is now complete.**
 
 ---
 

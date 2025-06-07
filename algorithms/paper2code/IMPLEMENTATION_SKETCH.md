@@ -33,23 +33,23 @@ The pipeline takes arxiv article (title, abstract, pdf) and generates summaries 
 - **1_section_planning_flow.py**  
   _Defines the PocketFlow pipeline for section planning stage._
 
-### **Stage 2: Abstraction Planning**
+### **Stage 1.1: Abstraction Planning**
 
-- **2_abstraction_planning_nodes.py**  
+- **1.1_abstraction_planning_nodes.py**  
   _Nodes for identifying and categorizing abstractions (algorithms, methods, datasets, workflows)._  
   _Uses hybrid rule-based + LLM approach for parameterizable abstraction detection._  
   _Flow: identify_abstractions >> categorize_abstractions >> save_abstractions_
 
-- **2_abstraction_planning_flow.py**  
+- **1.1_abstraction_planning_flow.py**  
   _Defines the PocketFlow pipeline for abstraction planning stage._
 
-### **Stage 3: Connection Planning**
+### **Stage 1.2: Connection Planning**
 
-- **3_connection_planning_nodes.py**  
+- **1.2_connection_planning_nodes.py**  
   _Nodes for mapping relationships between abstractions, dependencies, and workflow connections._  
   _Flow: analyze_dependencies >> map_connections >> save_connections_
 
-- **3_connection_planning_flow.py**  
+- **1.2_connection_planning_flow.py**  
   _Defines the PocketFlow pipeline for connection planning stage._
 
 ---

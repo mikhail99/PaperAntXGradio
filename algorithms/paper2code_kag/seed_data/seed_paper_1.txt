@@ -1,0 +1,7 @@
+This is a seed document for bootstrapping the KAG system.
+
+Its contents are about self-attention mechanisms in transformers.
+Self-attention allows inputs to interact with each other and find out who they should pay more attention to. The outputs are an aggregation of the attention scores and values.
+
+A secondary topic is the concept of Mixture of Experts (MoE).
+MoE models are a type of ensemble learning where multiple 'expert' networks are used. A gating network determines which expert to use for a given input, making them computationally efficient. 
