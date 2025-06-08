@@ -1,0 +1,2805 @@
+Nanotechnology
+ACCEPTED MANUSCRIPT • OPEN ACCESS
+An efficient modeling workflow for high-performance nanowire single-
+photon avalanche detector
+To cite this article before publication: Zhe Li et al 2024 Nanotechnology in press https://doi.org/10.1088/1361-6528/ad2019
+Manuscript version: Accepted Manuscript
+Accepted Manuscript is “the version of the article accepted for publication including all changes made as a result of the peer review process,
+and which may also include the addition to the article by IOP Publishing of a header, an article ID, a cover sheet and/or an ‘Accepted
+Manuscript’ watermark, but excluding any other editing, typesetting or other changes made by IOP Publishing and/or its licensors”
+This Accepted Manuscript is © 2024 The Author(s). Published by IOP Publishing Ltd.
+As the Version of Record of this article is going to be / has been published on a gold open access basis under a CC BY 4.0 licence, this Accepted
+Manuscript is available for reuse under a CC BY 4.0 licence immediately.
+Everyone is permitted to use all or part of the original content in this article, provided that they adhere to all the terms of the licence
+https://creativecommons.org/licences/by/4.0
+Although reasonable endeavours have been taken to obtain all necessary permissions from third parties to include their copyrighted content
+within this article, their full citation and copyright line may not be present in this Accepted Manuscript version. Before using any content from this
+article, please refer to the Version of Record on IOPscience once published for full citation and copyright details, as permissions may be required.
+All third party content is fully copyright protected and is not published on a gold open access basis under a CC BY licence, unless that is
+specifically stated in the figure caption in the Version of Record.
+View the article online for updates and enhancements.
+This content was downloaded from IP address 119.13.210.107 on 19/01/2024 at 12:50
+An efficient modeling workflow for high-performance
+nanowire single-photon avalanche detector
+Zhe Li∗, H. Hoe Tan, Chennupati Jagadish, and Lan Fu∗
+Australian Research Council Centre of Excellence for Transformative Meta-Optical
+Systems, Department of Electronic Materials Engineering, Research School of
+Physics, The Australian National University, Canberra ACT 2601, Australia
+E-mail: ∗zhe.li@anu.edu.au, lan.fu@anu.edu.au
+Abstract.
+Single-photon detector (SPD), an essential building block of the quantum
+communication system, plays a fundamental role in developing next-generation
+quantum technologies.
+In this work, we propose an efficient modeling workflow
+of nanowire SPDs utilizing avalanche breakdown at reverse-biased conditions.
+The
+proposed workflow is explored to maximize computational efficiency and balance time-
+consuming drift-diffusion simulation with fast script-based post-processing. Without
+excessive computational effort, we could predict a suite of key device performance
+metrics, including breakdown voltage, dark/light avalanche built-up time, photon
+detection efficiency, dark count rate, and the deterministic part of timing jitter due to
+device structures. Implementing the proposed workflow onto a single InP nanowire and
+comparing it to the extensively studied planar devices and superconducting nanowire
+SPDs, we showed the great potential of nanowire avalanche SPD to outperform their
+planar counterparts and obtain as superior performance as superconducting nanowires,
+i.e., achieve a high photon detection efficiency of 70% with a dark count rate less than
+20 Hz at non-cryogenic temperature. The proposed workflow is not limited to single-
+nanowire or nanowire-based device modeling and can be readily extended to more
+complicated two-/three dimensional structures.
+Keywords:
+single-photon detector, Geiger-mode avalanche diode, nanowires, low-
+dimensional materials, technology computer-aided design, nanosctructured devices
+Submitted to: Nanotechnology
+1. Introduction
+Single-photon detector (SPD), an essential building block for detecting and counting
+photons, plays a fundamental role in many emerging and fast-evolving technologies, such
+as quantum encryption and long-distance free-space quantum communication [1–4], light
+detection and ranging (LiDAR) [5, 6], and single-photon time-of-flight 3D imaging [7–
+10], to name a few. Over the past two decades, significant efforts have been devoted to
+Page 1 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+2
+improving the performance of SPDs in terms of photon detection efficiency (PDE), dark
+count rate (DCR), timing jitter, and most importantly, the capacity of fully integrated
+generation, manipulation, and detection of single-photon quantum state all in one chip.
+Most commercially available SPDs operate based on the photomultiplier or avalanche
+mechanism to achieve single-photon level detection [11]. Photon detection technologies
+based on the photomultiplier tube (PMT) have long been developed and matured for
+almost a century.
+Although PMT offers a very large active area which is desirable
+for simplifying optical alignment in long-range free-space quantum communications, it
+requires kilovolt-level operating conditions and suffers from high dark count rate and low
+detection efficiency. SPDs based on avalanche mechanism have surpassed PMTs thanks
+to their lower operating voltage, higher photon detection efficiency, ease of integration
+into an array and compatibility with other parts of peripheral CMOS logic circuits.
+Indeed, Si and InGaAs/InP based single-photon avalanche detectors (SPADs) have
+dominated the market in the visible and near-infrared wavelength, respectively, with
+other semiconductor materials such as germanium-on-silicon, HgCdTe, InGaAs/InAlAs,
+and InSb sharing the rest [11, 12].
+One
+of
+the
+main
+obstacles
+to
+advancing
+single-photon
+detection/counting
+technologies is that different performance metrics usually have conflicting trends (e.g.
+higher photon detection efficiency generally leads to larger dark count rate).
+Thus
+a trade-off in the design must be accounted for, depending on a specific application.
+This drives extensive research to explore new device structures made available by
+emerging low-dimensional nanostructures such as 1D nanowires (NWs) [13–16] and 0D
+quantum dots [17–19]. For example, it has been demonstrated that superconducting
+nanowire single-photon detectors (SNSPDs) promise the potential to closely approach
+an ideal SPD performance by simultaneously achieving low dark count rate (1 Hz), high
+detection efficiency (90% at wavelengths between 1520-1610 nm) and low timing jitter
+(150 ps) [20]. However, a critical bottleneck of SNSPD devices is its requirement of
+cryogenic temperature (<4 K), which drastically adds to the cost and complexity of
+the experimental setup and becomes prohibitive to use for applications such as satellite
+optical receivers [12].
+On the other hand, exploring 1D semiconductor nanowire-based single-photon
+avalanche detectors (NW-SPADs) has drawn increasing attention recently. It promises
+to deliver as good performance as SNSPDs, i.e. high photon detection efficiency and
+low timing jitter, but operating near room temperature [21]. Furthermore, the unique
+advantage of NW-SPAD is that low dark count rate performance can be maintained
+despite operating near room temperature, thanks to its nanoscale size and high material
+quality [22]. Over the past decade, although many linear-mode NW-APDs have been
+reported [23–32], there is only one report on nanowire APDs operating above their
+breakdown voltage (i.e., NW-SPADs or Geiger-mode NW-APDs) [21], because of the
+stringent requirement in epitaxial growth and device fabrication of these types of
+nanowire devices.
+It requires prudent device structural design and numerous cycles
+of complicated and (perhaps) non-reproducible device fabrication, which is costly and
+Page 2 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+3
+time-consuming. Hence, there is a great demand for developing a comprehensive device
+modeling scheme to achieve a deep understanding of the critical design parameters and
+provide timely guidance to material growth and device fabrication.
+Over the past two decades, many numerical studies have been dedicated to modeling
+SPAD performance [33–38]. The seminal work by Spinelli and Lacaita [33] pursued
+both deterministic (i.e.
+drift-diffusion model [39]) and stochastic (simplified Monte-
+Carlo method [40]) modeling techniques to simulate transient terminal avalanche current
+behavior and timing resolution. However, as pointed out by the authors, fully time-
+dependent deterministic modeling required a formidable computational load with serious
+numerical problems [41].
+Thus the majority of the work relied on simplified and
+equivalent lumped models. Other reported work either focused on one or two aspects of
+SPAD performance or adopted a simplified model to mitigate the heavy computational
+load of simulating avalanche phenomena. For example, Donnelly et al. and Jiang et
+al. studied extensively the trade-offs between dark count rate and photon detection
+efficiency [34, 35]; however, a complete drift-diffusion modeling was not considered.
+Overall, there is still a lack of robust and efficient computational workflow to simulate
+a suite of key SPAD performance metrics in the field.
+In this work, we propose a hybrid numerical workflow that integrates time-
+dependent drift-diffusion (DD) modeling, steady-state DD modeling, as well as a range of
+auxiliary post-processing routines to predict the five most important SPAD performance
+metrics, i.e., avalanche breakdown voltage, avalanche built-up time (corresponding to
+SPAD sensing time), timing jitter, dark count rate, and photon detection efficiency.
+Although the proposed workflow was demonstrated with single-nanowire SPAD in a
+one-dimensional domain, it is general to more complicated structures in two/three
+dimensions and not limited to nanowire-based devices.
+It can also be extended to
+include more SPAD metrics, such as afterpulsing probability, in future work.
+2. Numerical methods
+2.1. Proposed workflow
+To maximize the usage of time-consuming drift-diffusion simulation and produce as
+many device performance metrics as possible, we proposed the workflow shown in
+figure 1 to predict the five most important SPAD metrics operating in the Geiger
+mode: avalanche breakdown voltage, avalanche built-up time, timing jitter, dark count
+rate (DCR) and photon detection efficiency (PDE). The COMSOL Multiphysics was
+employed for the drift-diffusion (DD) simulations in this work. The workflow consists of
+two parts: a relatively slow but comprehensive time-dependent DD solver that produces
+three out of five SPAD metrics and other intermediate results for the subsequent process;
+and a fast post-processing routine that takes some of the output from DD simulation
+as input to compute the rest of performance metrics.
+More specifically, the time-dependent DD solver is set up to compute time-
+Page 3 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+4
+Figure 1. Proposed workflow for simulating a suite of SPAD performance metrics
+(in green), including avalanche breakdown voltage, avalanche built-up time (from dark
+time-dependent IV curves) and timing jitter (from light time-dependent IV curves),
+which are directly generated from the DD solver. Post-processed metrics include dark
+count rate and photon detection efficiency, computed based on the electric field and
+quantum efficiency generated by DD solvers. The input parameters are depicted in
+blue.
+dependent current-voltage (IV) characteristics under dark and light conditions with
+various external biases. Based on the IV curves, information on breakdown voltage can
+be immediately extracted.
+For applied bias beyond avalanche breakdown, terminal
+current increases rapidly and reaches a plateau after an extended period (e.g., see
+figure 2(b)). By fitting a standard logistic function to the current-time curve in dark
+condition, the avalanche built-up time can be estimated, which corresponds to the lower
+limit of SPADs’ sensing time (its inverse gives the maximum count rate). Likewise, the
+light avalanche built-up time can be calculated under an optical excitation. However,
+such response time varies depending on which part of the NW is under light excitation,
+and the corresponding standard deviation estimates the (lower limit of) timing jitter.
+Deploying a time-dependent DD solver provides important metrics of interest and
+ensures better numerical stability and convergence than the commonly used steady-
+state DD solver. This is because the regime after avalanche breakdown involves high
+non-linearity and exponential increase of carriers in a very short period, which is by no
+means a steady-state condition. Moreover, the space-charge effect that limits avalanche
+current from approaching infinity cannot be correctly simulated with a steady-state
+DD scheme, which is precisely the reason that steady-state DD simulations always
+tend to diverge just a few volts beyond breakdown [42]. The examples of the electric
+Page 4 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+5
+field with space-charge effect correctly recovered after avalanche breakdown can be
+found in figure S1 in the supplementary material. Therefore, one must apply a time-
+dependent DD solver (within the framework of deterministic modeling of SPADs) to
+accurately predict SPAD device behavior, even though the apparent downside is that
+time-dependent DD simulations are very time-consuming, which accounts for over 90%
+of the total computation time. The time-dependent IV characteristics can also be fed
+into the circuit-level lumped-sum modeling to optimise the peripheral electronics design,
+such as the gating dynamics, if required. However, this is beyond the scope of this work.
+On the other hand, although the steady-state DD scheme cannot accurately
+simulate avalanche phenomena, it can still compute quantum efficiency (QE), which
+characterizes how good incident photons are absorbed in NWs, regardless of whether
+there is an avalanche. This is a much faster routine and has been used for NW solar
+cell simulations with negligible computing time because it only requires a short-circuit
+condition (i.e. zero bias) [43–45]. The generated QE is an input for computing photon
+detection efficiency, as discussed in the following section.
+A fast post-processing routine is set up outside the drift-diffusion simulation
+workflow, taking the intermediate results from the drift-diffusion simulations as input
+and directly computing the dark count rate and photon detection efficiency. The spatial
+distribution of the electric field given by the time-dependent DD simulation is used to
+calculate the avalanche triggering probability (ATP), the chance that an electron-hole
+pair can trigger an avalanche event, following the scheme proposed by McIntyre [46]. For
+SPADs, it is more meaningful to cite photon detection efficiency [47–50], defined as the
+product of quantum efficiency and avalanche triggering probability. This is calculated
+by the post-processing routine.
+The dark count rate is another critical performance metric that characterizes the
+SPAD miscounts in the absence of a target optical signal. It indicates the occurrence of
+avalanche events triggered by thermally generated carriers or through other mechanisms
+such as direct or trap-assisted tunneling in the multiplication region, also known as
+dark carrier generation. These carrier generation terms are strong functions of the local
+electric field and depend on material properties, especially the material defect density
+and energy levels. The fast routine can easily compute these carrier generation rates
+by combining the electric field (extracted from DD simulations) and information on
+defects. The dark count rate is simply a product of dark carrier generation and avalanche
+triggering probability, given that every dark-generated carrier only has a certain chance
+to trigger an avalanche event.
+Overall, the proposed workflow seeks to maximize the usage of time-consuming DD
+simulation; both direct and indirect solutions from time-dependent DD simulations are
+used to calculate key SPAD performance metrics.
+Page 5 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+6
+2.2. Modeling SPAD performance
+The time-dependent drift-diffusion model, which solves for IV curves and obtains spatial
+electric field, consists of three coupled differential equations: the continuity equations for
+electrons and holes, and the Poisson equation for electric potential [39]. To demonstrate
+the proposed workflow and highlight the potential of nanowire-based SPADs, all
+simulations in this work were performed at a temperature of 150 K, higher than the
+cryogenic threshold temperature (120 K) [51]. The details of temperature dependent
+material properties can be found in the supplementary material. Moreover, since the
+working regime of Geiger-mode SPADs involves a large electric field after avalanche
+breakdown, the high-field saturation of carrier drift velocity must be considered. We
+adopt the commonly used Caughey-Thomas field-dependent model for carrier mobility
+[52], also detailed in the supplementary material.
+To accelerate the time-dependent DD simulation, we include only the most essential
+physics relevant to avalanche SPAD devices: for carrier recombination, the standard
+Shockley-Read-Hall model is applied [39]; for carrier generation, impact ionization and
+optical generation are considered.
+In particular, we adopt the ionization coefficient
+model proposed in Ref. [53] based on Monte Carlo simulations, verified by experimental
+data for temperatures ranging from 150 to 290 K. For the light generation model, for
+simplicity, we assumed a laser source with single-photon level power that gives a spatially
+uniform carrier generation rate inside the NW, as the light signal used in this work
+is mainly for computing timing jitter. Optical simulation (e.g., finite-difference time-
+domain (FDTD) simulation) can also be performed to obtain a more realistic carrier
+generation profile, though not critical for this study [43, 54].
+The terminal currents versus transient time under different external biases are
+a direct product of time-dependent DD simulation (e.g., figure 2(b)), from which
+breakdown voltage can be immediately determined. The dark avalanche built-up time
+is estimated by fitting a logistic function to the terminal current.
+Similarly, when
+optical generation is added, light current versus time can be obtained. The avalanche
+built-up time under light varies along the NW as it depends on which part of NW is
+excited (assuming a laser excitation with finite spot size). We can simulate a series
+of time-current curves by scanning a finite spot-size light source along the NW, and
+thus obtaining a range of avalanche built-up time. The built-up time here includes the
+time it takes to reach a threshold impact-ionization electric field, the time for carriers
+generated in a low-field region drifting to the high-field multiplication region, and the
+time for carriers generated in quasi-neutral region diffusing towards the multiplication
+region. In reality, all three above processes involve statistical fluctuation, incurring an
+extra and random delay. However, this work aims at fast deterministic modeling of
+SPADs, so these stochastic processes are not included. Therefore, the resultant built-up
+time is a lower limit of a SPAD’s timing response, i.e., theoretically, the best sensing
+time. Furthermore, the standard deviation of light avalanche built-up time estimates
+the SPAD timing jitter (also being a lower limit). Lateral diffusion of carriers in the
+Page 6 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+7
+direction perpendicular to the external bias is not considered, which needs an extension
+to the 2D/3D simulation domain. Such lateral diffusion within the depletion region is
+expected to be minimal since the high electric field leads to drift-dominant transport.
+The diffusion in the quasi-neutral region depends on the nanowire radius and will be
+investigated in future work, especially when surface recombination is also introduced.
+Dark count rate (DCR) and photon detection efficiency (PDE) are calculated via
+post-processing routines, both of which rely on the electric field extracted from time-
+dependent DD simulations. The electric field as a function of external biases is used to
+compute impact ionization coefficients αe and αh for electrons and holes, respectively,
+defined in Ref. [53], which strongly depend on the spatial distribution of the local electric
+field.
+These coefficients play a crucial role in determining the avalanche triggering
+probability (ATP), which characterizes the probability of generated electron-hole pair
+successfully triggering a self-sustaining avalanche, and is thus needed for calculating
+DCR and PDE. We denote this probability as Ppair:
+Ppair(x) = Pe(x) + Ph(x) −Pe(x)Ph(x),
+(1)
+where Pe and Ph are the probabilities that an electron or a hole can trigger an avalanche
+event, respectively; the subtraction of PePh in the equation is to avoid counting twice
+the avalanche triggered by both an electron and a hole [12]. It has long been proposed
+that Pe and Ph can be modeled through the following differential equations for a p-i-n
+structure, where the p-type region starts from x = 0 and ends with the n-type region
+at x = L with L being the length of an NW [55]:
+∂Pe
+∂x = −(1 −Pe)αe(Pe + Ph −PePh),
+∂Ph
+∂x = (1 −Ph)αh(Pe + Ph −PePh).
+(2)
+Following the scheme proposed in Ref. [46], solutions of coupled equations above can be
+found by solving a transcendental equation for Pe(x = 0):
+1 = [1 −Pe(0)] exp
+Z L
+0
+αe(x′)Pe(0)f(x′)
+1 −Pe(0) + Pe(0)f(x′)dx′
+
+,
+(3)
+given the boundary condition that Pe(L) = Ph(0) = 0, and f(x) is defined as:
+f(x) = exp
+Z x
+0
+[αh(x′) −αe(x′)] dx′
+
+.
+(4)
+Once Pe(0) is solved, the ATP for electron-hole pairs, electrons and holes, respectively,
+are given by:
+Ppair(x) =
+Pe(0)f(x)
+1 −Pe(0) + Pe(0)f(x),
+Pe(x)
+= 1 −[1 −Pe(0)] exp
+Z x
+0
+αe(x′)Ppair(x′)dx′
+
+,
+Ph(x)
+= Ppair(x) −Pe(x)
+1 −Pe(x)
+.
+(5)
+Page 7 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+8
+With the solved avalanche triggering probability Ppair, the DCR can be determined by:
+DCR = A
+Z L
+0
+Ppair(x)Gtot(x)dx,
+(6)
+where A is the cross-sectional area of the NW, and Gtot is the total dark carrier
+generation rate. In this work, we include contributions from thermal generation based
+on the Shockley-Read-Hall model (GSRH), direct band-to-band tunneling (GBBT), and
+trap-assisted tunneling (GTAT) [34–36]; the corresponding formulations can be found in
+the supplementary material.
+As mentioned before,
+extra information on quantum efficiency (QE) that
+characterizes photon absorption and carrier collection is needed to compute photon
+detection efficiency. The spatial QE profile can be calculated as:
+QE(x) = Iph(x)/q
+GoptVopt
+,
+(7)
+where Iph is the photo-current measured from the device terminal, whose magnitude
+depends on which part of the NW is optically excited (thus a function of x). Gopt is the
+carrier generation rate due to the optical signal, and Vopt is the volume where Gopt is
+applied, which can be approximated as Vopt ≈Ad, where d is the optical excitation size
+(i.e. averaged beam size); here d can be set to a realistic value based on the laser spot
+size, or it can be smaller if a detailed mapping of QE is desired to fully characterize
+its optical response. The light carrier generation Gopt is related to material absorption,
+reflection, incident laser power, and device geometries. For array-based nanowire devices
+with sub-wavelength feature sizes, the resonant light trapping renders the conventional
+ray optics description inaccurate. In that case, Gopt has no simple analytical formulation,
+such as the Beer-Lambertian type of absorption commonly adopted in the previous
+works [47–50]. As a result, a more complicated light absorption profile Gopt can only be
+obtained by numerical simulations [56–58]. Nevertheless, performing extra numerical
+simulations to obtain a more realistic Gopt for a single-nanowire device is not essential
+for this study. Thus, we assumed a spatially uniform generation rate and adopted the
+following simple formulation:
+Gopt(λ) = α(λ) [1 −R(λ)] PLaser
+d2
+λ
+hc,
+(8)
+where PLaser is the laser power, α(λ) is the absorption coefficient, R(λ) is the fraction
+of incident photons reflected from the NW surface (considered negligible in this work),
+c is the speed of light in vacuum, h is the Planck’s constant, and the area of incident
+laser on NW surface is approximated as d2.
+The spatially resolved photon detection efficiency is then given by:
+PDE(x) = QE(x) × Ppair(x),
+(9)
+where it is noted that in the low-field or quasi-neutral region, the avalanche triggering
+probability Ppair, due to its definition, reduces to either Pe or Ph. A single-valued PDE
+Page 8 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+9
+is sometimes more convenient to cite for performance comparison among different device
+designs. We thus defined a full-width at half-maximum length-averaged PDE(x) as:
+⟨PDE⟩=
+1
+x2 −x1
+Z x2
+x1
+PDE(x)dx,
+(10)
+where x1 and x2 define the boundary x coordinates that cover the half maximum.
+3. Results and discussion
+To investigate the performance of single-NW based SPAD, a p-i-n homojunction indium
+phosphide (InP) NW lying horizontally on a substrate is simulated. An Ohmic contact
+is assumed at the ends of both p- and n-segments. The NW has a diameter of 200
+nm and a length of 3 µm, with the p-segment length fixed at 1 µm and the i-segment
+varied from 250 to 1850 nm, whilst the n-segment length is varied accordingly to give a
+fixed total NW length. A simplified device schematic is shown in figure 2(a). Assuming
+that NW is grown from an n-type InP substrate, a highly doped n-type InP segment
+can be grown first, followed by an unintentionally doped i-region and p-doped top
+segment.
+In practice, it is still challenging to have a heavily doped p-type NW by
+selective-area metal-organic vapor-phase epitaxy (SA-MOVPE) [22]. Hence, based on
+the experimental information, we fixed the n-segment doping at 1×1018 cm−3 and varied
+the p-type doping from 1 × 1017 cm−3 (experimentally achievable [22, 59]) to 1 × 1018
+cm−3. The i-region is slightly n-doped due to the background doping often observed in
+undoped InP NWs by SA-MOVPE growth [22]. The i-region doping is also varied from
+5 × 1015 to 1 × 1017 cm−3 to explore its impact on SPAD performance.
+Figure 2. (a) A simplified schematic of single-NW based SPAD. (b) An example of
+time-dependent current characteristics in the dark condition for i-region thickness of
+950 nm with p-/n- and i-segment doping of 1×1018 and 5×1015 cm−3, respectively. The
+black circle indicates avalanche built-up time calculated by fitting a logistic function
+to the time-current curve; the red star highlights the end of the simulation where the
+final terminal current is extracted. (c) Current-voltage characteristics extracted from
+time-dependent current curves for a range of i-region thickness (Li) with the same
+doping as in (b).
+Page 9 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+10
+Solving the time-dependent DD model gives the time-dependent terminal current
+at different biases as direct output. An example is shown in figure 2(b) for an i-region
+thickness of 950 nm with p-/n- and i-region doping of 1 × 1018 and 5 × 1015 cm−3,
+respectively. The temporal behavior of terminal current below and beyond avalanche
+breakdown can be easily seen. Below the breakdown, the current experience some initial
+fluctuation and gradually reaches a steady state with a negligibly small current. On the
+other hand, as applied bias becomes equal to or greater than the breakdown voltage,
+the current rapidly ramps up and soon saturates at a certain level. The black circle
+highlights the avalanche built-up time, which is the period elapsed from the external
+bias is applied until a stable avalanche current is obtained. To estimate such built-up
+time, the time-current curve is first normalized by its maximum current and fitted by
+a logistic function. Truncating the fitting curve where its gradient is smaller than a
+prescribed threshold determines the build-up time. We take 10−6 ps−1 as the truncation
+threshold, considered small enough to be a reasonable criterion for a steady state. The
+fact that time-dependent current reaches a plateau when avalanche breakdown occurs
+indicates that the space-charge effect is correctly recovered in the simulations. Hence
+the current does not tend to go to infinity (see more discussion in the supplementary
+material).
+Once the breakdown current reaches a steady state, the terminal current at the
+last simulation timestep is extracted as the final terminal current, usually a few
+hundred picoseconds longer than the avalanche built-up time, highlighted in red stars
+in figure 2(b).
+No further simulation beyond this point is needed since the current
+fluctuation is too small to detect experimentally.
+Figure 2(c) shows the current-
+voltage characteristics for a range of i-region thicknesses Li with the same doping as in
+figure 2(b). It can be clearly seen that the breakdown voltage reduces with the decrease
+of i-region thickness.
+Figure 3. Avalanche breakdown voltage vs i-region thickness for various p-/i-segment
+doping cases.
+Page 10 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+11
+Figure 3 summarizes the extracted breakdown voltage as a function of i-region
+thickness for all doping cases, showing that a thinner i-region gives a smaller breakdown
+voltage. Avalanche breakdown is triggered once the electric field within the i-region
+reaches a threshold. For a thinner i-region, a smaller bias is enough to reach the threshold
+electric field.
+Although the breakdown voltage for a particular i-region thickness is
+similar between nanowires and the planar counterparts (e.g., see Ref. [60]), it does not
+necessarily cause other issues, such as comparably high dark count rates, thanks to the
+nanowire’s miniaturized volume, which will be discussed later. For the same p-segment
+doping (grouped by red or blue grading colors) and i-region thickness, an increase in
+i-region doping also gives a smaller breakdown voltage, consistent with widely cited
+theoretical analysis [39]. Overall, higher p-segment doping reduces breakdown voltage
+for all i-region thickness/doping cases.
+Moreover, as i-region doping increases and
+becomes comparable to p-region doping (e.g., Ni ≥5 × 1016 cm−3), the breakdown
+voltage is less dependent on i-region thickness since the effective multiplication region
+is primarily located at the p-i junction and does not span the entire i-region. Hence,
+varying i-region thickness has a limited impact on the breakdown voltage.
+The avalanche built-up time extracted from the dark time-dependent current curve
+is plotted against reverse bias beyond breakdown, as shown in figure 4 for all doping
+cases.
+This ‘dark’ avalanche built-up time can be regarded as the lower bound of
+the SPAD sensing response, as it characterizes the time taken to trigger an avalanche
+breakdown without photon excitation. Under the light condition, the response time
+will usually be shorter (with a few exceptions, as discussed later). However, there is
+no longer a single-valued built-up time to cite in the light case, as it depends on which
+part of the NW is optically excited. The inverse of avalanche built-up time can also
+be seen as the intrinsic maximum count rate of photons, being ‘intrinsic’ because it is
+independent of the effects from quenching, hold-off and reset times that usually depend
+on peripheral quenching circuits and specific applications (but not device itself).
+We performed simulations up to 3 V above avalanche breakdown voltage for all
+testing cases. Figure 4 shows that avalanche built-up time drops quickly by one order
+of magnitude when reverse bias increases by only several volts. Regardless of the i-
+region thickness, for both high and low p-segment doping cases, the dark built-up time
+can drop below 1 ns when the reverse bias is 1.0 V beyond breakdown. For p- and
+i-region doping of 1018 and 1016 cm−3, respectively, the built-up time fluctuates for
+Li = 1050 and 1450 nm. This is because some of the current experience a sudden surge,
+quickly reaching a comparable current level to other Li cases. However, the current is
+yet to stabilize, resulting in a longer total built-up time. Overall, a larger reverse bias
+is preferred to achieve a sub-nanosecond SPAD sensing time and a better maximum
+count rate. However, a larger bias with high electric field in the i-region also leads to a
+higher dark count rate. Such a trade-off must be considered, depending on whether the
+maximum count rate or DCR poses a more stringent limit on specific applications.
+When the device is exposed to optical excitation, the light time-dependent terminal
+currents can similarly be simulated to extract the light avalanche built-up time. The
+Page 11 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+12
+Figure 4. Avalanche built-up time extracted from dark time-dependent current curves
+for different i-region thicknesses and p-/i-segment doping. The top row corresponds to
+a varying i-region doping with the p-segment doping of 1×1018 cm−3, and the bottom
+row is for the p-segment doping of 1 × 1017 cm−3.
+single-photon source used in this work has an input power of 5.68 pW at a wavelength
+of 700 nm, which gives a single photon per pulse, assuming a laser repetition rate of
+20 MHz commonly used in experiments [61]. The top right schematic in figure 5 shows
+the setup of simulations in the light condition: a laser spot size of 300 nm in diameter
+is assumed, within which the carrier generation is enabled. Here the laser spot size
+is much smaller than a realistic laser spot size because we want to obtain a detailed
+mapping that characterizes the NW intrinsic photo-response, which in fact, should be
+independent of optical excitation spot size. Initially, the excitation ‘box’ is placed at
+the p-doped end of NW, and is progressively scanned through the entire NW with a
+step size of 300 nm. In total, it generates ten light simulation data, each giving a light
+avalanche built-up time. The light avalanche built-up time varies due to an interplay
+of several competing processes (i.e., light-generated carrier diffusion, low-field drift and
+recombination). The variation of spatially dependent light avalanche built-up time thus
+induces a timing jitter. It should be noted that such timing jitter is a lower limit of
+the actual one since various statistical fluctuations of avalanche are not considered; in
+other words, it is the ‘deterministic’ part of the actual timing jitter, which can be well
+predicted in this proposed workflow once the device structure is given.
+Figure 5(a) shows two examples of time-dependent terminal currents under light
+condition for i-region thickness of 1850 and 250 nm, respectively, both with p-/i- doping
+of 1018 and 5 × 1015 cm−3 at an excess bias of Ve =1.5 V. The excess bias is defined
+as Ve = Va −VB, where Va and VB are applied reverse bias and breakdown voltage,
+respectively. For reference, the dark time-dependent current is also plotted in black; the
+Page 12 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+13
+Figure 5. Avalanche breakdown of NW-SPAD under light condition. (a) At Ve =1.5
+V, time-dependent terminal currents are extracted for the cases of Li = 1850 nm
+(upper panel) and 250 nm (lower panel), with p-/i-doping of 1018 and 5 × 1015 cm−3,
+respectively. The colored data correspond to light response with a laser beam size of
+300×300 nm2) scanned from the p- to n-side of the NW, as indicated in the upper right
+schematic. (b) Both dark (line plus symbol) and light (line only) avalanche built-up
+time are summarized at different excess biases, with different colormaps representing
+laser scanning locations. Data highlighted in the dashed frame correspond to the cases
+shown in (a). (c) Spatial variation of light avalanche built-up time is plotted along the
+NW axis at different reverse biases. For Li =250 nm at a reverse bias of 13.5 V(i.e.
+Ve=1.5 V), the data is plotted in red with its dark counterpart also shown in a red
+line.
+light current curves have colormaps detailed in the upper right schematic, indicating
+the scanning position of laser input. Figure 5(b) summarizes the avalanche built-up
+Page 13 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+14
+time in dark condition (lines plus symbols) and under light (lines only) as a function
+of excess bias, extracted from figure 5(a). Notice that excess bias is calculated based
+on dark breakdown voltage. For the i-region of 1850 nm under illumination, an earlier
+breakdown is found at 0.5 V below dark breakdown voltage, thus giving Ve = −0.5
+V. To fully reveal the spatial variation of light avalanche built-up time, the data in
+figure 5(b) can be reorganized to present as a function of laser excitation location, as
+shown in figure 5(c). Correspondingly the induced timing jitter can then be obtained
+by calculating the standard deviation of each curve.
+From figure 5(c), a noticeable trend is that light avalanche built-up time is larger
+outside the i-region, which can be easily understood since light-generated carriers need
+to first diffuse to the multiplication region (i-region) before triggering an avalanche. A
+more interesting observation is that light avalanche built-up time is not always shorter
+than its dark counterpart, especially when the i-region is thin. Here we highlight a case
+shown in the lower panel of figure 5(c) for i-region thickness of 250 nm (i.e., the i-region
+is located at 1000 to 1250 nm along the NW axis), where the red line indicates the dark
+avalanche built-up time at Ve = 1.5 V. It can be seen that for laser excitation beyond
+2000 nm, the light avalanche built-up time is longer than the dark one. This is because
+the minority carriers (i.e. holes) generated at the far end of NW (an n-type region)
+recombine on their way diffusing to the i-region, given that the maximum hole diffusion
+length is only about 350 nm (as calculated based on Einstein’s relation with carrier
+mobility, see details in the supplementary material). The excess holes localised in the
+n-region can also diffuse towards the contact, contributing to dark current and lowering
+the light current such that it takes longer for the device to reach avalanche. On the
+other hand, such observation is not seen for the minority carrier (electron) generated at
+the p-doped end of NW because of its longer diffusion length (∼1 µm). Overall, the
+essence is that an excitation spot far away from the multiplication region can directly
+impair the device response speed.
+The standard deviation of light avalanche built-up time along the NW, as shown
+in figure 5(c), estimates the lower limit of SPAD timing jitter. Given the similar trend
+observed for different i-region thickness and doping, we summarize the timing jitter
+performance for a few representative cases in figure 6. Timing jitter, similar to avalanche
+built-up time, decreases as excess bias increases. For low i-doping of 5 × 1015 cm−3, a
+thinner i-region tends to give a larger timing jitter for most bias points. However, as
+i-doping increases to 1 × 1017 cm−3, the difference becomes negligible. Regardless of
+i-region thickness and doping, for excess bias of more than 2 V, the timing jitter can be
+less than 50 ps. For high i-region doping at Ve = 3 V, the timing jitter can be smaller
+than 10 ps, revealing that single-NW-based SPADs have great potential for high-speed
+and low-latency applications.
+The breakdown voltage, avalanche built-up time and timing jitter discussed above
+are all extracted directly from the time-dependent DD simulations. For the rest of the
+SPAD performance metrics, we then used post-processing routines to calculate PDE and
+DCR. The calculation of detection efficiency also needs a separate quantum efficiency
+Page 14 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+15
+Figure 6.
+Timing jitter performance for a selection of p-/i- doping and i-region
+thicknesses. For each p-doping case, we choose the lowest and highest i-doping cases,
+i.e. 5 × 1015 and 1 × 1017 cm−3, with two extreme i-region thicknesses (1850 and 250
+nm).
+simulation from the fast steady-state DD solver. The spatial PDE(x) as a function of the
+NW axis can be calculated as per equation 9. Figure 7 shows two examples of PDE(x)
+for high and low p-doping cases with the same i-region doping of Ni = 5 × 1015 cm−3
+at a range of excess biases. It is easily seen that PDE(x) increases with a larger excess
+voltage. More specifically, for the high p-doping case (upper panel), a thicker i-region
+leads to overall better PDE(x) along the NW. In contrast, for the low p-doping case, a
+thinner i-region is preferred. Moreover, for high p-doping, a peak PDE(x) above 60%
+is achieved at Li = 1850 nm with higher Ve. For the low p-doping case, excess voltage
+exhibits a less significant effect on PDE(x); for all i-region thicknesses Li, there is only
+a slightly increased PDE with increased Ve. The highest peak PDE(x) of Li = 250 nm
+remains above 40% for all Ve.
+The spatial photon detection efficiency can also be length-averaged within a width
+of half maximum by equation 10, which gives a single-valued mean detection efficiency
+⟨PDE⟩. Figure 8 shows that mean detection efficiency ⟨PDE⟩increases with a larger
+excess bias Ve. Also, as i-region doping increases, the difference in ⟨PDE⟩given by
+different Li becomes smaller. This is because a larger i-region doping shifts the high-field
+space-charge region closer to the p-i junction, and for cases such as Ni = 1 × 1017 cm−3,
+the carrier multiplication region is primarily at the p-i junction, shorter than the i-region
+thickness. Hence, varying Li has a limited effect on changing the peak field strength, and
+PDE only increases slightly. Furthermore, suppose p-region doping is also low (such that
+p-/i-region doping contrast is small). In that case, the high-field multiplication region is
+essentially always near the p-i junction, regardless of the actual i-region thickness. As a
+result, a thick i-region is not desirable as it creates an inefficient, low-field quasi-neutral
+region away from the p-i junction, which is not beneficial for carrier collection and also
+has a low avalanche triggering probability. This is why for all the low p-doping cases
+(i.e., the lower panel of figure 8), a thin i-region thickness is preferred. On the other
+hand, when the doping contrast between the i- and p-region is large, such as in the case
+of Ni = 5 × 1015 cm−3 with Np = 1 × 1018 cm−3, the high-field multiplication region
+Page 15 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+16
+Figure 7. Top row: spatial photon detection efficiency PDE(x) for p-/i-doping of
+1018 and 5 × 1015 cm−3 at a range of excess biases. Bottom row: spatial PDE(x) for
+p-/i-doping of 1017 and 5 × 1015 cm−3.
+spans the entire i-region, leading to good carrier collection efficiency as well as high
+avalanche triggering probability throughout the i-region. Consequently, a thick i-region
+is preferred over a thin one for better PDE performance.
+Figure 8. Mean photon detection efficiency ⟨PDE⟩is calculated by taking full-width
+at half-maximum length-averaged PDE(x) and is plotted against the excess voltage for
+all doping cases.
+Additionally, it should be noted that such length-averaged ⟨PDE⟩only indicates
+Page 16 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+17
+a lower bound of NW-SPAD’s peak PDE performance. Nevertheless, NW-SPADs can
+achieve high mean detection efficiency ranging from 20% to nearly 60% for cases of high
+p-/i-region doping contrast where a thick i-region is preferred (e.g., Ni = 5 × 1015 cm−3
+with Np = 1018 cm−3). When the p-/i-region doping contrast is low and a thin i-region is
+ideal, an even higher efficiency approaching 70% can be obtained (e.g., Ni = Np = 1017
+cm−3). To compare, the customized cutting-edge planar InGaAs/InP SPDs typically
+present detection efficiencies of 25%∼33%, though at higher operation temperatures of
+163∼240 K [11, 12]. For array-based NW-SPADs, the light-trapping effect allows for
+highly concentrated light absorption to be focused precisely around the multiplication
+region by manipulating array pitch size and NW radius [62].
+In this scenario, it
+is possible for array-based NW-SPADs to achieve the maximum detection efficiency
+observed in the spatial PDE(x) profile, where a detection efficiency approaching 90%
+can be obtained (see figure 10).
+Figure 9. The Dark count rate is calculated for a defect density of NT = 1012 cm−3
+for all doping cases.
+To demonstrate the dependence of DCR on i-region thickness and doping, we
+performed the calculations through the post-processing routines for defect densities of
+NT =[1010, 1011, 1012, 1013, 1014] cm−3.
+Under the same conditions (i.e., the same
+Li, Ni, Np and Ve), DCR is proportional to the defect density.
+Figure 9 shows an
+example of computed DCR for all doping cases with a defect density of 1012 cm−3.
+The computed DCR for the full range of defect densities can be found in figure S2
+(supplementary material). Based on equations S5 and S6 in the supplementary material,
+DCR increases with excess bias due to enhanced direct band-to-band and trap-assisted
+tunneling under a high electric field. However, the rate of increase for higher Ve slows
+down and eventually becomes much less noticeable as i-region doping increases. This
+is most evident for the low p-doping case, where the DCR is nearly independent of
+Page 17 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+18
+excess bias. When the doping contrast between the i- and p-doped regions is low, the
+high-field multiplication region is primarily located at the p-i junction. The over-bias
+beyond avalanche breakdown does not significantly increase the peak electric field at
+the junction but merely expands the space-charge region into the neutral region, where
+the dark carrier generation remains relatively low. This is why the increase of DCR at a
+larger excess voltage is limited for the cases of low p-doping and high i-doping. On the
+other hand, in the case of high doping contrast, the high-field space-charge region spans
+the entire i-doped region. Increasing excess voltage further enhances the peak electric
+field, where the dark carrier generation is the largest. Hence there is still an apparent
+increase in DCR as the excess bias increases. For the same reason, it is noted that as
+i-region doping Ni becomes larger, the DCR dependence on the i-region thickness also
+becomes much smaller since the high-field multiplication region is always around the p-i
+junction, regardless of actual i-region thickness.
+Overall, by adjusting the i-region doping/thickness and p-region doping, the dark
+count rate of a single-nanowire SPAD may vary over several orders of magnitude. In
+particular, for low i-region doping of 5 × 1015 or 1 × 1016 cm−3, a dark count rate
+less than 1 Hz can be achieved, giving as superior performance as the cutting-edge
+superconducting nanowire-based SPD [20]; such performance, if achieved in the future,
+is projected to outperform the customized planar InP SPADs, which typically give dark
+counts ranging from 10 (operated at 163 K) to 26 kHz (at 240 K) [11, 12].
+Lastly,
+comparing the trend of dark count rate in figure 9 to that of photon detection efficiency
+in figure 8, an apparent trade-off between these two metrics can be noted: wherever the
+detection efficiency is high, a high dark count rate ensues.
+To investigate such a trade-off and to highlight the potential of nanowire-based
+SPADs, figure 10 shows dark count rates plotted against the maximum photon detection
+efficiencies (extracted from spatial PDE(x) profiles) for all doping cases. We assumed
+a high-quality NW grown by SA-MOVPE (i.e.
+a defect density of 1010 cm−3) that
+has been demonstrated experimentally [22, 59, 63].
+Despite a general trend that a
+higher DCR accompanies a larger PDE, the degree of such trade-off can be potentially
+mitigated by properly adjusting the i-region thickness and doping. To guide the material
+growth and device fabrication for a particular application, for example, aiming at PDE
+around 70% (at 700 nm) and DCR between 10 to 100 Hz, one can simply pick an
+appropriate candidate from eight configurations (of different i-region thickness and i-/p-
+region doping), shown as eight sub-figures in figure 10. It is noted that a structure of
+Li = 250 nm with the i-/p-region doping of Ni = 5×1016 cm−3 and Np = 1×1017 cm−3,
+respectively, can achieve the design objective. To put this in context, if such a design
+is realized experimentally, it will closely follow some of the champion and commercial
+single-photon detectors based on superconducting NWs, whose peak PDE is around
+85% to 95% with a DCR between 102 to 104 Hz [15, 64], but at a much higher, non-
+cryogenic temperature (150 K in this work) rather than ≤5 K for superconducting NW
+based detectors. It should be noted that experimentally, it is still challenging to have as
+delicate control of NW doping as in numerical simulations. Fortunately, based on the
+Page 18 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+19
+simulations, having an i-region doping less or greater than 5 × 1016 cm−3 for Li = 250
+nm will not substantially compromise the performance. For example, if the i-region ends
+up being less n-doped, although the peak PDE declines to around 50%, DCR decreases
+to less than 10 Hz. On the other hand, a more heavily doped i-region will have a PDE
+> 80% at the expense of increased DCR to 103 Hz.
+Figure 10. Dark count rate versus peak PDE is plotted assuming a high-quality NW
+with defect density of NT = 1010 cm−3 for all doping cases.
+Lastly, it is worth mentioning that the impact of nanowire surface defect states on
+the NW-SPAD performance was not included due to the 1D device structure studied
+in this work. The surface states acting as recombination centers in the quasi-neutral
+regions can capture light-generated carriers as they diffuse towards the multiplication
+region to trigger an avalanche event, decreasing the device’s carrier collection efficiency
+and eventually leading to a lower photon detection efficiency.
+Furthermore, carriers
+captured by the surface defects during the avalanche may be detrapped and induce
+new avalanche events, i.e., afterpulsing [21].
+Nevertheless, InP nanowires grown by
+metal-organic vapor-phase or vapor-liquid-solid epitaxy are generally reported with low
+surface defect densities and surface recombination velocity [22, 59, 65, 66]. InP nanowire
+solar cells have been reported with record efficiencies for both epitaxially grown and
+top-down etched arrays without intentional surface passivation [62, 67], indicating that
+surface defect issue may be limited in compromising photon detection efficiency. The
+effect of surface defects on afterpulsing probability will be investigated in future work.
+Overall, our simulations indicate that with proper design, it is promising to achieve high-
+performance NW-based SPADs that can outperform current state-of-the-art detectors
+based on other technologies.
+Page 19 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+20
+4. Conclusions
+We have demonstrated an efficient workflow to model a suite of key performance
+metrics for single nanowire-based single-photon avalanche detectors, which, to our
+knowledge, has yet to be reported. The workflow incorporates the relatively slow drift-
+diffusion solver and several fast post-processing routines to maximize computational
+efficiency. With this, the avalanche breakdown voltage, dark/light avalanche built-up
+time, deterministic part of timing jitter, dark count rate, and photon detection efficiency
+can be modeled in an integrated and computationally efficient way.
+The proposed
+workflow can effectively serve as a mapping tool between application-driven metrics
+and a span of design parameters to accelerate the design-fabrication cycle for a high
+throughput of high-performance devices. Furthermore, our showcase of implementing
+the workflow onto a single InP nanowire SPAD operating at non-cryogenic temperature
+reveals the great potential in mitigating the common trade-offs between high detection
+efficiency/low timing jitter and high dark counts seen in the planar counterparts, thanks
+to the extremely small active volume of nanowires (i.e., low DCR) and possible tuning
+of various optical resonant modes for highly localized excitation (i.e., high PDE and
+low timing jitter). With a proper structural design and material doping, the nanowire
+SPAD is projected to simultaneously achieve a high detection efficiency of 70% with a
+dark count rate less than 20 Hz operated at 150 K. It greatly enhances the freedom in
+designing avalanche photodetectors and highlights that nanowires are among the most
+promising candidates for high-performance single-photon detection.
+Acknowledgments
+The authors acknowledge the financial support from the Australian Research Council.
+This research was undertaken with the assistance of resources and services from the
+National Computational Infrastructure (NCI), which is supported by the Australian
+Government.
+Supplementary material
+Spatial electric field near avalanche breakdown, temperature-dependent physical models,
+formulations of dark carrier generation rates, and dark count rate of different defect
+density are given in the supplementary material.
+Data Availability Statement
+The data that support the findings of this study are available from the corresponding
+authors upon reasonable request.
+Page 20 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+21
+References
+[1] Hadfield R H 2009 Nature Photonics 3(12)
+[2] Stajic J 2013 Science 339 1163–1163
+[3] Zhang J, Itzler M A, Zbinden H and Pan J W 2015 Light: Science & Applications 4(5)
+[4] Anisimova E, Nikulov D, Hu S S, Bourgon M, Neumann S P, Ursin R, Jennewein T and Makarov
+V 2021 EPJ Quantum Technology 8(1)
+[5] Li Z P, Ye J T, Huang X, Jiang P Y, Cao Y, Hong Y, Yu C, Zhang J, Zhang Q, Peng C Z, Xu F
+and Pan J W 2021 Optica 8 344–349
+[6] Kim I, Martins R J, Jang J, Badloe T, Khadir S, Jung H Y, Kim H, Kim J, Genevet P and Rho
+J 2021 Nature Nanotechnology 16(5)
+[7] Gupta A, Ingle A and Gupta M 2019 Asynchronous single-photon 3d imaging Proc. ICCV
+[8] Bruschini C, Homulle H, Antolovic I M, Burri S and Charbon E 2019 Light: Science & Applications
+8(1)
+[9] Piron F, Morrison D, Yuce M R and Redout´e J M 2021 IEEE Sensors Journal 21 12654–12666
+[10] Tobin R, Halimi A, McCarthy A, Soan P J and Buller G S 2021 Scientific Reports 11(1)
+[11] Wang H, Guo J, Miao J, Luo W, Gu Y, Xie R, Wang F, Zhang L, Wang P and Hu W 2022 Small 18
+2103963 (Preprint https://onlinelibrary.wiley.com/doi/pdf/10.1002/smll.202103963)
+URL https://onlinelibrary.wiley.com/doi/abs/10.1002/smll.202103963
+[12] Ceccarelli
+F,
+Acconcia
+G,
+Gulinatti
+A,
+Ghioni
+M,
+Rech
+I
+and
+Osel-
+lame
+R
+2021
+Advanced
+Quantum
+Technologies
+4
+2000102
+(Preprint
+https://onlinelibrary.wiley.com/doi/pdf/10.1002/qute.202000102)
+URL
+https://onlinelibrary.wiley.com/doi/abs/10.1002/qute.202000102
+[13] Esmaeil Zadeh I, Los J W N, Gourgues R B M, Steinmetz V, Bulgarini G, Dobro-
+volskiy S M, Zwiller V and Dorenbos S N 2017 APL Photonics
+2 111301 (Preprint
+https://doi.org/10.1063/1.5000001) URL https://doi.org/10.1063/1.5000001
+[14] Vetter A, Ferrari S, Rath P, Alaee R, Kahl O, Kovalyuk V, Diewald S, Goltsman G N, Korneev
+A, Rockstuhl C and Pernice W H P 2016 Nano Letters 16 7085–7092 pMID: 27759401
+[15] Korzh B, Zhao Q Y, Allmaras J P, Frasca S, Autry T M, Bersin E A, Beyer A D, Briggs R M,
+Bumble B, Colangelo M, Crouch G M, Dane A E, Gerrits T, Lita A E, Marsili F, Moody G,
+Pena C, Ramirez E, Rezac J D, Sinclair N, , Velasco A E, Verma V B, Wollman E E, Xie S,
+Zhu D, Hale P D, Spiropulu M, Silverman K L, Mirin R P, Nam S W, Kozorezov A G, Shaw
+M D and Berggren K K 2020 Nature Photonics 14(4)
+[16] Wollman E E, Verma V B, Beyer A D, Briggs R M, Korzh B, Allmaras J P, Marsili F, Lita A E,
+Mirin R P, Nam S W and Shaw M D 2017 Opt. Express 25 26792–26801
+[17] Eisaman
+M
+D,
+Fan
+J,
+Migdall
+A
+and
+Polyakov
+S
+V
+2011
+Review
+of
+Scientific
+Instruments
+82
+071101
+(Preprint
+https://doi.org/10.1063/1.3610677)
+URL
+https://doi.org/10.1063/1.3610677
+[18] Blakesley J C, See P, Shields A J, Kardyna l B E, Atkinson P, Farrer I and Ritchie D A 2005 Phys.
+Rev. Lett. 94(6) 067401
+[19] Gansen E J, Rowe M A, Greene M B, Rosenberg D, , Harvey T E, Su M Y, Hadfield R H, Nam
+S W and Mirin R P 2007 Nature Photonics 1(10)
+[20] Marsili F, Verma V B, Stern J A, Harrington S, Lita A E, Gerrits T, Vayshenker I, Baek B, Shaw
+M D, Mirin R P and Nam S W 2013 Nature Photonics 7(3)
+[21] Farrell
+A
+C,
+Meng
+X,
+Ren
+D,
+Kim
+H,
+Senanayake
+P,
+Hsieh
+N
+Y,
+Rong
+Z,
+Chang
+T
+Y,
+Azizur-Rahman
+K
+M
+and
+Huffaker
+D
+L
+2019
+Nano
+Letters
+19
+582–590
+(Preprint
+https://doi.org/10.1021/acs.nanolett.8b04643)
+URL
+https://doi.org/10.1021/acs.nanolett.8b04643
+[22] Gao Q, Li Z, Li L, Vora K, Li Z, Alabadla A, Wang F, Guo Y, Peng K, Wenas Y, Mokkapati
+S, Karouta F, Tan H, Jagadish C and Fu L 2019 Progress in Photovoltaics: Research and
+Applications 27 237–244 ISSN 1062-7995
+Page 21 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+22
+[23] Hayden O, Agarwal R and Lieber C M 2006 Nature Materials 5 352–356 ISSN 1476-4660 URL
+https://doi.org/10.1038/nmat1635
+[24] Yang
+C,
+Barrelet
+C
+J,
+Capasso
+F
+and
+Lieber
+C
+M
+2006
+Nano
+Letters
+6
+2929–
+2934
+pMID:
+17163733
+(Preprint
+https://doi.org/10.1021/nl062314b)
+URL
+https://doi.org/10.1021/nl062314b
+[25] Yang
+K,
+Kwak
+K
+and
+Kim
+S
+2014
+physica
+status
+solidi
+c
+11
+217–221
+(Preprint
+https://onlinelibrary.wiley.com/doi/pdf/10.1002/pssc.201300388)
+URL
+https://onlinelibrary.wiley.com/doi/abs/10.1002/pssc.201300388
+[26] Chuang L C, Sedgwick F G, Chen R, Ko W S, Moewe M, Ng K W, Tran T T D
+and
+Chang-Hasnain
+C
+2011
+Nano
+Letters
+11
+385–390
+pMID:
+21174451
+(Preprint
+https://doi.org/10.1021/nl102988w) URL https://doi.org/10.1021/nl102988w
+[27] Bulgarini G, Reimer M E, Hocevar M, Bakkers E P A M, Kouwenhoven L P and Zwiller V 2012 Na-
+ture Photonics 6 455–458 ISSN 1749-4893 URL https://doi.org/10.1038/nphoton.2012.110
+[28] Jain V, Heurlin M, Barrigon E, Bosco L, Nowzari A, Shroff S, Boix V, Karimi M, Jam
+R J, Berg A, Samuelson L, Borgstr¨om M T, Capasso F and Pettersson H 2017 ACS
+Photonics 4 2693–2698 (Preprint https://doi.org/10.1021/acsphotonics.7b00389) URL
+https://doi.org/10.1021/acsphotonics.7b00389
+[29] Senanayake P, Hung C H, Farrell A, Ramirez D A, Shapiro J, Li C K, Wu Y R, Hayat
+M M and Huffaker D L 2012 Nano Letters 12 6448–6452 pMID: 23206195 (Preprint
+https://doi.org/10.1021/nl303837y) URL https://doi.org/10.1021/nl303837y
+[30] Farrell A C, Senanayake P, Hung C H, El-Howayek G, Rajagopal A, Currie M, Hayat
+M
+M
+and
+Huffaker
+D
+L
+2015
+Scientific
+Reports
+5
+17580
+ISSN
+2045-2322
+URL
+https://doi.org/10.1038/srep17580
+[31] Parakh M, Pokharel R, Dawkins K, Devkota S, Li J and Iyer S 2022 Nanoscale Adv. 4(18) 3919–
+3927 URL http://dx.doi.org/10.1039/D2NA00359G
+[32] Pokharel
+R,
+Kuchoor
+H,
+Parakh
+M,
+Devkota
+S,
+Dawkins
+K,
+Ramaswamy
+P,
+Li
+J,
+Winkler
+C,
+Reynolds
+L
+and
+Iyer
+S
+2023
+ACS
+Applied
+Nano
+Materi-
+als
+6
+5093–5105
+(Preprint
+https://doi.org/10.1021/acsanm.2c03644)
+URL
+https://doi.org/10.1021/acsanm.2c03644
+[33] Spinelli A and Lacaita A 1997 IEEE Transactions on Electron Devices 44 1931–1943
+[34] Donnelly J, Duerr E, Mcintosh K, Dauler E, Oakley D, Groves S, Vineis C, Mahoney L, Molvar
+K, Hopman P, Jensen K, Smith G, Verghese S and Shaver D 2006 IEEE Journal of Quantum
+Electronics 42 797–809
+[35] Jiang X, Itzler M A, Ben-Michael R and Slomkowski K 2007 IEEE Journal of Selected Topics in
+Quantum Electronics 13 895–905
+[36] Xu Y, Xiang P, Xie X and Huang Y 2016 Semiconductor Science and Technology 31 065024 URL
+https://doi.org/10.1088/0268-1242/31/6/065024
+[37] Mofasser A, Saha S, Hadi K S, Mohammedy F M and El-Batawy Y 2017 Modeling of photocurrent
+and dark count probability of ingaas/ inp single photon avalanche photodiode 2017 IEEE
+International Conference on Telecommunications and Photonics (ICTP) pp 147–151
+[38] Yanikgonul S, Leong V, Ong J R, Png C E and Krivitsky L 2020 IEEE Journal of Selected Topics
+in Quantum Electronics 26 1–8
+[39] 2006
+Physics
+of
+Semiconductor
+Devices
+(John
+Wiley
+Sons,
+Ltd)
+chap
+2,
+pp
+77–133
+ISBN
+9780470068328
+(Preprint
+https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470068328.ch2)
+URL
+https://onlinelibrary.wiley.com/doi/abs/10.1002/9780470068328.ch2
+[40] Plimmer S, David J, Ong D and Li K 1999 IEEE Transactions on Electron Devices 46 769–775
+[41] Laux S and Grossman B 1985 IEEE Transactions on Electron Devices 32 2076–2082
+[42] AnsysOpoticsSupport Avalanche photodetector https://optics.ansys.com/hc/en-us/articles/360042454814-Aval
+accessed: 2022-09-20
+[43] Li Z, Wenas Y C, Fu L, Mokkapati S, Tan H H and Jagadish C 2015 IEEE Journal of Photovoltaics
+Page 22 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+23
+5 854–864
+[44] Zhong Z, Li Z, Gao Q, Li Z, Peng K, Li L, Mokkapati S, Vora K, Wu J, Zhang G, Wang
+Z, Fu L, Tan H H and Jagadish C 2016 Nano Energy 28 106–114 ISSN 2211-2855 URL
+https://www.sciencedirect.com/science/article/pii/S2211285516303202
+[45] Yang
+I,
+Li
+Z,
+Wong-Leung
+J,
+Zhu
+Y,
+Li
+Z,
+Gagrani
+N,
+Li
+L,
+Lockrey
+M
+N,
+Nguyen H, Lu Y, Tan H H, Jagadish C and Fu L 2019 Nano Letters
+19 3821–
+3829 pMID: 31141386 (Preprint https://doi.org/10.1021/acs.nanolett.9b00959) URL
+https://doi.org/10.1021/acs.nanolett.9b00959
+[46] McIntyre R 1973 IEEE Transactions on Electron Devices 20 637–641
+[47] Mazzillo M, Piazza A, Condorelli G, Sanfilippo D, Fallica G, Billotta S, Belluso M, Bonanno G,
+Cosentino L, Pappalardo A and Finocchiaro P 2008 IEEE Transactions on Nuclear Science 55
+3620–3625
+[48] Gulinatti A, Rech I, Fumagalli S, Assanelli M, Ghioni M and Cova S D 2009 Modeling photon
+detection efficiency and temporal response of single photon avalanche diodes Photon Counting
+Applications, Quantum Optics, and Quantum Information Transfer and Processing II vol 7355
+ed Dusek M, Prochazka I and Sobolewski R International Society for Optics and Photonics
+(SPIE) p 73550X URL https://doi.org/10.1117/12.820661
+[49] Panglosse A, Martin-Gonthier P, Marcelot O, Virmontois C, Saint-P´e O and Magnan P 2021
+Sensors 21 ISSN 1424-8220 URL https://www.mdpi.com/1424-8220/21/17/5860
+[50] Qian X, Jiang W, Elsharabasy A and Deen M J 2023 Sensors 23 ISSN 1424-8220 URL
+https://www.mdpi.com/1424-8220/23/7/3412
+[51] Lagowski
+J
+1997
+Macmillan
+Encyclopedia
+of
+Chemistry
+Macmillan
+Encyclo-
+pedia
+of
+Chemistry
+(Macmillan
+Reference
+USA)
+ISBN
+9780028972220
+URL
+https://books.google.com.au/books?id=N0JLAQAAIAAJ
+[52] Caughey D and Thomas R 1967 Proceedings of the IEEE 55 2192–2193
+[53] Petticrew J D, Dimler S J, Tan C H and Ng J S 2020 Journal of Lightwave Technology 38 961–965
+[54] Li Z, Azimi Z, Li Z, Yu Y, Huang L, Jin W, Tan H H, Jagadish C, Wong-Leung J and Fu L 2023
+Nanoscale 15(23) 10033–10041 URL http://dx.doi.org/10.1039/D3NR00340J
+[55] Oldham W, Samuelson R and Antognetti P 1972 IEEE Transactions on Electron Devices 19
+1056–1060
+[56] Hu
+L
+and
+Chen
+G
+2007
+Nano
+Letters
+7
+3249–3252
+pMID:
+17927257
+(Preprint
+https://doi.org/10.1021/nl071018b) URL https://doi.org/10.1021/nl071018b
+[57] Kupec
+J,
+Stoop
+R
+L
+and
+Witzigmann
+B
+2010
+Opt.
+Express
+18
+27589–27605
+URL
+https://opg.optica.org/oe/abstract.cfm?URI=oe-18-26-27589
+[58] Anttu
+N
+and
+Xu
+H
+Q
+2013
+Opt.
+Express
+21
+A558–A575
+URL
+https://opg.optica.org/oe/abstract.cfm?URI=oe-21-103-A558
+[59] Li
+Z,
+Tan
+H
+H,
+Jagadish
+C
+and
+Fu
+L
+2018
+Advanced
+Materials
+Technologies
+3
+1800005 (Preprint https://onlinelibrary.wiley.com/doi/pdf/10.1002/admt.201800005)
+URL https://onlinelibrary.wiley.com/doi/abs/10.1002/admt.201800005
+[60] Tan L J J, Ng J S, Tan C H and David J P R 2008 IEEE Journal of Quantum Electronics 44
+378–382
+[61] Zhu Y, Raj V, Li Z, Tan H H, Jagadish C and Fu L 2021 Advanced Materials
+33
+2105729 (Preprint https://onlinelibrary.wiley.com/doi/pdf/10.1002/adma.202105729)
+URL https://onlinelibrary.wiley.com/doi/abs/10.1002/adma.202105729
+[62] Wallentin J, Anttu N, Asoli D, Huffman M, I, Magnusson M H, Siefer G, Fuss-Kailuweit P, Dimroth
+F, Witzigmann B, Xu H Q, Samuelson L, Deppert K and Borgstr¨om M T 2013 Science 339
+1057–1060 (Preprint https://www.science.org/doi/pdf/10.1126/science.1230969) URL
+https://www.science.org/doi/abs/10.1126/science.1230969
+[63] Wong-Leung
+J,
+Yang
+I,
+Li
+Z,
+Karuturi
+S
+K,
+Fu
+L,
+Tan
+H
+H
+and
+Jagadish
+C
+2020
+Advanced
+Materials
+32
+1904359
+(Preprint
+https://onlinelibrary.wiley.com/doi/pdf/10.1002/adma.201904359)
+URL
+Page 23 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript
+Single-Nanowire SPAD Modeling Workflow
+24
+https://onlinelibrary.wiley.com/doi/abs/10.1002/adma.201904359
+[64] Quantum
+S
+Single
+quantum
+eos
+specification
+sheet
+URL
+https://singlequantum.com/wp-content/uploads/2019/05/Single-Quantum-Eos.pdf
+[65] Joyce H J, Wong-Leung J, Yong C K, Docherty C J, Paiman S, Gao Q, Tan H H,
+Jagadish
+C,
+Lloyd-Hughes
+J,
+Herz
+L
+M
+and
+Johnston
+M
+B
+2012
+Nano
+Letters
+12
+5325–5330
+pMID:
+22962963
+(Preprint
+https://doi.org/10.1021/nl3026828)
+URL
+https://doi.org/10.1021/nl3026828
+[66] LaPierre R R, Chia A C E, Gibson S J, Haapamaki C M, Boulanger J, Yee R, Kuyanov P, Zhang J,
+Tajik N, Jewell N and Rahman K M A 2013 physica status solidi (RRL) Rapid Research Letters 7
+815–830 (Preprint https://onlinelibrary.wiley.com/doi/pdf/10.1002/pssr.201307109)
+URL https://onlinelibrary.wiley.com/doi/abs/10.1002/pssr.201307109
+[67] van
+Dam
+D,
+van
+Hoof
+N
+J
+J,
+Cui
+Y,
+van
+Veldhoven
+P
+J,
+Bakkers
+E
+P
+A
+M,
+G´omez
+Rivas
+J
+and
+Haverkort
+J
+E
+M
+2016
+ACS
+Nano
+10
+11414–11419
+pMID:
+28024324
+(Preprint
+https://doi.org/10.1021/acsnano.6b06874)
+URL
+https://doi.org/10.1021/acsnano.6b06874
+Page 24 of 24
+AUTHOR SUBMITTED MANUSCRIPT - NANO-135855.R1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+Accepted Manuscript

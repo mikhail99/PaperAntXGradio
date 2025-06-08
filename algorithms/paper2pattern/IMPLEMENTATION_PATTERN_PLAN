@@ -1,0 +1,45 @@
+aim of the project is to extract from arxiv papers methodology (design patterns)
+INPUT: collection of arxiv papers (so title, abstract and other metadata, and pdf)
+
+PREPROCESSING:
+- pdfs are converded to text (using PyMuPDF)
+- splitting paper in sections:
+  - Challenge: Section titles vary (e.g., "Method", "Our Approach").
+  - Solution: Use a combination of regex for common titles and a small LLM call to classify section purpose for robustness.
+  - Identify "relevant" sections for methodology extraction. Start with core sections ("Methodology", "Approach") and potentially use an LLM to rate relevance of others.
+- store sections:
+  - Knowledge Base Stage: Use a vector database (e.g., ChromaDB) to store sections, embeddings, and extracted patterns for efficient similarity search.
+
+PROCESSING FILE STANDALONE (Initial Extraction):
+ - Input: Paper info (title, abstract, sections relevant to methodology).
+ - Use multi-step LLM prompting (Chain-of-Thought) for better quality extraction:
+   1. Find Domain Dictionary: Prompt LLM to identify core domain-specific terms and their definitions from the text.
+   2. Extract Patterns: Use a sequence of prompts to fill out the pattern structure.
+ - Pattern Structure:
+    - Intent: A brief statement of the purpose served by the design pattern.
+    - Based On: The higher-level patterns upon which the design pattern is based.
+    - Dictionary Entries: The entries in the domain dictionary that are introduced to support the design pattern.
+    - Motivation: Typical example situations where application of the design pattern is beneficial.
+    - Structure: A description of the pattern structure. Generate a textual representation that can be converted into a diagram (e.g., Mermaid.js syntax).
+    - Participants: The classes and objects that enter in the design pattern and their responsibilities.
+    - Collaborations: Typical interaction scenarios for the design pattern participants.
+    - Consequences: Discussion of the design and implementation implications of using the design pattern.
+    - Applicability: Typical situations to which the design pattern can be benefically applied.
+- Store domain dictionary and patterns.
+
+PROCESSING FILE KNOWLEDGE BASE (Collective Intelligence):
+- Input: Paper info; access to the existing pattern knowledge base.
+- Find similar papers:
+  - Generate embeddings for the new paper's methodology section(s).
+  - Perform a vector similarity search against the knowledge base to find the most similar papers.
+- Use Retrieval-Augmented Generation (RAG) for extraction:
+  - Construct a prompt including the new paper's text AND the extracted patterns from similar papers as context.
+  - Task the LLM to analyze the new paper, determine if it uses a variation of the provided patterns or a new one, and extract its pattern structure. This improves consistency and pattern recognition.
+
+GENERAL CONSIDERATIONS:
+- Evaluation: How to measure success?
+  - Create a "golden set" of papers with manually extracted patterns.
+  - Compare LLM output against the golden set to measure quality.
+  - Human-in-the-loop validation will be necessary.
+- Tooling / UI:
+  - Develop a simple UI (e.g., Gradio, Streamlit) to upload papers, view intermediate outputs (like sections), trigger processing, and review/edit the final extracted patterns. This will be crucial for development and debugging. 
