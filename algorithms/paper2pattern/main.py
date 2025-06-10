@@ -4,7 +4,7 @@ import os
 import dspy
 
 from src.dspy_config import configure_dspy
-from src.modules import DictionaryExtractor, StandalonePatternExtractor
+from src.modules import DictionaryExtractor, BlueprintExtractor, ImportanceAssessor
 
 def find_section_content(sections, title_keyword):
     """Finds the content of the first section that contains a keyword in its title."""
@@ -14,56 +14,220 @@ def find_section_content(sections, title_keyword):
     return None
 
 def run_dictionary_extraction(paper_id, sections):
-    """Runs the domain dictionary extraction process."""
-    print("\n--- Running Domain Dictionary Extraction ---")
+    """Runs the domain dictionary extraction process for all sections."""
+    print("\n--- Running Domain Dictionary Extraction for All Sections ---")
+    
+    output_dir = os.path.join("outputs", paper_id)
+    dictionary_path = os.path.join(output_dir, "dictionary.json")
+    importance_path = os.path.join(output_dir, "importance.json")
+
+    # Load importance data
+    if not os.path.exists(importance_path):
+        print(f"Error: Importance data not found at {importance_path}. Please run the 'assess' process first.")
+        return
+    try:
+        with open(importance_path, 'r') as f:
+            importance_data = json.load(f)
+        importance_map = {item['section_title']: item['is_important'] for item in importance_data}
+    except (json.JSONDecodeError, FileNotFoundError):
+        print(f"Error: Could not load or parse importance data from {importance_path}. Please run the 'assess' process first.")
+        return
+
+    # Load existing dictionary if it exists
+    try:
+        if os.path.exists(dictionary_path):
+            with open(dictionary_path, 'r') as f:
+                full_dictionary_by_section = json.load(f)
+        else:
+            full_dictionary_by_section = {}
+    except json.JSONDecodeError:
+        print(f"Warning: Could not parse existing dictionary file at {dictionary_path}. Starting fresh.")
+        full_dictionary_by_section = {}
+
     paper_title = sections[0].get('title', 'No Title Found')
     abstract_content = find_section_content(sections, 'abstract')
-    target_section_content = find_section_content(sections, 'introduction')
-
     if not abstract_content:
         print("Warning: Abstract not found. Proceeding without it.")
         abstract_content = ""
-        
-    if not target_section_content:
-        print("Error: Could not find 'Introduction' section.")
-        return
 
     extractor = DictionaryExtractor()
-    result = extractor(
-        title=paper_title,
-        abstract=abstract_content,
-        paper_section=target_section_content
-    )
-    domain_dictionary = result.domain_dictionary
-    print("\n--- Extracted Domain Dictionary ---")
-    print(domain_dictionary)
-    print("-----------------------------------")
 
+    for i, section in enumerate(sections):
+        section_title = section.get('title', f'Section {i+1}')
+        section_content = section.get('content', '')
+
+        if section_title in full_dictionary_by_section:
+            print(f"Skipping section '{section_title}' (already processed).")
+            continue
+        
+        # Use pre-computed importance
+        if not importance_map.get(section_title, False):
+            print(f"Skipping unimportant section: '{section_title}'")
+            continue
+
+        if not section_content or len(section_content.split()) < 20:
+            print(f"Skipping short section: '{section_title}'")
+            continue
+
+        print(f"Processing section: '{section_title}'...")
+        result = extractor(
+            title=paper_title,
+            abstract=abstract_content,
+            paper_section=section_content
+        )
+        domain_dictionary_str = result.domain_dictionary
+
+        if domain_dictionary_str.strip().startswith("```json"):
+            json_content = domain_dictionary_str.strip()[7:-3].strip()
+        else:
+            json_content = domain_dictionary_str
+
+        try:
+            parsed_terms = json.loads(json_content)
+            if isinstance(parsed_terms, list) and parsed_terms:
+                full_dictionary_by_section[section_title] = parsed_terms
+                # Save after each successful extraction
+                with open(dictionary_path, 'w') as f:
+                    json.dump(full_dictionary_by_section, f, indent=4)
+                print(f"Saved dictionary for section: '{section_title}'")
+        except (json.JSONDecodeError, TypeError):
+            print(f"Warning: Could not parse dictionary from section '{section_title}'. Skipping.")
+            continue
+
+    print(f"\n--- Completed Dictionary Extraction for {len(full_dictionary_by_section)} Sections ---")
+    print(f"Final dictionary saved to {dictionary_path}")
+
+
+def run_blueprint_extraction(paper_id, sections):
+    """Runs the implementation blueprint extraction process for each section."""
+    print("\n--- Running Implementation Blueprint Extraction for All Sections ---")
+    
     output_dir = os.path.join("outputs", paper_id)
-    dictionary_path = os.path.join(output_dir, "dictionary.json")
-    with open(dictionary_path, 'w') as f:
-        json.dump({"dictionary": domain_dictionary}, f, indent=4)
-    print(f"Successfully saved dictionary to {dictionary_path}")
+    blueprint_path = os.path.join(output_dir, "blueprint.json")
+    importance_path = os.path.join(output_dir, "importance.json")
 
-def run_pattern_extraction(paper_id, sections):
-    """Runs the full design pattern extraction process."""
-    print("\n--- Running Full Pattern Extraction ---")
-    
-    # Concatenate all section content to form the full paper context
-    paper_context = "\\n\\n".join([s.get('content', '') for s in sections if s.get('content')])
-    
-    if not paper_context:
-        print("Error: No content found in sections to form paper context.")
+    # Load importance data
+    if not os.path.exists(importance_path):
+        print(f"Error: Importance data not found at {importance_path}. Please run the 'assess' process first.")
+        return
+    try:
+        with open(importance_path, 'r') as f:
+            importance_data = json.load(f)
+        importance_map = {item['section_title']: item['is_important'] for item in importance_data}
+    except (json.JSONDecodeError, FileNotFoundError):
+        print(f"Error: Could not load or parse importance data from {importance_path}. Please run the 'assess' process first.")
         return
 
-    extractor = StandalonePatternExtractor()
-    extracted_pattern = extractor(paper_context=paper_context)
+    # Load existing blueprints if the file exists
+    try:
+        if os.path.exists(blueprint_path):
+            with open(blueprint_path, 'r') as f:
+                full_blueprint = json.load(f)
+        else:
+            full_blueprint = []
+    except json.JSONDecodeError:
+        print(f"Warning: Could not parse existing blueprint file at {blueprint_path}. Starting fresh.")
+        full_blueprint = []
     
+    # Create a set of processed section titles for quick lookup
+    processed_titles = {item['section_title'] for item in full_blueprint}
+
+    paper_title = sections[0].get('title', 'No Title Found')
+    abstract_content = find_section_content(sections, 'abstract')
+    if not abstract_content:
+        print("Warning: Abstract not found. Proceeding without it.")
+        abstract_content = ""
+
+    extractor = BlueprintExtractor()
+
+    for i, section in enumerate(sections):
+        section_title = section.get('title', f'Section {i+1}')
+        section_content = section.get('content', '')
+
+        if section_title in processed_titles:
+            print(f"Skipping section '{section_title}' (already processed).")
+            continue
+        
+        # Use pre-computed importance
+        if not importance_map.get(section_title, False):
+            print(f"Skipping unimportant section: '{section_title}'")
+            continue
+
+        # Skip very short sections or sections that are just references
+        if not section_content or len(section_content.split()) < 50:
+            print(f"Skipping short section: '{section_title}'")
+            continue
+        
+        print(f"Processing section: '{section_title}'...")
+        result = extractor(
+            title=paper_title,
+            abstract=abstract_content,
+            paper_section=section_content
+        )
+        
+        full_blueprint.append({
+            "section_title": section_title,
+            "blueprint": result.implementation_blueprint
+        })
+        # Save after each successful extraction
+        with open(blueprint_path, 'w') as f:
+            json.dump(full_blueprint, f, indent=4)
+        print(f"Saved blueprint for section: '{section_title}'")
+
+    print(f"\n--- Completed Blueprint Generation for {len(full_blueprint)} Sections ---")
+    print(f"Final blueprint list saved to {blueprint_path}")
+
+
+def run_importance_assessment(paper_id, sections):
+    """Runs the section importance assessment process and saves the results."""
+    print("\n--- Running Section Importance Assessment ---")
+
     output_dir = os.path.join("outputs", paper_id)
-    pattern_path = os.path.join(output_dir, "pattern.json")
-    with open(pattern_path, 'w') as f:
-        json.dump(extracted_pattern, f, indent=4)
-    print(f"Successfully saved pattern to {pattern_path}")
+    importance_path = os.path.join(output_dir, "importance.json")
+
+    # Load existing importance data if it exists
+    try:
+        if os.path.exists(importance_path):
+            with open(importance_path, 'r') as f:
+                importance_data = json.load(f)
+        else:
+            importance_data = []
+    except json.JSONDecodeError:
+        print(f"Warning: Could not parse existing importance file at {importance_path}. Starting fresh.")
+        importance_data = []
+
+    processed_titles = {item['section_title'] for item in importance_data}
+    assessor = ImportanceAssessor()
+
+    for i, section in enumerate(sections):
+        section_title = section.get('title', f'Section {i+1}')
+        section_content = section.get('content', '')
+
+        if section_title in processed_titles:
+            print(f"Skipping section '{section_title}' (already assessed).")
+            continue
+
+        if not section_content.strip():
+            print(f"Skipping empty section: '{section_title}'")
+            continue
+
+        print(f"Assessing section: '{section_title}'...")
+        content_preview = " ".join(section_content.split()[:100])
+        is_important = assessor(section_title=section_title, content_preview=content_preview)
+
+        importance_data.append({
+            "section_title": section_title,
+            "is_important": is_important
+        })
+
+        with open(importance_path, 'w') as f:
+            json.dump(importance_data, f, indent=4)
+        
+        assessment = "Important" if is_important else "Unimportant"
+        print(f"Saved assessment for '{section_title}': {assessment}")
+
+    print(f"\n--- Completed Importance Assessment for {len(importance_data)} Sections ---")
+    print(f"Assessment data saved to {importance_path}")
 
 
 def main(paper_id, process_type):
@@ -103,8 +267,10 @@ def main(paper_id, process_type):
     # 3. Run the selected process
     if process_type == "dictionary":
         run_dictionary_extraction(paper_id, sections)
-    elif process_type == "pattern":
-        run_pattern_extraction(paper_id, sections)
+    elif process_type == "blueprint":
+        run_blueprint_extraction(paper_id, sections)
+    elif process_type == "assess":
+        run_importance_assessment(paper_id, sections)
     else:
         print(f"Error: Unknown process type '{process_type}'.")
 
@@ -115,8 +281,8 @@ if __name__ == '__main__':
     parser.add_argument(
         "process_type", 
         type=str, 
-        choices=['dictionary', 'pattern'],
-        help="The type of extraction to perform: 'dictionary' or 'pattern'."
+        choices=['dictionary', 'blueprint', 'assess'],
+        help="The type of extraction to perform: 'dictionary', 'blueprint', or 'assess'."
     )
     args = parser.parse_args()
     

@@ -1,5 +1,9 @@
 import dspy
-from .signatures import DomainDictionarySignature, FieldSignature, MermaidSignature
+from .signatures import (
+    DomainDictionarySignature, 
+    ImplementationBlueprintSignature,
+    SectionImportanceSignature
+)
 
 class DictionaryExtractor(dspy.Module):
     """A dspy.Module for extracting a domain dictionary from a paper section."""
@@ -28,51 +32,53 @@ class DictionaryExtractor(dspy.Module):
         )
         return prediction
 
-class StandalonePatternExtractor(dspy.Module):
-    """A module to extract a full design pattern from a paper, field by field."""
+class BlueprintExtractor(dspy.Module):
+    """A module to generate an Implementation Blueprint from a paper."""
 
     def __init__(self):
         super().__init__()
-        self.fields_to_extract = [
-            "Intent", "Motivation", "Applicability", 
-            "Participants", "Collaborations", "Consequences",
-            "Implementation", "Sample Code", "Known Uses", "Related Patterns"
-        ]
-        
-        # Predictor for standard text fields
-        self.field_extractor = dspy.ChainOfThought(FieldSignature)
-        
-        # Specialized predictor for the structure diagram
-        self.structure_extractor = dspy.ChainOfThought(MermaidSignature)
+        self.generate_blueprint = dspy.ChainOfThought(ImplementationBlueprintSignature)
 
-    def forward(self, paper_context):
+    def forward(self, title, abstract, paper_section):
         """
-        Executes the full pattern extraction process.
+        Generates the implementation blueprint.
 
         Args:
-            paper_context (str): The full text of the paper.
+            title (str): The title of the paper.
+            abstract (str): The abstract of the paper.
+            paper_section (str): The content of a key paper section.
 
         Returns:
-            dict: A dictionary containing all the extracted pattern fields.
+            dspy.Prediction: An object containing the 'implementation_blueprint'.
         """
-        extracted_pattern = {}
-
-        # Extract standard fields
-        for field_name in self.fields_to_extract:
-            print(f"Extracting field: {field_name}...")
-            prediction = self.field_extractor(
-                paper_context=paper_context,
-                field_name=field_name
-            )
-            extracted_pattern[field_name] = prediction.field_value
-        
-        # Extract the structure as a Mermaid diagram
-        print("Extracting field: Structure...")
-        prediction = self.structure_extractor(
-            paper_context=paper_context,
-            field_name="Structure"
+        prediction = self.generate_blueprint(
+            title=title,
+            abstract=abstract,
+            paper_section=paper_section
         )
-        extracted_pattern["Structure"] = prediction.mermaid_diagram
-        
-        print("Pattern extraction complete.")
-        return extracted_pattern 
+        return prediction
+
+class ImportanceAssessor(dspy.Module):
+    """A module to assess the importance of a paper section."""
+
+    def __init__(self):
+        super().__init__()
+        self.assess_importance = dspy.Predict(SectionImportanceSignature)
+
+    def forward(self, section_title, content_preview):
+        """
+        Assesses the importance of a paper section.
+
+        Args:
+            section_title (str): The title of the section.
+            content_preview (str): A preview of the section's content.
+
+        Returns:
+            bool: True if the section is 'Important', False otherwise.
+        """
+        result = self.assess_importance(
+            section_title=section_title,
+            content_preview=content_preview
+        )
+        # Check for the word "Important" in the output, case-insensitively
+        return 'important' in result.assessment.lower() 

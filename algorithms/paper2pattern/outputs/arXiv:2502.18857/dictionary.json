@@ -1,3 +1,502 @@
 {
-    "dictionary": "Single-photon detector (SPD): A device that generates one electrical output pulse in response to a single input photon.\nPhoton-detection efficiency (PDE): The probability that a photon incident on the detector leads to an electrical output large enough to be registered by the external electronics.\nDark count (DCR): The average number of counts registered by a detector per second in the absence of any input photons.\nSPAD: Single-Photon Avalanche Detector.\nImpact ionization: A physical process where an energetic electron or hole knocks additional electrons and holes out of lattice bonds, creating an avalanche.\nGeiger mode: The operating mode of an SPAD where it is biased beyond its breakdown voltage.\nTCAD: Technology computer-aided design tools used for physics-based device modeling.\nNanowire: A nanoscale wire used in SPAD construction, offering light-trapping effects and high material quality.\nDeep learning (DL): A computational approach using artificial neural networks to learn from data.\nDNN: Deep Neural Network, a type of deep learning model.\nImpact ionization: A physical process where an energetic electron or hole knocks additional electrons and holes out of lattice bonds, creating an avalanche.\nAvalanche: A chain reaction of collisions creating a measurable current.\nBioluminescence: Light emitted by living organisms.\nLiDAR: Light detection and ranging.\nPhotoluminescence: Emission of light by a substance.\nQuantum encryption: Secure communication using principles of quantum mechanics.\nCryogenic temperature: Extremely low temperatures (<<<4 K).\nInP: Indium phosphide, a semiconductor material.\nForward calculations: Simulations predicting device performance based on input parameters.\nInverse design: The process of determining the device structure needed to achieve desired performance metrics.\nFinite-element method (FEM): A numerical technique for solving differential equations.\nFinite-difference time-domain (FDTD): A numerical technique for solving Maxwell's equations.\nQuantum efficiency: The ratio of photons detected to photons incident on the detector.\nBreakdown voltage: The voltage at which an SPAD begins to avalanche.\nLattice bonds: The bonds holding atoms together in a crystal structure.\nPhotonic quantum computing: A type of quantum computing that uses photons as qubits.\nMetasurfaces: Artificial materials with subwavelength structures that manipulate light.\nGenerative adversarial networks: A type of deep learning model used for generative tasks.\nNeural adjoint: A technique for efficiently computing gradients in deep learning models.\nVariational autoencoder: A type of deep learning model used for dimensionality reduction and generative tasks."
+    "Physics-Aware Inverse Design for Nanowire Single-Photon Avalanche Detectors via Deep Learning": [
+        {
+            "term": "SPAD",
+            "definition": "Single-Photon Avalanche Detector, a type of photodetector that exhibits a large output signal for each detected photon."
+        },
+        {
+            "term": "Photon Detection Efficiency",
+            "definition": "A measure of the probability that a photon will be detected by a photodetector."
+        },
+        {
+            "term": "Semiconductor Drift-Diffusion Model",
+            "definition": "A model used to simulate the behavior of charge carriers (electrons and holes) in a semiconductor device, considering drift and diffusion effects."
+        },
+        {
+            "term": "Deep Learning Model",
+            "definition": "A type of machine learning model with multiple layers, used for learning complex patterns from data."
+        },
+        {
+            "term": "Nanowire",
+            "definition": "A nanoscale wire, often used as a building block in semiconductor devices."
+        },
+        {
+            "term": "Physics-Aware Inverse Design",
+            "definition": "A design approach that incorporates physical principles and constraints into the optimization process to achieve desired device performance."
+        }
+    ],
+    "Abstract": [
+        {
+            "term": "SPAD",
+            "definition": "Single-Photon Avalanche Detector, a type of photodetector."
+        },
+        {
+            "term": "Inverse Design",
+            "definition": "A design approach that directly infers a structure needed to achieve desired performance, as opposed to traditional iterative design."
+        },
+        {
+            "term": "Drift-Diffusion Model",
+            "definition": "A semiconductor model used to simulate the behavior of charge carriers in a device."
+        },
+        {
+            "term": "Photon Detection Efficiency",
+            "definition": "A measure of how effectively a photodetector converts incident photons into detectable signals."
+        },
+        {
+            "term": "Semiconductor Nanowires",
+            "definition": "Nanoscale wires made of semiconductor material, used as building blocks in SPADs."
+        },
+        {
+            "term": "Unit Cell",
+            "definition": "A repeating structural element in a periodic device, such as an array of SPADs."
+        }
+    ],
+    "Introduction": [
+        {
+            "term": "SPAD",
+            "definition": "Single-Photon Avalanche Detector, a device that generates an electrical output pulse in response to a single photon."
+        },
+        {
+            "term": "PDE",
+            "definition": "Photon-detection efficiency, the probability that a photon incident on the detector leads to a registered electrical output."
+        },
+        {
+            "term": "DCR",
+            "definition": "Dark count rate, the average number of counts registered by a detector in the absence of input photons."
+        },
+        {
+            "term": "Impact ionization",
+            "definition": "A physical process where energetic electrons or holes knock additional electrons and holes out of lattice bonds, creating an avalanche of mobile carriers."
+        },
+        {
+            "term": "Geiger mode",
+            "definition": "Operation of an SPAD biased beyond its breakdown voltage, leading to an avalanche current."
+        },
+        {
+            "term": "TCAD",
+            "definition": "Technology computer-aided design tools used for physics-based device modeling."
+        },
+        {
+            "term": "Nanowire",
+            "definition": "A nanoscale wire used in SPADs to achieve high photon detection efficiency."
+        },
+        {
+            "term": "Deep Learning (DL)",
+            "definition": "A computational tool used to accelerate device design and infer key design parameters."
+        },
+        {
+            "term": "DNN",
+            "definition": "Deep Neural Network, a type of deep learning model used for surrogate modeling."
+        },
+        {
+            "term": "Forward design",
+            "definition": "A design process that calculates performance metrics (PDE, DCR) given device structure and material properties."
+        },
+        {
+            "term": "Inverse design",
+            "definition": "A design process that infers device parameters needed to achieve target performance metrics (PDE, DCR)."
+        },
+        {
+            "term": "Avalanche breakdown",
+            "definition": "The point at which an SPAD is biased beyond its breakdown voltage, triggering an avalanche current."
+        },
+        {
+            "term": "Quantum efficiency",
+            "definition": "A measure of the detector's ability to convert photons into electron-hole pairs."
+        }
+    ],
+    "Designing forward prediction networks": [
+        {
+            "term": "SPAD",
+            "definition": "Single-Photon Avalanche Diode: A highly sensitive semiconductor photodetector that generates an amplified electrical signal in response to a single photon."
+        },
+        {
+            "term": "Quantum Efficiency",
+            "definition": "A measure of the detector's ability to convert photons into electron-hole pairs, typically expressed as a percentage."
+        },
+        {
+            "term": "Avalanche Triggering Probability",
+            "definition": "The probability that an impact ionization event will trigger an avalanche breakdown in the SPAD."
+        },
+        {
+            "term": "Drift-Diffusion Model",
+            "definition": "A semiconductor device model that describes carrier transport based on drift and diffusion phenomena."
+        },
+        {
+            "term": "Photon Detection Efficiency (PDE)",
+            "definition": "The probability that an incident photon will be detected as a valid event by the SPAD."
+        },
+        {
+            "term": "Dark Count Rate",
+            "definition": "The rate at which the SPAD generates false detection events in the absence of incident photons."
+        },
+        {
+            "term": "Threshold Breakdown Voltage",
+            "definition": "The voltage at which avalanche breakdown occurs in the SPAD."
+        },
+        {
+            "term": "Surrogate Model",
+            "definition": "A computationally efficient approximation of a complex physical model, often implemented using machine learning techniques like deep learning."
+        },
+        {
+            "term": "Loss Function",
+            "definition": "A function that quantifies the difference between the model's predictions and the true values during training, used to optimize the model's parameters."
+        },
+        {
+            "term": "Training Data",
+            "definition": "The dataset used to train a machine learning model, consisting of input-output pairs used to adjust the model's parameters."
+        },
+        {
+            "term": "Excess Bias",
+            "definition": "The difference between the applied voltage and the threshold breakdown voltage."
+        },
+        {
+            "term": "Impact Ionization",
+            "definition": "A process where energetic carriers collide with atoms in the semiconductor, generating additional electron-hole pairs."
+        }
+    ],
+    "Physics-aware SPAD inverse design workflow": [
+        {
+            "term": "SPAD",
+            "definition": "Single-Photon Avalanche Detector, a type of photodetector."
+        },
+        {
+            "term": "PDE",
+            "definition": "Photon Detection Efficiency, a measure of how effectively a detector converts photons into detectable signals."
+        },
+        {
+            "term": "DCR",
+            "definition": "Dark Count Rate, the rate at which a detector produces signals in the absence of light."
+        },
+        {
+            "term": "Lp",
+            "definition": "Length of the p-region in a semiconductor nanowire."
+        },
+        {
+            "term": "Li",
+            "definition": "Length of the i-region (intrinsic region) in a semiconductor nanowire."
+        },
+        {
+            "term": "Ln",
+            "definition": "Length of the n-region in a semiconductor nanowire."
+        },
+        {
+            "term": "Dp",
+            "definition": "Doping concentration in the p-region."
+        },
+        {
+            "term": "Di",
+            "definition": "Doping concentration in the i-region."
+        },
+        {
+            "term": "Dn",
+            "definition": "Doping concentration in the n-region."
+        },
+        {
+            "term": "Va",
+            "definition": "Applied voltage across the SPAD."
+        },
+        {
+            "term": "Random Forest (RF)",
+            "definition": "A supervised machine-learning method that combines multiple decision trees for classification."
+        },
+        {
+            "term": "Decision Tree",
+            "definition": "A flowchart-like structure used in machine learning to make decisions based on a series of rules."
+        },
+        {
+            "term": "Bootstrapped",
+            "definition": "A resampling technique used to create multiple datasets from a single dataset, used in Random Forests to increase diversity."
+        },
+        {
+            "term": "Majority Voting",
+            "definition": "An ensemble method where each model casts a vote, and the most frequent vote determines the final prediction."
+        },
+        {
+            "term": "Forward Network Models",
+            "definition": "Neural networks trained to simulate the behavior of a SPAD given its parameters."
+        },
+        {
+            "term": "Avalanche Electric Field",
+            "definition": "The electric field strength that triggers an avalanche process in a semiconductor."
+        },
+        {
+            "term": "Metasurface",
+            "definition": "An artificial material with periodic structures designed to manipulate electromagnetic waves."
+        }
+    ],
+    "Demonstrating on-demand nanowire SPAD design": [
+        {
+            "term": "SPAD",
+            "definition": "Single-photon avalanche detector, a photodetector that exhibits a large and fast electrical signal in response to a single photon."
+        },
+        {
+            "term": "PDE",
+            "definition": "Photon detection efficiency, a measure of the probability that a photon will be detected by the SPAD."
+        },
+        {
+            "term": "Mean PDE",
+            "definition": "A length-averaged quantity representing the average photon detection efficiency across the nanowire axis, serving as a lower bound of the peak PDE."
+        },
+        {
+            "term": "Peak PDE",
+            "definition": "The maximal value of the raw PDE(x) distribution, representing the best achievable performance, often enhanced by light-trapping techniques."
+        },
+        {
+            "term": "Nanowire",
+            "definition": "A semiconductor structure with dimensions on the nanometer scale, used as the active element in the SPAD."
+        },
+        {
+            "term": "Dark carrier generation",
+            "definition": "The generation of electron-hole pairs in the semiconductor material without incident photons, contributing to dark current."
+        },
+        {
+            "term": "Drift-diffusion model",
+            "definition": "A semiconductor device model that describes the transport of charge carriers under the influence of electric fields and concentration gradients."
+        },
+        {
+            "term": "Random Forest (RF)",
+            "definition": "A machine learning algorithm used for classification, generating a candidate nanowire parameter vector."
+        },
+        {
+            "term": "DNN-based surrogate models",
+            "definition": "Deep neural network models used to approximate the behavior of the physics-based simulator, enabling fast optimization of the SPAD design."
+        },
+        {
+            "term": "DCR",
+            "definition": "Dark current, the current flowing through the SPAD in the absence of incident photons."
+        },
+        {
+            "term": "Defect density",
+            "definition": "A measure of the number of defects per unit volume in the semiconductor material, influencing dark carrier generation."
+        },
+        {
+            "term": "Applied voltage",
+            "definition": "The voltage applied across the SPAD, a key parameter refined during the inverse design iteration loop."
+        }
+    ],
+    "Discussion": [
+        {
+            "term": "SPAD",
+            "definition": "Single-photon avalanche detector, a semiconductor device that detects individual photons."
+        },
+        {
+            "term": "Inverse Design",
+            "definition": "A design approach where the desired performance is specified, and the structure needed to achieve that performance is inferred."
+        },
+        {
+            "term": "Drift-Diffusion Model",
+            "definition": "A semiconductor model that simulates the movement of charge carriers under the influence of electric fields and diffusion forces."
+        },
+        {
+            "term": "Surrogate Model",
+            "definition": "A computationally cheaper model that approximates the behavior of a more complex model (in this case, the drift-diffusion model)."
+        },
+        {
+            "term": "Deep Neural Network (DNN)",
+            "definition": "A type of machine learning model with multiple layers used to learn complex patterns from data."
+        },
+        {
+            "term": "Photon Detection Efficiency (PDE)",
+            "definition": "A measure of the probability that a photon will be detected by the SPAD."
+        },
+        {
+            "term": "Dark Count Rate (DCR)",
+            "definition": "The rate at which the SPAD generates false detection events in the absence of incident photons."
+        },
+        {
+            "term": "Random Forest",
+            "definition": "A machine learning model that combines multiple decision trees to make predictions."
+        },
+        {
+            "term": "Transfer Learning",
+            "definition": "A machine learning technique where a model trained on one task is reused as a starting point for training on a different but related task."
+        },
+        {
+            "term": "Metasurface",
+            "definition": "An artificial material with subwavelength structures that can control the propagation of electromagnetic waves."
+        },
+        {
+            "term": "Conditional Generative Adversarial Networks (cGANs)",
+            "definition": "A type of generative model used for inverse design, capable of generating multiple designs that match a target response."
+        },
+        {
+            "term": "Conditional Variational Autoencoders (cVAEs)",
+            "definition": "Another type of generative model used for inverse design, similar in purpose to cGANs."
+        },
+        {
+            "term": "Conditional Diffusion Models",
+            "definition": "A class of generative models that progressively add noise to data and then learn to reverse the process, enabling the generation of new samples."
+        }
+    ],
+    "Training data generation": [
+        {
+            "term": "Drift-Diffusion Model",
+            "definition": "A set of coupled partial differential equations used to describe the behavior of charge carriers (electrons and holes) in a semiconductor under the influence of electric fields and concentration gradients."
+        },
+        {
+            "term": "Electric Potential (\u03d5)",
+            "definition": "The measure of the electric potential at a given point in space, influencing the movement of charge carriers."
+        },
+        {
+            "term": "Electron (n)",
+            "definition": "A negatively charged particle, one of the primary charge carriers in a semiconductor."
+        },
+        {
+            "term": "Hole (p)",
+            "definition": "The absence of an electron in a semiconductor's valence band, effectively acting as a positive charge carrier."
+        },
+        {
+            "term": "Mobility (\u03bcn, \u03bcp)",
+            "definition": "A measure of how easily electrons (\u03bcn) or holes (\u03bcp) move through a semiconductor material under the influence of an electric field."
+        },
+        {
+            "term": "Diffusion Coefficient (Dn, Dp)",
+            "definition": "A measure of how quickly electrons (Dn) or holes (Dp) spread out due to concentration gradients."
+        },
+        {
+            "term": "Quantum Efficiency (QE)",
+            "definition": "The ratio of the number of photogenerated carriers collected by the detector to the number of incident photons."
+        },
+        {
+            "term": "Photogenerated Carrier",
+            "definition": "An electron-hole pair created by the absorption of a photon in a semiconductor."
+        },
+        {
+            "term": "Impact Ionization",
+            "definition": "A process where energetic charge carriers collide with atoms in a semiconductor, generating additional electron-hole pairs."
+        },
+        {
+            "term": "Volume (V)",
+            "definition": "The space over which a physical quantity, such as a generation rate, is applied or integrated."
+        },
+        {
+            "term": "Cross-sectional Area (A)",
+            "definition": "The area of a nanowire when viewed from the top, used in calculations involving volume and density."
+        }
+    ],
+    "Calculation of dark count rate": [
+        {
+            "term": "SPAD",
+            "definition": "Single-Photon Avalanche Detector - a device used in photonic quantum information technologies."
+        },
+        {
+            "term": "DCR",
+            "definition": "Dark Count Rate - the rate at which spurious detection events occur in a SPAD."
+        },
+        {
+            "term": "Ppair",
+            "definition": "Avalanche triggering probability - the probability of a generated electron-hole pair triggering a self-sustaining avalanche."
+        },
+        {
+            "term": "\u03b1e",
+            "definition": "Electron impact ionization coefficient - a parameter related to the probability of an electron causing ionization."
+        },
+        {
+            "term": "\u03b1h",
+            "definition": "Hole impact ionization coefficient - a parameter related to the probability of a hole causing ionization."
+        },
+        {
+            "term": "Gtot",
+            "definition": "Total dark carrier generation rate - the overall rate at which dark carriers are generated in the SPAD."
+        },
+        {
+            "term": "A",
+            "definition": "Cross-sectional area of a nanowire."
+        },
+        {
+            "term": "L",
+            "definition": "Length of a nanowire."
+        }
+    ],
+    "Calculation of photon detection efficiency": [
+        {
+            "term": "SPAD",
+            "definition": "Single-Photon Avalanche Detector, a device used in photonic quantum information technologies."
+        },
+        {
+            "term": "PDE",
+            "definition": "Photon Detection Efficiency, a measure of the detector's ability to convert photons into detectable signals. Calculated as the product of Quantum Efficiency and Avalanche Triggering Probability."
+        },
+        {
+            "term": "QE",
+            "definition": "Quantum Efficiency, a component of PDE, representing the probability of a photon being detected."
+        },
+        {
+            "term": "Avalanche Triggering Probability",
+            "definition": "A component of PDE, representing the probability of an avalanche event occurring."
+        },
+        {
+            "term": "Spatial Distribution",
+            "definition": "The raw data of the photon detection efficiency, which is dependent on spatial coordinates."
+        },
+        {
+            "term": "Mean PDE",
+            "definition": "The length-averaged Photon Detection Efficiency over a defined region (half-maximum)."
+        },
+        {
+            "term": "Half-Maximum",
+            "definition": "A region defined by x1 and x2, used to calculate the mean PDE."
+        },
+        {
+            "term": "Nanowire Dimension",
+            "definition": "A parameter affecting the performance of SPADs, influencing the mean PDE."
+        },
+        {
+            "term": "Doping Concentration",
+            "definition": "A parameter affecting the performance of SPADs, influencing the mean PDE."
+        },
+        {
+            "term": "Applied Voltage",
+            "definition": "A parameter affecting the performance of SPADs, influencing the mean PDE."
+        }
+    ],
+    "Acknowledgments": [
+        {
+            "term": "SPAD",
+            "definition": "Single-Photon Avalanche Detector, a type of photodetector that exhibits a large output signal for each detected photon."
+        },
+        {
+            "term": "Photon Detection Efficiency",
+            "definition": "A measure of the probability that a photon will be detected by a photodetector."
+        },
+        {
+            "term": "Semiconductor Drift-Diffusion Model",
+            "definition": "A model used to simulate the behavior of charge carriers in semiconductor devices."
+        },
+        {
+            "term": "Inverse Design",
+            "definition": "A design approach that starts with desired performance characteristics and works backward to determine the device structure needed to achieve them."
+        },
+        {
+            "term": "Deep Learning",
+            "definition": "A type of machine learning that uses artificial neural networks with multiple layers to analyze data and make predictions."
+        },
+        {
+            "term": "Nanowires",
+            "definition": "Nanoscale wires with diameters on the order of nanometers, often used as building blocks in electronic and photonic devices."
+        },
+        {
+            "term": "Photonic Quantum Information Technologies",
+            "definition": "Technologies that utilize photons (particles of light) to process and transmit information, enabling applications like quantum computing and quantum communication."
+        }
+    ],
+    "Funding:": [
+        {
+            "term": "SPAD",
+            "definition": "Single-Photon Avalanche Detector, a type of photodetector used in photonic quantum information technologies."
+        },
+        {
+            "term": "ARC",
+            "definition": "Australian Research Council, a government agency providing funding for research."
+        },
+        {
+            "term": "CE200100010",
+            "definition": "Australian Research Council Centre of Excellence for Transformative Meta-Optical Systems, a research funding project."
+        },
+        {
+            "term": "FT220100656",
+            "definition": "Australian Research Council Future Fellowship, a research funding program."
+        }
+    ]
 }

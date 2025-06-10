@@ -40,10 +40,10 @@ This document outlines the development steps for the paper pattern extraction pr
     - Install necessary packages: `pip install dspy openai chromadb`.
     - Configure `dspy` with an LLM (e.g., `dspy.OpenAI` or a local model) and set the API key.
 
-- [ ] **Define DSPy Signature:** In `/src/signatures.py`, define a `dspy.Signature` for extracting a list of domain terms and their definitions from a text.
+- [x] **Define DSPy Signature:** In `/src/signatures.py`, define a `dspy.Signature` for extracting a list of domain terms and their definitions from a text.
     - `DomainDictionarySignature(paper_section -> domain_dictionary)` where `domain_dictionary` is a string containing a list of "Term: Definition".
 
-- [ ] **Create DSPy Module:** In `/src/modules.py`, create a `DictionaryExtractor(dspy.Module)` that uses `dspy.ChainOfThought` with the `DomainDictionarySignature`.
+- [x] **Create DSPy Module:** In `/src/modules.py`, create a `DictionaryExtractor(dspy.Module)` that uses `dspy.ChainOfThought` with the `DomainDictionarySignature`.
 
 - [ ] **Update Main Script:** Modify `main.py` to:
     1. Take a paper ID as an argument.
