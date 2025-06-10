@@ -1,4 +1,5 @@
 import dspy
+import json
 from .signatures import (
     DomainDictionarySignature, 
     ImplementationBlueprintSignature,
@@ -63,7 +64,7 @@ class ImportanceAssessor(dspy.Module):
 
     def __init__(self):
         super().__init__()
-        self.assess_importance = dspy.Predict(SectionImportanceSignature)
+        self.assess_importance = dspy.ChainOfThought(SectionImportanceSignature)
 
     def forward(self, section_title, content_preview):
         """
@@ -80,5 +81,6 @@ class ImportanceAssessor(dspy.Module):
             section_title=section_title,
             content_preview=content_preview
         )
-        # Check for the word "Important" in the output, case-insensitively
-        return 'important' in result.assessment.lower() 
+        
+        # The output is now a simple string: 'Important' or 'Unimportant'.
+        return result.assessment.strip() == 'Important' 

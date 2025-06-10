@@ -1,3 +1,4 @@
+from typing import Literal
 import dspy
 
 class DomainDictionarySignature(dspy.Signature):
@@ -60,11 +61,17 @@ class ImplementationBlueprintSignature(dspy.Signature):
     )
 
 class SectionImportanceSignature(dspy.Signature):
-    """Assess the importance of a paper section for understanding the core implementation."""
+    """Assess if a paper section is essential for creating a high-level implementation blueprint.
+
+    The goal is to identify sections that describe the core algorithm, model architecture, or key techniques. 
+    Exclude sections that focus on experimental results, ablation studies, conclusions, or detailed mathematical proofs that are not critical for a practical implementation.
+    """
 
     section_title = dspy.InputField(desc="The title of the paper section.")
     content_preview = dspy.InputField(desc="The first 100 words of the section's content.")
     
-    assessment = dspy.OutputField(
-        desc="A single word: 'Important' or 'Unimportant'. Important sections typically include Introduction, Methods, Results, or core technical descriptions. Unimportant sections include References, Acknowledgements, Appendices, or boilerplate."
+    assessment: Literal['Important', 'Unimportant'] = dspy.OutputField(
+        desc=('A single word: "Important" or "Unimportant". '
+              'Select "Important" for sections like "Method", "Algorithm", "Architecture", or core concept descriptions. '
+              'Select "Unimportant" for sections like "Introduction", "Related Work", "Experiments", "Results", "Conclusion", "References", and most "Appendices".')
     ) 
