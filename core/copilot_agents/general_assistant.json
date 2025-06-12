@@ -1,0 +1,6 @@
+{
+  "name": "General Assistant",
+  "description": "Basic LLM chat (no tools)",
+  "model_prompt": null,
+  "mcp_info": null
+}

@@ -50,4 +50,35 @@ button:has(> span:contains('Get Report')) {
   content: '\1F5FA  '; /* 🗺️ */
   font-size: 1.1em;
 }
-''' 
+
+/* Copilot Tab specific styles */
+#copilot-main-container {
+    height: calc(100vh - 250px); /* Adjust offset for header/tabs etc. */
+}
+
+#copilot-main-container > div { /* Target direct children columns */
+    height: 100%;
+}
+
+#copilot-chat-column {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#copilot_chatbot {
+    flex-grow: 1;
+    overflow-y: auto;
+    height: 100%;
+}
+
+#agent-details-display pre code {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+}
+
+#copilot-reload-button {
+    max-width: 2.5em; /* Adjust size of reload button */
+    min-width: 2.5em !important;
+}
+'''
