@@ -1,0 +1,24 @@
+{
+  "name": "Calculator Assistant",
+  "description": "An assistant that can perform calculations using a tool.",
+  "model_prompt": "You are a helpful assistant with access to a calculator. Use the calculator tool to answer mathematical questions.",
+  "mcp_info": {
+    "server_id": "managed_calculator",
+    "tools": [
+      {
+        "name": "calculate",
+        "description": "Performs a mathematical calculation. The input should be a single string representing a valid mathematical expression (e.g., '2 + 2', '10 * (4 - 2)', 'sqrt(16)').",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "expression": {
+              "type": "string",
+              "description": "The mathematical expression to evaluate."
+            }
+          },
+          "required": ["expression"]
+        }
+      }
+    ]
+  }
+}

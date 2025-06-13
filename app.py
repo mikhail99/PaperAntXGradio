@@ -7,16 +7,29 @@ from ui.ui_paperqa import create_paperqa_tab
 from ui.ui_mindmap import create_mindmap_tab
 from ui.ui_library import create_library_tab
 from ui.custom_css import CUSTOM_CSS
+from core.article_manager import ArticleManager
+from core.collections_manager import CollectionsManager
+from core.copilot_service import CopilotService
+from core.llm_service import LLMService
+from core.mcp_server_manager import MCPServerManager
+
 
 def main():
     with gr.Blocks(css=CUSTOM_CSS) as demo:
         gr.Markdown("# PaperAnt X")
         state = get_shared_state()
+
+        llm_service = LLMService()
+        collections_manager = CollectionsManager()
+        article_manager = ArticleManager(collections_manager)
+        mcp_server_manager = MCPServerManager()
+        copilot_service = CopilotService(collections_manager, article_manager, llm_service, mcp_server_manager)
+
         with gr.Tabs():
             create_articles_tab(state)
             create_paperqa_tab(state)
             create_mindmap_tab(state)
-            create_copilot_tab(state)
+            create_copilot_tab(state, copilot_service)
             create_collections_tab(state)
             create_library_tab(state)
     demo.launch()
