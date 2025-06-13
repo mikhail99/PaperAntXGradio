@@ -208,17 +208,27 @@ def create_copilot_tab(state, copilot_service: CopilotService):
 
                 response_generator = copilot_service.chat_with_agent(agent_name, message, llm_history, provider, model)
                 
-                # State for processing this turn's response
-                full_assistant_message = {"role": "assistant", "content": None}
-                assembled_tool_calls = []
+                # --- State for processing this turn's response and history ---
+                turn_messages = []
+                current_assistant_message = None
+                
                 is_first_assistant_bubble = True
                 last_bubble_was_text = False
                 tool_call_ui_map = {}  # Maps tool_call_id to {'index': int, 'call': dict}
 
+                def finalize_assistant_message():
+                    nonlocal current_assistant_message, turn_messages
+                    if current_assistant_message:
+                        if current_assistant_message.get("content") is None and current_assistant_message.get("tool_calls"):
+                            current_assistant_message.pop("content", None)
+                        if current_assistant_message.get("content") or current_assistant_message.get("tool_calls"):
+                             turn_messages.append(current_assistant_message)
+                        current_assistant_message = None
+
                 for chunk in response_generator:
                     if chunk['type'] == 'text_chunk':
+                        # --- UI Update ---
                         if not last_bubble_was_text:
-                            # New text bubble needed after a tool call or at the start
                             if is_first_assistant_bubble:
                                 ui_history[-1][1] = chunk['content']
                             else:
@@ -226,25 +236,20 @@ def create_copilot_tab(state, copilot_service: CopilotService):
                             is_first_assistant_bubble = False
                             last_bubble_was_text = True
                         else:
-                            # Append to the existing text bubble
                             ui_history[-1][1] += chunk['content']
                         
-                        # Assemble content for the final LLM history object
-                        if full_assistant_message["content"] is None:
-                            full_assistant_message["content"] = ""
-                        full_assistant_message["content"] += chunk['content']
+                        # --- History Update ---
+                        if current_assistant_message is None or 'tool_calls' in current_assistant_message:
+                            finalize_assistant_message()
+                            current_assistant_message = {"role": "assistant", "content": ""}
+                        
+                        if current_assistant_message.get("content") is None: current_assistant_message["content"] = ""
+                        current_assistant_message["content"] += chunk['content']
 
                     elif chunk['type'] == 'tool_call':
+                        # --- UI Update ---
                         last_bubble_was_text = False
                         tool_call = chunk['tool_call']
-
-                        # Assemble tool call for LLM history
-                        assembled_tool_calls.append({
-                            "id": tool_call["id"], "type": "function", 
-                            "function": {"name": tool_call["name"], "arguments": tool_call["arguments"]}
-                        })
-
-                        # Create a new, dedicated bubble for this tool call, using HTML for a collapsible section
                         tool_md = f"""<details>
 <summary>🛠️ Calling Tool: <code>{tool_call['name']}</code></summary>
 <br>
@@ -258,27 +263,36 @@ def create_copilot_tab(state, copilot_service: CopilotService):
                             ui_history[-1][1] = tool_md
                         else:
                             ui_history.append([None, tool_md])
-                        
                         is_first_assistant_bubble = False
                         tool_call_ui_map[tool_call['id']] = {'index': len(ui_history) - 1, 'call': tool_call}
 
+                        # --- History Update ---
+                        if current_assistant_message is None:
+                            current_assistant_message = {"role": "assistant", "content": None, "tool_calls": []}
+                        if "tool_calls" not in current_assistant_message:
+                            current_assistant_message["tool_calls"] = []
+                        
+                        current_assistant_message["tool_calls"].append({
+                            "id": tool_call["id"], "type": "function", 
+                            "function": {"name": tool_call["name"], "arguments": tool_call["arguments"]}
+                        })
+
                     elif chunk['type'] == 'tool_result':
+                        # --- UI Update ---
+                        last_bubble_was_text = False
                         tool_result = chunk['tool_result']
                         tool_call_id = tool_result['tool_call_id']
                         if tool_call_id in tool_call_ui_map:
                             bubble_info = tool_call_ui_map[tool_call_id]
                             bubble_index = bubble_info['index']
                             original_call = bubble_info['call']
-                            
                             content = tool_result['content']
                             try:
-                                # Try to pretty-print if the content is JSON
                                 parsed_content = json.loads(content)
                                 content_md = f"```json\n{json.dumps(parsed_content, indent=2)}\n```"
                             except (json.JSONDecodeError, TypeError):
                                 content_md = f"```\n{str(content)}\n```"
 
-                            # Re-render the bubble content with the result, making it temporarily expanded
                             tool_md_with_result = f"""<details open>
 <summary>✅ Tool Call Succeeded: <code>{original_call['name']}</code></summary>
 <br>
@@ -293,7 +307,16 @@ def create_copilot_tab(state, copilot_service: CopilotService):
 <br>🤔 Thinking...
 </details>"""
                             ui_history[bubble_index][1] = tool_md_with_result
-                    
+                        
+                        # --- History Update ---
+                        finalize_assistant_message()
+                        turn_messages.append({
+                            "role": "tool",
+                            "tool_call_id": tool_result["tool_call_id"],
+                            "tool_name": tool_result["tool_name"],
+                            "content": tool_result["content"],
+                        })
+
                     elif chunk['type'] == 'error':
                         if ui_history[-1][1] is None: ui_history[-1][1] = ""
                         ui_history[-1][1] += f"\n\nAn error occurred: {chunk['content']}"
@@ -301,28 +324,19 @@ def create_copilot_tab(state, copilot_service: CopilotService):
                         return
 
                     yield ui_history, gr.update(interactive=False), gr.update(interactive=False), llm_history
-
-                # Finalize the full assistant message for LLM history
-                if assembled_tool_calls:
-                    full_assistant_message["tool_calls"] = assembled_tool_calls
-                    if full_assistant_message["content"] is None:
-                        full_assistant_message.pop("content")
                 
+                finalize_assistant_message()
+
                 # Clean up tool bubbles: remove "Thinking..." and collapse details
                 for bubble_info in tool_call_ui_map.values():
                     idx = bubble_info['index']
                     if idx < len(ui_history) and ui_history[idx][1]:
-                        # Remove the "Thinking..." indicator
                         cleaned_md = ui_history[idx][1].replace("<br>🤔 Thinking...", "")
-                        # Collapse the details view for a cleaner final state
                         cleaned_md = cleaned_md.replace("<details open>", "<details>")
                         ui_history[idx][1] = cleaned_md
 
                 # Update the master LLM history state for the next turn
-                new_llm_history = llm_history + [
-                    {"role": "user", "content": message},
-                    full_assistant_message
-                ]
+                new_llm_history = llm_history + [{"role": "user", "content": message}] + turn_messages
 
                 yield ui_history, gr.update(interactive=True), gr.update(interactive=True), new_llm_history
 
