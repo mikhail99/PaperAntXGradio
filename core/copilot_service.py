@@ -85,7 +85,7 @@ class CopilotService:
                 print(f"Error while stopping MCP sessions after failure: {stop_e}")
             return json.dumps({"error": error_message})
 
-    def chat_with_agent(self, agent_name: str, message: str, llm_history: List[Dict[str, Any]]) -> Generator[Dict, None, None]:
+    def chat_with_agent(self, agent_name: str, message: str, llm_history: List[Dict[str, Any]], provider: str, model: str) -> Generator[Dict, None, None]:
         """
         Handles a chat interaction with a specific agent, supporting tools.
         This is a generator function to support streaming and tool calls.
@@ -99,7 +99,6 @@ class CopilotService:
         mcp_info = agent_config.get('mcp_info', None)
         tools = mcp_info.get('tools', []) if mcp_info else []
         server_id = mcp_info.get('server_id') if mcp_info else None
-        provider = os.getenv("DEFAULT_LLM_PROVIDER", "gemini")
 
         # Add the new user message to the conversation history.
         messages: List[Dict[str, Any]] = llm_history + [{"role": "user", "content": message}]
@@ -110,6 +109,7 @@ class CopilotService:
                 messages=messages,
                 system_prompt=system_prompt,
                 provider=provider,
+                model=model,
                 tools=tools
             )
 

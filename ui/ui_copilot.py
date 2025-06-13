@@ -111,6 +111,20 @@ def create_copilot_tab(state, copilot_service: CopilotService):
                     with gr.Accordion("Agent Details", open=True):
                         agent_details_display = gr.Markdown("Select an agent to see details.", elem_id="agent-details-display")
 
+                    with gr.Accordion("LLM Settings", open=False):
+                        llm_provider_selector = gr.Radio(
+                            label="LLM Provider",
+                            choices=["gemini", "openai", "anthropic"],
+                            value=copilot_service.llm_service.default_provider,
+                            interactive=True,
+                        )
+                        llm_model_textbox = gr.Textbox(
+                            label="Model Name",
+                            value=getattr(copilot_service.llm_service, f"{copilot_service.llm_service.default_provider}_model"),
+                            interactive=True,
+                        )
+
+
                 with gr.Column(scale=3, elem_id="copilot-chat-column"):
                     chatbot = gr.Chatbot(
                         [],
@@ -170,7 +184,16 @@ def create_copilot_tab(state, copilot_service: CopilotService):
                     generate_agent_list_html(copilot_service, agent_name)
                 )
 
-            def on_chat_message(agent_name, message, ui_history, llm_history):
+            def on_provider_change(provider):
+                if provider == "gemini":
+                    return copilot_service.llm_service.gemini_model
+                elif provider == "openai":
+                    return copilot_service.llm_service.openai_model
+                elif provider == "anthropic":
+                    return copilot_service.llm_service.anthropic_model
+                return "" # Should not happen
+
+            def on_chat_message(agent_name, message, ui_history, llm_history, provider, model):
                 if not message.strip():
                     yield ui_history, gr.update(), gr.update(), llm_history
                     return
@@ -183,7 +206,7 @@ def create_copilot_tab(state, copilot_service: CopilotService):
                     yield ui_history, gr.update(interactive=True), gr.update(interactive=True), llm_history
                     return
 
-                response_generator = copilot_service.chat_with_agent(agent_name, message, llm_history)
+                response_generator = copilot_service.chat_with_agent(agent_name, message, llm_history, provider, model)
                 
                 # State for processing this turn's response
                 full_assistant_message = {"role": "assistant", "content": None}
@@ -371,10 +394,18 @@ def create_copilot_tab(state, copilot_service: CopilotService):
                 js=_js_attach_listener # Re-attach listener after HTML is reloaded
             )
 
+            # LLM Provider change logic
+            llm_provider_selector.change(
+                fn=on_provider_change,
+                inputs=[llm_provider_selector],
+                outputs=[llm_model_textbox],
+                queue=False
+            )
+
             # Chat logic
             chat_submit_event = chat_input.submit(
                 on_chat_message,
-                [selected_agent_name_state, chat_input, chatbot, conversation_history_state],
+                [selected_agent_name_state, chat_input, chatbot, conversation_history_state, llm_provider_selector, llm_model_textbox],
                 [chatbot, chat_input, send_button, conversation_history_state],
             ).then(
                 lambda: gr.update(value=""),
@@ -385,7 +416,7 @@ def create_copilot_tab(state, copilot_service: CopilotService):
 
             send_button.click(
                 on_chat_message,
-                [selected_agent_name_state, chat_input, chatbot, conversation_history_state],
+                [selected_agent_name_state, chat_input, chatbot, conversation_history_state, llm_provider_selector, llm_model_textbox],
                 [chatbot, chat_input, send_button, conversation_history_state],
             ).then(
                 lambda: gr.update(value=""),

@@ -43,16 +43,16 @@ class LLMService:
         if self.anthropic_api_key and self.anthropic_api_key != 'your_anthropic_api_key_here':
             self.anthropic_client = anthropic.Anthropic(api_key=self.anthropic_api_key)
 
-    def call_llm(self, messages: List[Dict[str, any]], system_prompt: Optional[str] = None, provider: Optional[str] = None, tools: Optional[List[Dict[str, Any]]] = None) -> Generator[Dict, None, None]:
+    def call_llm(self, messages: List[Dict[str, any]], system_prompt: Optional[str] = None, provider: Optional[str] = None, model: Optional[str] = None, tools: Optional[List[Dict[str, Any]]] = None) -> Generator[Dict, None, None]:
         provider = (provider or self.default_provider).lower()
 
         try:
             if provider == "gemini":
-                yield from self._call_gemini(messages, system_prompt, tools)
+                yield from self._call_gemini(messages, system_prompt, tools, model)
             elif provider == "openai":
-                yield from self._call_openai(messages, system_prompt, tools)
+                yield from self._call_openai(messages, system_prompt, tools, model)
             elif provider == "anthropic":
-                yield from self._call_anthropic(messages, system_prompt, tools)
+                yield from self._call_anthropic(messages, system_prompt, tools, model)
             else:
                 yield {"type": "error", "content": f"Error: Unsupported LLM provider '{provider}'. Supported providers are 'gemini', 'openai', 'anthropic'."}
         except Exception as e:
@@ -60,12 +60,12 @@ class LLMService:
             print(f"ERROR: {error_message}")
             yield {"type": "error", "content": error_message}
 
-    def _call_gemini(self, messages: List[Dict[str, Any]], system_prompt: Optional[str], tools: Optional[List[Dict[str, Any]]]) -> Generator[Dict, None, None]:
+    def _call_gemini(self, messages: List[Dict[str, Any]], system_prompt: Optional[str], tools: Optional[List[Dict[str, Any]]], model: Optional[str]) -> Generator[Dict, None, None]:
         if not self.gemini_api_key or self.gemini_api_key == 'your_gemini_api_key_here':
             yield {"type": "error", "content": "Error: GEMINI_API_KEY not found or is a placeholder. Please set it in your .env file."}
             return
         
-        model_name = self.gemini_model
+        model_name = model or self.gemini_model
         model_kwargs = {}
         if system_prompt:
             model_kwargs['system_instruction'] = system_prompt
@@ -130,7 +130,7 @@ class LLMService:
                             }
                         }
 
-    def _call_openai(self, messages: List[Dict[str, any]], system_prompt: Optional[str], tools: Optional[List[Dict[str, Any]]]) -> Generator[Dict, None, None]:
+    def _call_openai(self, messages: List[Dict[str, any]], system_prompt: Optional[str], tools: Optional[List[Dict[str, Any]]], model: Optional[str]) -> Generator[Dict, None, None]:
         if not self.openai_client:
             yield {"type": "error", "content": "Error: OPENAI_API_KEY not found, is a placeholder, or client not initialized. Please set it in your .env file."}
             return
@@ -151,7 +151,7 @@ class LLMService:
             else: # user or regular assistant message
                 full_messages.append({"role": m["role"], "content": m["content"]})
         
-        model_name = self.openai_model
+        model_name = model or self.openai_model
         
         request_params = {
             "model": model_name,
@@ -204,7 +204,7 @@ class LLMService:
         except Exception as e:
             yield {"type": "error", "content": f"OpenAI API Error: {str(e)}"}
 
-    def _call_anthropic(self, messages: List[Dict[str, any]], system_prompt: Optional[str], tools: Optional[List[Dict[str, Any]]]) -> Generator[Dict, None, None]:
+    def _call_anthropic(self, messages: List[Dict[str, any]], system_prompt: Optional[str], tools: Optional[List[Dict[str, Any]]], model: Optional[str]) -> Generator[Dict, None, None]:
         if not self.anthropic_client:
             yield {"type": "error", "content": "Error: ANTHROPIC_API_KEY not found, is a placeholder, or client not initialized. Please set it in your .env file."}
             return
@@ -213,7 +213,7 @@ class LLMService:
         # especially for tool results, which should be in Anthropic's specific format.
         anthropic_messages = messages
 
-        model_name = self.anthropic_model
+        model_name = model or self.anthropic_model
         
         api_kwargs = {
             "model": model_name,
