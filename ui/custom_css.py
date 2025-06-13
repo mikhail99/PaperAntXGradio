@@ -77,8 +77,76 @@ button:has(> span:contains('Get Report')) {
     word-wrap: break-word !important;
 }
 
-#copilot-reload-button {
-    max-width: 2.5em; /* Adjust size of reload button */
-    min-width: 2.5em !important;
+/* Agent List Styles */
+#agent-list-container .agent-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.agent-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color-primary);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    /* By not setting a background-color, it will inherit and work in dark mode. */
+}
+
+.agent-item:hover {
+    background-color: var(--background-fill-secondary);
+}
+
+.agent-item.selected {
+    border-color: var(--primary-500);
+    /* background-color is removed to avoid contrast issues in dark mode */
+    box-shadow: 0 0 0 1px var(--primary-500);
+}
+
+.agent-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.agent-text {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.agent-name {
+    font-weight: 600;
+    color: var(--body-text-color-strong);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.agent-description {
+    font-size: 0.9em;
+    color: var(--body-text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Custom style for the discrete reload button */
+.discrete-reload-button {
+    background: transparent !important;
+    border: 1px solid var(--border-color-primary) !important;
+    color: var(--body-text-color) !important;
+    box-shadow: none !important;
+    font-weight: 500 !important;
+}
+
+.discrete-reload-button:hover {
+    background: var(--background-fill-secondary) !important;
+    border-color: var(--primary-500) !important;
+    color: var(--body-text-color-strong) !important;
 }
 '''

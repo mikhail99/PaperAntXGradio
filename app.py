@@ -11,6 +11,7 @@ from core.article_manager import ArticleManager
 from core.collections_manager import CollectionsManager
 from core.copilot_service import CopilotService
 from core.llm_service import LLMService
+from core.mcp_server_manager import MCPServerManager
 
 
 def main():
@@ -18,11 +19,11 @@ def main():
         gr.Markdown("# PaperAnt X")
         state = get_shared_state()
 
-        # Instantiate core services
         llm_service = LLMService()
         collections_manager = CollectionsManager()
         article_manager = ArticleManager(collections_manager)
-        copilot_service = CopilotService(collections_manager, article_manager, llm_service)
+        mcp_server_manager = MCPServerManager()
+        copilot_service = CopilotService(collections_manager, article_manager, llm_service, mcp_server_manager)
 
         with gr.Tabs():
             create_articles_tab(state)
