@@ -179,11 +179,9 @@ class CopilotService:
                         ]
                     })
                 elif provider == 'gemini':
-                    # Gemini's 'function_response' part needs 'name' and 'content'.
-                    for res in tool_results:
+                    # Gemini requires a single 'tool' role message containing all function responses for a given turn.
+                    if tool_results:
                         messages.append({
                             "role": "tool",
-                            "tool_name": res["tool_name"],
-                            "content": res["content"],
-                            "tool_call_id": res["tool_call_id"] # Pass along for consistency, though not used in Gemini history formatting
+                            "tool_results": tool_results
                         })

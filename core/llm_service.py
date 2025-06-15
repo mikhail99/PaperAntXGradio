@@ -88,15 +88,18 @@ class LLMService:
             role = "model" if msg["role"] == "assistant" else msg["role"]
             
             if role == "tool":
-                gemini_messages.append({
-                    "role": "tool",
-                    "parts": [{
-                        "function_response": {
-                            "name": msg["tool_name"],
-                            "response": {"content": msg["content"]},
-                        }
-                    }]
-                })
+                # For Gemini, multiple tool responses for a single turn are grouped in one message.
+                if "tool_results" in msg:
+                    parts = [
+                        {
+                            "function_response": {
+                                "name": res["tool_name"],
+                                "response": {"content": res["content"]},
+                            }
+                        } for res in msg.get("tool_results", [])
+                    ]
+                    if parts:
+                        gemini_messages.append({"role": "tool", "parts": parts})
             elif msg.get("tool_calls"): # Assistant message with tool calls
                 parts = [{
                     "function_call": {

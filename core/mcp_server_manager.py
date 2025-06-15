@@ -35,11 +35,16 @@ class MCPServerManager:
     def _discover_managed_servers(self) -> Dict[str, Dict[str, Any]]:
         servers_dir = os.path.join(os.path.dirname(__file__), 'mcp_servers')
         calculator_script = os.path.join(servers_dir, 'calculator_server.py')
+        csv_script = os.path.join(servers_dir, 'csv_server.py')
 
         return {
             "managed_calculator": {
                 "command": sys.executable,
                 "args": [calculator_script],
+            },
+            "managed_csv": {
+                "command": sys.executable,
+                "args": [csv_script],
             }
         }
 
