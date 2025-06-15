@@ -1,136 +1,98 @@
+"""
+Bootstrap Knowledge Base Flow
+
+This script orchestrates the bootstrapping of the Knowledge Base (KB) by
+processing a set of seed documents. For each document, it runs the full
+planning pipeline (section selection, abstraction detection, connection analysis)
+and ingests the results into the KB.
+"""
+import logging
 import os
-import sys
-import json
-import subprocess
 from pathlib import Path
-import importlib.util
+from typing import Dict, Any
 
-# --- Path Setup ---
-# Add the root of the KAG project and the original paper2code project to the Python path
-# This allows importing modules from both projects.
-current_dir = Path(__file__).parent
-kag_root = current_dir
-paper2code_root = current_dir.parent / "paper2code"
-sys.path.append(str(kag_root))
-sys.path.append(str(paper2code_root))
-# --- End Path Setup ---
+from algorithms.paper2code_kag.utils.path_setup import setup_paths
+setup_paths()
 
-from utils.knowledge_base import KnowledgeBase
-# Import '1_ingest_paper_flow.py' using importlib because its name is not a valid identifier
-spec = importlib.util.spec_from_file_location("ingest_flow", kag_root / "1_ingest_paper_flow.py")
-ingest_flow_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(ingest_flow_module)
-ingest_paper = ingest_flow_module.ingest_paper
+from algorithms.paper2code_kag.utils.knowledge_base import KnowledgeBase
+from algorithms.paper2code_kag.utils.pdf_utils import extract_sections, calculate_text_stats
+from algorithms.paper2code_kag.section_selection_flow import run_section_selection
+from algorithms.paper2code_kag.abstraction_detection_flow import run_abstraction_detection
+from algorithms.paper2code_kag.connection_analysis_flow import run_connection_analysis
 
-def run_legacy_planning(paper_path: Path, temp_output_dir: Path) -> tuple[Path, Path]:
+logging.basicConfig(level=logging.INFO, format='%(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def bootstrap_knowledge_base(
+    seed_data_dir: str,
+    kb: KnowledgeBase,
+    output_dir: str = "output",
+    use_mock_llm: bool = True
+):
     """
-    Runs the existing planning flows from the original `paper2code` project.
-    
-    NOTE: The subprocess calls are MOCKED. You will need to replace them
-    with the actual commands to run your legacy scripts. This will depend on
-    the specific command-line arguments they accept.
+    Processes all seed documents and populates the Knowledge Base.
     """
-    print(f"\n--- Running legacy planning for {paper_path.name} ---")
+    logger.info("🚀 Starting Knowledge Base bootstrapping process...")
+    seed_files = [f for f in os.listdir(seed_data_dir) if f.endswith('.txt')]
+
+    for seed_file in seed_files:
+        doc_path = os.path.join(seed_data_dir, seed_file)
+        doc_id = Path(doc_path).stem
+        logger.info(f"--- Processing seed document: {doc_id} ---")
+
+        try:
+            # 1. Ingest document into PaperQA index
+            logger.info(f"Ingesting '{doc_id}' into PaperQA index...")
+            kb.add_document(doc_path, doc_id=doc_id)
+            
+            # 2. Extract sections
+            sections = extract_sections(doc_path)
+            
+            # 3. Initialize shared state for this document
+            shared_state: Dict[str, Any] = {
+                "doc_id": doc_id,
+                "doc_path": doc_path,
+                "sections": sections,
+                "text_stats": calculate_text_stats("\n".join(s['content'] for s in sections)),
+            }
+            
+            # 4. Run the planning pipeline
+            shared_state = run_section_selection(shared_state, use_mock_llm=use_mock_llm, output_dir=output_dir)
+            shared_state = run_abstraction_detection(shared_state, use_mock_llm=use_mock_llm, output_dir=output_dir)
+            shared_state = run_connection_analysis(shared_state, use_mock_llm=use_mock_llm, output_dir=output_dir)
+            
+            # 5. Add results to the central KB
+            kb.add_abstractions(doc_id, shared_state.get("categorized_abstractions", []))
+            kb.add_connections(doc_id, shared_state.get("categorized_connections", []))
+            
+            logger.info(f"✅ Successfully processed and added '{doc_id}' to the KB.")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to process {doc_id}: {e}", exc_info=True)
+            # Continue to the next document
+            continue
+            
+    logger.info("🎉 Knowledge Base bootstrapping complete.")
+
+def main():
+    """Main function to run the bootstrapping flow."""
+    kb_path = "knowledge_base"
+    output_dir = "output"
+    seed_data_dir = "seed_data"
     
-    # 1. Define paths to legacy scripts
-    abstraction_flow_script = paper2code_root / "11_abstraction_planning_flow.py"
-    connection_flow_script = paper2code_root / "connection_planning_flow.py"
+    os.makedirs(output_dir, exist_ok=True)
     
-    # 2. Mock the subprocess calls
-    print("MOCK: Running abstraction planning...")
-    # This assumes the script takes --input-file and --output-dir
-    # subprocess.run(
-    #     ["python", str(abstraction_flow_script), "--input-file", str(paper_path), "--output-dir", str(temp_output_dir)],
-    #     check=True
-    # )
-    abstraction_plan_path = temp_output_dir / "abstraction_plan.json"
-    mock_abs_data = {
-        "metadata": {"source": paper_path.name},
-        "abstractions": [{"id": "abs1", "name": f"MockAbstraction_{paper_path.stem}"}]
-    }
-    with open(abstraction_plan_path, 'w') as f:
-        json.dump(mock_abs_data, f, indent=2)
-    print(f"MOCK: Created mock abstraction plan at {abstraction_plan_path}")
-
-    print("MOCK: Running connection planning...")
-    # This assumes the connection script takes the abstraction plan as input
-    # subprocess.run(
-    #     ["python", str(connection_flow_script), "--input-file", str(abstraction_plan_path), "--output-dir", str(temp_output_dir)],
-    #     check=True
-    # )
-    connection_plan_path = temp_output_dir / "connection_plan.json"
-    mock_conn_data = {
-        "metadata": {"source": paper_path.name},
-        "connections": [{"from": "abs1", "to": "abs1", "type": "mock_dependency"}]
-    }
-    with open(connection_plan_path, 'w') as f:
-        json.dump(mock_conn_data, f, indent=2)
-    print(f"MOCK: Created mock connection plan at {connection_plan_path}")
-
-    print("--- Legacy planning finished ---")
-    return abstraction_plan_path, connection_plan_path
-
-def update_kb_from_plans(kb: KnowledgeBase, docname: str, abs_plan_path: Path, conn_plan_path: Path):
-    """
-    Parses the generated plans and updates the global Abstractions & Connections DB.
-    """
-    print(f"\n--- Updating Knowledge Base for {docname} ---")
-    abstractions_db = kb.load_abstractions()
-
-    with open(abs_plan_path) as f:
-        new_abstractions = json.load(f).get("abstractions", [])
-    with open(conn_plan_path) as f:
-        new_connections = json.load(f).get("connections", [])
+    # Initialize Knowledge Base
+    logger.info(f"Initializing Knowledge Base at '{kb_path}'...")
+    kb = KnowledgeBase(kb_path)
     
-    if "abstractions_by_doc" not in abstractions_db:
-        abstractions_db["abstractions_by_doc"] = {}
-    if "connections_by_doc" not in abstractions_db:
-        abstractions_db["connections_by_doc"] = {}
-    
-    # Store all abstractions and connections under the docname
-    abstractions_db["abstractions_by_doc"][docname] = new_abstractions
-    abstractions_db["connections_by_doc"][docname] = new_connections
-
-    kb.save_abstractions(abstractions_db)
-    print(f"--- Knowledge Base update for {docname} complete ---")
-
-def bootstrap_knowledge_base():
-    """
-    Main orchestration script for bootstrapping the KB.
-    """
-    print("===== Starting Knowledge Base Bootstrap Process =====")
-    kb = KnowledgeBase("knowledge_base")
-    seed_data_dir = Path("seed_data")
-    temp_output_dir = Path("temp_bootstrap_output")
-    
-    if not seed_data_dir.exists():
-        print(f"Error: Seed data directory not found at {seed_data_dir.resolve()}")
-        return
-        
-    seed_files = list(seed_data_dir.glob("*"))
-    if not seed_files:
-        print(f"No seed files found in {seed_data_dir.resolve()}. Nothing to do.")
-        return
-
-    print(f"Found {len(seed_files)} seed document(s) to process.")
-    
-    for paper_path in seed_files:
-        print(f"\n=================================================")
-        print(f"Processing: {paper_path.name}")
-        print(f"=================================================")
-        
-        # 1. Ingest paper into PaperQA index
-        ingest_paper(str(paper_path))
-        
-        # 2. Run legacy planning flows
-        paper_temp_dir = temp_output_dir / paper_path.stem
-        paper_temp_dir.mkdir(parents=True, exist_ok=True)
-        abs_plan_path, conn_plan_path = run_legacy_planning(paper_path, paper_temp_dir)
-        
-        # 3. Update the KB with the results
-        update_kb_from_plans(kb, paper_path.name, abs_plan_path, conn_plan_path)
-
-    print("\n===== Knowledge Base Bootstrap Process Finished =====")
+    # Run bootstrapping
+    bootstrap_knowledge_base(
+        seed_data_dir=seed_data_dir,
+        kb=kb,
+        output_dir=output_dir,
+        use_mock_llm=True
+    )
 
 if __name__ == "__main__":
-    bootstrap_knowledge_base() 
+    main() 

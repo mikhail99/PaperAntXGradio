@@ -1,122 +1,103 @@
-import argparse
+"""
+This script defines the main workflow for processing a single paper,
+ingesting it into the Knowledge Base, and generating planning documents.
+"""
 import logging
+import os
 from pathlib import Path
-import importlib.util
+from typing import Dict, Any
 
-# Setup paths before local imports
-from utils.path_setup import setup_paths
+from algorithms.paper2code_kag.utils.path_setup import setup_paths
 setup_paths()
 
-from utils.knowledge_base import KnowledgeBase
+from algorithms.paper2code_kag.utils.knowledge_base import KnowledgeBase
+from algorithms.paper2code_kag.abstraction_detection_flow import run_abstraction_detection
+from algorithms.paper2code_kag.connection_analysis_flow import run_connection_analysis
 
-# --- Dynamic Import of Legacy Flows ---
-# Use importlib because the filenames are not valid Python identifiers.
-def import_flow_from_file(flow_name: str, file_path: Path):
-    """Dynamically imports a class from a file."""
-    spec = importlib.util.spec_from_file_location(file_path.stem, file_path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return getattr(module, flow_name)
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
-# Define paths to the legacy flow files.
-# Assumes the user has copied them into the `paper2code_kag` directory.
-current_dir = Path(__file__).parent
-AbstractionPlanningFlow = import_flow_from_file(
-    "AbstractionPlanningFlow",
-    current_dir / "1.1_abstraction_planning_flow.py"
-)
-ConnectionPlanningFlow = import_flow_from_file(
-    "ConnectionPlanningFlow",
-    current_dir / "1.2_connection_planning_flow.py"
-)
-# --- End Dynamic Import ---
 
-def process_and_plan_paper(doc_path: str):
+def process_and_analyze_paper(
+    doc_path: str,
+    kb: KnowledgeBase,
+    output_dir: str = "output",
+    use_mock_llm: bool = True
+) -> Dict[str, Any]:
     """
-    Orchestrates the full pipeline for a single document:
-    1. Ingests into the Knowledge Base.
-    2. Runs abstraction planning.
-    3. Runs connection planning.
+    Orchestrates the end-to-end processing for a single document.
     """
-    logging.info(f"🚀 Starting full processing for document: {doc_path}")
-    doc_file = Path(doc_path)
-    if not doc_file.exists():
-        logging.error(f"Document file not found at {doc_path}")
-        return
-
-    doc_name = doc_file.name
-    output_dir = Path("output") / doc_file.stem
-    output_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f"🚀 Starting full processing for document: {doc_path}")
+    doc_id = Path(doc_path).stem
     
-    # === 1. Ingest into Knowledge Base ===
-    kb = KnowledgeBase("knowledge_base")
-    try:
-        docs = kb.load_docs()
-        if doc_name not in docs.docs:
-            logging.info(f"Ingesting {doc_name} into the Knowledge Base...")
-            docs.add(doc_path, docname=doc_name)
-            kb.save_docs(docs)
-            logging.info(f"Successfully ingested {doc_name}.")
-        else:
-            logging.info(f"{doc_name} already exists in the Knowledge Base.")
-        
-        # Retrieve the full text for planning
-        full_text = docs.docs[doc_name].text
-        
-    except Exception as e:
-        logging.error(f"An error occurred during ingestion: {e}")
-        return
-
-    # === 2. Prepare Shared State for Planning ===
-    # We bypass the need for a separate "section planning" step by
-    # treating the entire document as a single, high-priority section.
-    shared_state = {
-        "selected_sections": [{
-            "title": "Full Document",
-            "content": full_text,
-            "section_type": "full_text",
-            "priority": 1
-        }],
-        "planning_summary": {
-            "source_document": doc_name,
-            "selection_method": "full_text_ingestion"
-        }
+    # 1. Ingest document into PaperQA index
+    logger.info(f"Ingesting '{doc_id}' into PaperQA index...")
+    kb.add_document(doc_path, doc_id=doc_id)
+    
+    # 2. Extract sections
+    logger.info("Extracting sections from the document...")
+    sections = extract_sections(doc_path)
+    
+    # Initialize shared state
+    shared_state: Dict[str, Any] = {
+        "doc_id": doc_id,
+        "doc_path": doc_path,
+        "sections": sections,
+        "text_stats": calculate_text_stats("\n".join(s['content'] for s in sections)),
     }
-    logging.info("Prepared shared state using full document text.")
+    
 
-    # === 3. Run Abstraction Planning ===
-    try:
-        logging.info("🎯 Running Abstraction Planning Flow...")
-        abstraction_flow = AbstractionPlanningFlow(use_mock_llm=True, output_dir=str(output_dir))
-        shared_state = abstraction_flow.run(shared_state)
-        logging.info("✅ Abstraction Planning completed.")
-    except Exception as e:
-        logging.error(f"Abstraction Planning failed: {e}", exc_info=True)
-        return
+    # 4. Run Abstraction Detection Flow
+    shared_state = run_abstraction_detection(shared_state, use_mock_llm=use_mock_llm, output_dir=output_dir)
 
-    # === 4. Run Connection Planning ===
-    try:
-        logging.info("🔗 Running Connection Planning Flow...")
-        connection_flow = ConnectionPlanningFlow(use_mock_llm=True, output_dir=str(output_dir))
-        shared_state = connection_flow.run(shared_state)
-        logging.info("✅ Connection Planning completed.")
-    except Exception as e:
-        logging.error(f"Connection Planning failed: {e}", exc_info=True)
-        return
-        
-    logging.info(f"🎉 Full processing for {doc_name} finished successfully.")
-    logging.info(f"Final plans saved in: {output_dir.resolve()}")
+    # 5. Run Connection Analysis Flow
+    shared_state = run_connection_analysis(shared_state, use_mock_llm=use_mock_llm, output_dir=output_dir)
+    
+    # 6. Add results to Knowledge Base
+    logger.info(f"Adding processed abstractions and connections for '{doc_id}' to the Knowledge Base...")
+    kb.add_abstractions(
+        doc_id=doc_id,
+        abstractions=shared_state.get("categorized_abstractions", [])
+    )
+    kb.add_connections(
+        doc_id=doc_id,
+        connections=shared_state.get("categorized_connections", [])
+    )
+    
+    logger.info(f"✅ Successfully processed and ingested document: {doc_id}")
+    
+    return shared_state
+
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Run the full ingestion and planning pipeline for a single document."
-    )
-    parser.add_argument("doc_path", type=str, help="The path to the document file to process.")
-    args = parser.parse_args()
+    """Main function to run the ingestion flow."""
+    kb_path = "knowledge_base"
+    output_dir = "output"
+    os.makedirs(output_dir, exist_ok=True)
     
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-    
-    process_and_plan_paper(args.doc_path)
+    # Initialize Knowledge Base
+    logger.info(f"Initializing Knowledge Base at '{kb_path}'...")
+    kb = KnowledgeBase(kb_path)
+
+    # Path to the paper to be processed
+    doc_to_process = "seed_data/seed_paper_1.txt"
+    if not os.path.exists(doc_to_process):
+        logger.error(f"Document not found: {doc_to_process}")
+        return
+        
+    try:
+        # Run the full pipeline
+        final_state = process_and_plan_paper(
+            doc_path=doc_to_process,
+            kb=kb,
+            output_dir=output_dir,
+            use_mock_llm=True
+        )
+        logger.info("🎉 End-to-end paper ingestion and planning complete.")
+        
+    except Exception as e:
+        logger.error(f"An error occurred during the process: {e}", exc_info=True)
 
 if __name__ == "__main__":
     main() 

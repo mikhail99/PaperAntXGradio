@@ -106,5 +106,29 @@
     {
         "section_title": "Appendix A Model Specs",
         "is_important": true
+    },
+    {
+        "section_title": "Appendix B Hyper-parameters",
+        "is_important": false
+    },
+    {
+        "section_title": "Appendix C Linear flow and Diffusion",
+        "is_important": true
+    },
+    {
+        "section_title": "Appendix D Proof of Spectrum Autoregressive",
+        "is_important": false
+    },
+    {
+        "section_title": "Appendix E Linear multisteps method",
+        "is_important": false
+    },
+    {
+        "section_title": "Appendix F Classifier free guidance.",
+        "is_important": false
+    },
+    {
+        "section_title": "Instructions for reporting errors",
+        "is_important": false
     }
 ]

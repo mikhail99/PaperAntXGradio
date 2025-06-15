@@ -40,7 +40,7 @@ class BlueprintExtractor(dspy.Module):
         super().__init__()
         self.generate_blueprint = dspy.ChainOfThought(ImplementationBlueprintSignature)
 
-    def forward(self, title, abstract, paper_section):
+    def forward(self, title, abstract, paper_section, domain_dictionary):
         """
         Generates the implementation blueprint.
 
@@ -48,6 +48,7 @@ class BlueprintExtractor(dspy.Module):
             title (str): The title of the paper.
             abstract (str): The abstract of the paper.
             paper_section (str): The content of a key paper section.
+            domain_dictionary (str): A JSON string of the domain dictionary for the section.
 
         Returns:
             dspy.Prediction: An object containing the 'implementation_blueprint'.
@@ -55,7 +56,8 @@ class BlueprintExtractor(dspy.Module):
         prediction = self.generate_blueprint(
             title=title,
             abstract=abstract,
-            paper_section=paper_section
+            paper_section=paper_section,
+            domain_dictionary=domain_dictionary
         )
         return prediction
 

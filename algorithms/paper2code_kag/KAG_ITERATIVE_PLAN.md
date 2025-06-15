@@ -46,11 +46,11 @@ This document breaks down the Knowledge-Augmented Generation (KAG) architecture 
 
 **Goal:** Implement the "Retrieve" phase of the KAG workflow. For a new paper, find similar work and seed a draft plan using the Knowledge Base.
 
--[ ] Create `3_seed_plan_nodes.py`:
-    -[ ] `FindSimilarPapersNode`: Takes a new paper's abstract, queries the `Paper-QA` index, and returns the top N most similar indexed papers.
-    -[ ] `RetrieveKnownAbstractionsNode`: For each section of the new paper, performs a semantic search against the `Paper-QA` index to find similar chunks from *all* indexed papers. It then retrieves the known abstractions/connections associated with those chunks from the Abstractions DB.
-    -[ ] `AssembleDraftPlanNode`: Collates the retrieved concepts into a structured `draft_plan.json`.
--[ ] Create `3_seed_plan_flow.py` to orchestrate these nodes.
+-[x] Create `seed_plan_nodes.py`:
+    -[x] `FindSimilarPapersNode`: Takes a new paper's abstract, queries the `Paper-QA` index, and returns the top N most similar indexed papers.
+    -[x] `RetrieveKnownAbstractionsNode`: For each section of the new paper, performs a semantic search against the `Paper-QA` index to find similar chunks from *all* indexed papers. It then retrieves the known abstractions/connections associated with those chunks from the Abstractions DB.
+    -[x] `AssembleDraftPlanNode`: Collates the retrieved concepts into a structured `draft_plan.json`.
+-[x] Create `seed_plan_flow.py` to orchestrate these nodes.
 -[ ] **Validation:**
     -[ ] Run the flow on a new paper that is conceptually similar to one of the seed papers.
     -[ ] Verify that `FindSimilarPapersNode` correctly identifies the known similar paper(s).

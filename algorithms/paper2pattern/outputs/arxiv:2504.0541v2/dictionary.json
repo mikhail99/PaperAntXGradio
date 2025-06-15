@@ -1,0 +1,568 @@
+{
+    "Table of Contents": [
+        {
+            "term": "Diffusion Transformers",
+            "definition": "A type of generative model that uses a diffusion process to generate data."
+        },
+        {
+            "term": "Denoising",
+            "definition": "The process of removing noise from data, often used in diffusion models."
+        },
+        {
+            "term": "Semantic Component",
+            "definition": "The lower-frequency information representing the overall meaning or structure of the data."
+        },
+        {
+            "term": "High-Frequency Components",
+            "definition": "The finer details and high-frequency information in the data."
+        },
+        {
+            "term": "Decoupled Diffusion Transformer (DDT)",
+            "definition": "A modified diffusion transformer architecture with a dedicated condition encoder and velocity decoder."
+        },
+        {
+            "term": "Condition Encoder",
+            "definition": "A component of DDT responsible for extracting semantic information."
+        },
+        {
+            "term": "Velocity Decoder",
+            "definition": "A component of DDT responsible for decoding high-frequency details."
+        },
+        {
+            "term": "FID (Fr\u00e9chet Inception Distance)",
+            "definition": "A metric used to evaluate the quality of generated images."
+        },
+        {
+            "term": "ImageNet",
+            "definition": "A large dataset of labeled images commonly used for training and evaluating image generation models."
+        },
+        {
+            "term": "Encoder-Decoder Ratio",
+            "definition": "The relative size or complexity of the encoder and decoder components in a neural network."
+        },
+        {
+            "term": "Statistical Dynamic Programming",
+            "definition": "An optimization technique used to find the best sharing strategies for encoder conditions."
+        }
+    ],
+    "DDT: Decoupled Diffusion Transformer": [
+        {
+            "term": "Diffusion Transformer",
+            "definition": "A type of transformer model used for generative tasks, particularly image generation, that incorporates diffusion processes."
+        },
+        {
+            "term": "DDT (Decoupled Diffusion Transformer)",
+            "definition": "A novel architecture that decouples the condition encoder (for semantic extraction) and velocity decoder to resolve optimization dilemmas in diffusion transformers."
+        },
+        {
+            "term": "Condition Encoder",
+            "definition": "A component of the DDT architecture responsible for extracting semantic self-conditions."
+        },
+        {
+            "term": "Velocity Decoder",
+            "definition": "A component of the DDT architecture responsible for decoding velocity information."
+        },
+        {
+            "term": "FID (Fr\u00e9chet Inception Distance)",
+            "definition": "A metric used to evaluate the quality of generated images, with lower values indicating better quality."
+        },
+        {
+            "term": "Denoising Step",
+            "definition": "A step in the diffusion process where noise is gradually removed from an input to generate an image."
+        },
+        {
+            "term": "Semantic Self-Conditions",
+            "definition": "Representations of the semantic content extracted by the condition encoder, used to guide the generation process."
+        }
+    ],
+    "Diffusion Transformers.": [
+        {
+            "term": "Diffusion Transformer",
+            "definition": "A type of transformer architecture applied to diffusion models, replacing traditional UNet architectures."
+        },
+        {
+            "term": "UNet",
+            "definition": "A traditional convolutional neural network architecture commonly used in diffusion models."
+        },
+        {
+            "term": "DiT",
+            "definition": "A pioneering work introducing transformers into diffusion models."
+        },
+        {
+            "term": "SiT",
+            "definition": "A work validating the transformer architecture with linear flow diffusion."
+        },
+        {
+            "term": "SD3",
+            "definition": "A diffusion transformer model used for text-to-image generation."
+        },
+        {
+            "term": "Lumina",
+            "definition": "A diffusion transformer model used for text-to-image generation."
+        },
+        {
+            "term": "PixArt",
+            "definition": "A diffusion transformer model used for text-to-image generation."
+        },
+        {
+            "term": "DDT",
+            "definition": "Decoupled Diffusion Transformer, a new variant that decouples low-frequency encoding and high-frequency decoding for faster convergence."
+        },
+        {
+            "term": "FID",
+            "definition": "Fr\u00e9chet Inception Distance, a metric used to evaluate the quality of generated images."
+        },
+        {
+            "term": "Text-to-Image",
+            "definition": "A generative task where text prompts are used to generate images."
+        }
+    ],
+    "Fast Diffusion Training.": [
+        {
+            "term": "Diffusion Transformers",
+            "definition": "A type of transformer model used in generative modeling, particularly for image generation, that utilizes a diffusion process for training."
+        },
+        {
+            "term": "Denoising",
+            "definition": "The process of iteratively removing noise from data, a core component of diffusion models."
+        },
+        {
+            "term": "Attention Mechanisms",
+            "definition": "Techniques that allow a model to focus on the most relevant parts of the input data when making predictions."
+        },
+        {
+            "term": "Sparse Attention",
+            "definition": "A type of attention mechanism that prioritizes interactions between only the most relevant tokens, reducing computational complexity."
+        },
+        {
+            "term": "Lognorm Sampling",
+            "definition": "A technique used to stabilize training dynamics in diffusion models by sampling from a log-normal distribution."
+        },
+        {
+            "term": "Representational Learning",
+            "definition": "A branch of machine learning focused on learning useful and informative representations of data."
+        },
+        {
+            "term": "REPA",
+            "definition": "A technique that integrates vision-specific priors into diffusion training."
+        },
+        {
+            "term": "RCG",
+            "definition": "Another technique that integrates vision-specific priors into diffusion training."
+        },
+        {
+            "term": "DoD",
+            "definition": "Yet another technique that integrates vision-specific priors into diffusion training."
+        },
+        {
+            "term": "Masked Modeling",
+            "definition": "A technique that strengthens spatial reasoning by enforcing structured feature completion during denoising."
+        }
+    ],
+    "3 Preliminary Analysis": [
+        {
+            "term": "Diffusion Transformer",
+            "definition": "A type of transformer architecture used in diffusion models, designed to encode noisy inputs and extract semantic components."
+        },
+        {
+            "term": "Denoising Step",
+            "definition": "A stage in the diffusion process where the model refines the image, progressively removing noise."
+        },
+        {
+            "term": "Semantic Encoding",
+            "definition": "The process of capturing the lower-frequency, meaningful components of an image during the diffusion process."
+        },
+        {
+            "term": "Optimization Dilemma",
+            "definition": "The conflict between encoding low-frequency semantics and decoding high-frequency details in diffusion transformers."
+        },
+        {
+            "term": "Decoupled Diffusion Transformer (DDT)",
+            "definition": "A new architecture that separates semantic extraction and high-frequency decoding into dedicated components."
+        },
+        {
+            "term": "Reverse-SDE Process",
+            "definition": "The generation process in diffusion models, moving from noise to a coherent image."
+        },
+        {
+            "term": "FID (Fr\u00e9chet Inception Distance)",
+            "definition": "A metric used to evaluate the quality of generated images, with lower values indicating better quality."
+        },
+        {
+            "term": "Linear-based Flow Matching",
+            "definition": "A specialized family of diffusion models characterized by their simplicity and efficiency."
+        },
+        {
+            "term": "Adams-like Solver",
+            "definition": "A numerical method used to solve differential equations, employed here to collect performance data."
+        },
+        {
+            "term": "Spectral Components",
+            "definition": "The frequency components of an image, used in the diffusion process to represent different levels of detail."
+        },
+        {
+            "term": "Time-shift Values",
+            "definition": "Parameters that control the timing of computations within the diffusion process, influencing performance."
+        }
+    ],
+    "4 Method": [
+        {
+            "term": "Diffusion Transformer",
+            "definition": "A type of transformer model used for generative tasks, particularly image generation, that utilizes a diffusion process for training."
+        },
+        {
+            "term": "Condition Encoder",
+            "definition": "A component of the DDT architecture responsible for extracting low-frequency semantic information from noisy input, class labels, and timestep."
+        },
+        {
+            "term": "Velocity Decoder",
+            "definition": "A component of the DDT architecture that processes noisy latent representations using a self-condition to predict high-frequency velocity."
+        },
+        {
+            "term": "Self-Condition",
+            "definition": "The output of the condition encoder, used as input to the velocity decoder, representing the low-frequency semantic component."
+        },
+        {
+            "term": "Linear Flow Diffusion Framework",
+            "definition": "The established training methodology used for the DDT model, based on a diffusion process."
+        },
+        {
+            "term": "DDT",
+            "definition": "Abbreviation for Decoupled Diffusion Transformer, the proposed architecture in the paper."
+        }
+    ],
+    "4.1 Condition Encoder": [
+        {
+            "term": "Diffusion Transformer",
+            "definition": "A type of transformer model used in diffusion models for image generation, aiming to improve generation quality."
+        },
+        {
+            "term": "DDT (Decoupled Diffusion Transformer)",
+            "definition": "A novel architecture designed to resolve the optimization dilemma in diffusion transformers by decoupling semantic extraction and high-frequency decoding."
+        },
+        {
+            "term": "Self-Condition",
+            "definition": "A feature representation extracted by the condition encoder, capturing information about the noisy latent variable, timestep, and class label."
+        },
+        {
+            "term": "AdaLN-Zero",
+            "definition": "A technique for injecting external-conditioning information into encoded features within each encoder block."
+        },
+        {
+            "term": "REPA",
+            "definition": "A representation alignment technique used to maintain local consistency of features across adjacent timesteps."
+        },
+        {
+            "term": "DINOv2",
+            "definition": "A representation used for aligning intermediate features in the self-mapping encoder."
+        },
+        {
+            "term": "Timestep",
+            "definition": "A parameter indicating the stage of the diffusion process, used as conditioning information for the encoder."
+        },
+        {
+            "term": "Class Label",
+            "definition": "A categorical variable representing the class of the input data, also used as conditioning information for the encoder."
+        }
+    ],
+    "4.2 Velocity Decoder": [
+        {
+            "term": "DDT",
+            "definition": "Decoupled Diffusion Transformer, a new architecture designed to resolve optimization dilemmas in diffusion transformers."
+        },
+        {
+            "term": "Velocity Decoder",
+            "definition": "A component of the DDT that estimates the velocity (v_t) based on noisy latent x_t, timestep t, and self-conditioning z_t."
+        },
+        {
+            "term": "Condition Encoder",
+            "definition": "A component of the DDT responsible for semantic extraction."
+        },
+        {
+            "term": "Self-conditioning",
+            "definition": "A feature (z_t) that contains class label information and is used as input to the decoder."
+        },
+        {
+            "term": "Timestep (t)",
+            "definition": "An index representing a specific point in the diffusion process."
+        },
+        {
+            "term": "Noisy Latent (x_t)",
+            "definition": "The input to the decoder, representing a noisy version of the original data at a specific timestep."
+        },
+        {
+            "term": "AdaLN-Zero",
+            "definition": "A technique used to inject the self-conditioning feature (z_t) into the decoder feature."
+        },
+        {
+            "term": "Flow Matching Loss",
+            "definition": "The loss function used to train the decoder, aiming to minimize the difference between the data and the estimated velocity."
+        },
+        {
+            "term": "Timestep (t)",
+            "definition": "An index representing a specific point in the diffusion process."
+        },
+        {
+            "term": "FFN blocks",
+            "definition": "Feed Forward Neural Network blocks, a common component in transformer architectures."
+        },
+        {
+            "term": "Attention blocks",
+            "definition": "Attention mechanism blocks, a core component of transformer architectures."
+        }
+    ],
+    "4.3 Sampling acceleration": [
+        {
+            "term": "Diffusion Transformer",
+            "definition": "A type of transformer model used in diffusion models for generative tasks, particularly image generation."
+        },
+        {
+            "term": "Denoising Step",
+            "definition": "A stage in the diffusion process where noise is gradually removed from a noisy input to generate a sample."
+        },
+        {
+            "term": "Encoder",
+            "definition": "A component of the model responsible for extracting features and semantic information from the noisy input (latent)."
+        },
+        {
+            "term": "Decoder",
+            "definition": "A component of the model responsible for reconstructing the image from the encoded features."
+        },
+        {
+            "term": "Self-Condition",
+            "definition": "A previously computed latent representation (z) used as input to the decoder in subsequent denoising steps, enabling faster inference."
+        },
+        {
+            "term": "Latent (z)",
+            "definition": "A lower-dimensional representation of the input data, typically obtained through an encoder. In this context, it represents the encoded noisy input."
+        },
+        {
+            "term": "Sharing Ratio",
+            "definition": "The proportion of denoising steps where the self-condition is reused from a previous step, aiming to reduce computational burden."
+        },
+        {
+            "term": "Timestep (t)",
+            "definition": "An index representing a specific stage in the diffusion process, used to track the progress of denoising."
+        },
+        {
+            "term": "\u03a6 (Phi)",
+            "definition": "A set of timesteps where the self-condition is recalculated, rather than reused from a previous step."
+        }
+    ],
+    "Uniform Encoder Sharing.": [
+        {
+            "term": "Diffusion Transformer",
+            "definition": "A type of transformer model used for generative tasks, particularly image generation, that utilizes a diffusion process."
+        },
+        {
+            "term": "DDT (Decoupled Diffusion Transformer)",
+            "definition": "A specific architecture of diffusion transformer with a decoupled design for semantic extraction and velocity decoding."
+        },
+        {
+            "term": "Self-Condition",
+            "definition": "A representation of the input at a particular denoising step, used to guide subsequent steps in the diffusion process. It's a key element being optimized in this paper."
+        },
+        {
+            "term": "\u03a6 (Phi)",
+            "definition": "A set used to accelerate UNet models and, in this context, represents a strategy for sharing self-conditions between denoising steps."
+        },
+        {
+            "term": "UNet",
+            "definition": "A type of neural network architecture commonly used in image processing and segmentation tasks, often used as a baseline for comparison."
+        },
+        {
+            "term": "DeepCache",
+            "definition": "A technique used to accelerate UNet models by caching intermediate representations."
+        },
+        {
+            "term": "Denoising Step",
+            "definition": "A stage in the diffusion process where noise is gradually removed from an input to generate an image."
+        }
+    ],
+    "Statistic Dynamic Programming.": [
+        {
+            "term": "DDT",
+            "definition": "Decoupled Diffusion Transformer, a new architecture proposed to improve performance and inference speed."
+        },
+        {
+            "term": "\u03a6",
+            "definition": "Represents a step or index within the diffusion process, used to construct the similarity matrix."
+        },
+        {
+            "term": "\ud835\udc12",
+            "definition": "The statistic similarity matrix, used to calculate costs between different steps."
+        },
+        {
+            "term": "\ud835\udc02",
+            "definition": "The cost matrix, used in the dynamic programming algorithm to find the optimal path."
+        },
+        {
+            "term": "\ud835\udc0f",
+            "definition": "The traced path matrix, indicating the optimal sequence of steps found by dynamic programming."
+        },
+        {
+            "term": "Dynamic Programming",
+            "definition": "An algorithmic technique for solving optimization problems by breaking them down into smaller, overlapping subproblems."
+        },
+        {
+            "term": "Backtracking",
+            "definition": "A technique used to reconstruct the optimal solution after finding the minimal cost path using dynamic programming."
+        }
+    ],
+    "5.2 Metric comparison with baselines": [
+        {
+            "term": "Diffusion Transformer",
+            "definition": "A type of transformer model used for generative tasks, particularly image generation, that utilizes a diffusion process for training."
+        },
+        {
+            "term": "DDT (Decoupled Diffusion Transformer)",
+            "definition": "A novel diffusion transformer architecture that decouples semantic extraction (low-frequency components) from high-frequency decoding."
+        },
+        {
+            "term": "FID (Fr\u00e9chet Inception Distance)",
+            "definition": "A metric used to evaluate the quality of generated images by comparing the distribution of features extracted from generated images and real images."
+        },
+        {
+            "term": "IS (Inception Score)",
+            "definition": "A metric used to evaluate the quality and diversity of generated images. Higher scores indicate better quality and diversity."
+        },
+        {
+            "term": "Precision",
+            "definition": "A metric indicating the proportion of correctly identified positive cases out of all cases identified as positive."
+        },
+        {
+            "term": "Recall",
+            "definition": "A metric indicating the proportion of actual positive cases that were correctly identified."
+        },
+        {
+            "term": "SiT (Score Inception Transformer)",
+            "definition": "A model used for evaluating the quality of generated images."
+        },
+        {
+            "term": "En",
+            "definition": "Likely refers to the number of encoders in a model configuration (e.g., 8En indicates 8 encoders)."
+        },
+        {
+            "term": "De",
+            "definition": "Likely refers to the number of decoders in a model configuration (e.g., 4De indicates 4 decoders)."
+        },
+        {
+            "term": "REPA",
+            "definition": "A baseline diffusion transformer model used for comparison."
+        },
+        {
+            "term": "Semantic Extraction",
+            "definition": "The process of identifying and isolating the low-frequency, meaning-bearing components of data, particularly in the context of image generation."
+        }
+    ],
+    "5.4 Acceleration by Encoder sharing": [
+        {
+            "term": "Diffusion Transformer",
+            "definition": "A type of transformer model used in diffusion models for image generation, which iteratively refines a noisy input to produce a high-quality image."
+        },
+        {
+            "term": "Self-Condition",
+            "definition": "A feature extracted by the encoder in a diffusion transformer, representing the semantic information at a specific timestep. It's used to guide the denoising process."
+        },
+        {
+            "term": "Encoder",
+            "definition": "A neural network component responsible for extracting features from the input data, in this case, the noisy input in a diffusion transformer."
+        },
+        {
+            "term": "Decoder",
+            "definition": "A neural network component responsible for reconstructing the data from the encoded features."
+        },
+        {
+            "term": "FID (Fr\u00e9chet Inception Distance)",
+            "definition": "A metric used to evaluate the quality of generated images by comparing their feature distributions to those of real images."
+        },
+        {
+            "term": "IS (Inception Score)",
+            "definition": "Another metric used to evaluate the quality and diversity of generated images."
+        },
+        {
+            "term": "Uniform Strategy",
+            "definition": "A simple encoder sharing strategy where the self-condition is recalculated every K timesteps."
+        },
+        {
+            "term": "Statistics Dynamic Programming",
+            "definition": "A more sophisticated encoder sharing strategy that uses dynamic programming to identify the optimal sharing strategy based on the similarity of self-conditions."
+        },
+        {
+            "term": "Timestep",
+            "definition": "A discrete point in the iterative denoising process of a diffusion model."
+        }
+    ],
+    "Encoder-Decoder Ratio": [
+        {
+            "term": "Diffusion Transformer",
+            "definition": "A type of transformer model used for generative tasks, particularly image generation, that utilizes a diffusion process."
+        },
+        {
+            "term": "DDT (Decoupled Diffusion Transformer)",
+            "definition": "A specific architecture of diffusion transformer with a decoupled design of a condition encoder and a velocity decoder."
+        },
+        {
+            "term": "Encoder Layers",
+            "definition": "Layers within a neural network model responsible for extracting features and encoding information from the input data."
+        },
+        {
+            "term": "Decoder Layers",
+            "definition": "Layers within a neural network model responsible for generating output based on the encoded information."
+        },
+        {
+            "term": "Ratio",
+            "definition": "The proportional relationship between the number of encoder layers and decoder layers in a neural network model."
+        },
+        {
+            "term": "Convergence Speed",
+            "definition": "The rate at which a model's training process reaches a stable state or optimal solution."
+        },
+        {
+            "term": "Performance",
+            "definition": "A measure of how well a model performs on a given task, often quantified by metrics like FID."
+        },
+        {
+            "term": "FID (Fr\u00e9chet Inception Distance)",
+            "definition": "A metric used to evaluate the quality of generated images by comparing them to real images."
+        },
+        {
+            "term": "m_nDe",
+            "definition": "A notation used to represent models with 'm' encoder layers and 'n' decoder layers."
+        }
+    ],
+    "Decoder Block types.": [
+        {
+            "term": "DDT",
+            "definition": "Decoupled Diffusion Transformer, a new architecture designed to improve diffusion transformers by decoupling semantic extraction and high-frequency decoding."
+        },
+        {
+            "term": "FID",
+            "definition": "Fr\u00e9chet Inception Distance, a metric used to evaluate the quality of generated images; lower values indicate better quality."
+        },
+        {
+            "term": "Decoder Block",
+            "definition": "A component within the DDT architecture responsible for high-frequency decoding."
+        },
+        {
+            "term": "Encoder-Decoder Design",
+            "definition": "An architectural pattern where an encoder processes input and a decoder generates output, often used in sequence-to-sequence models."
+        },
+        {
+            "term": "Training Steps",
+            "definition": "The number of iterations performed during the training process."
+        },
+        {
+            "term": "Classifier-Free Guidance",
+            "definition": "A training technique used to improve the quality and controllability of generated samples."
+        },
+        {
+            "term": "Attn",
+            "definition": "Abbreviation for 'Attention', a mechanism used in neural networks to weigh the importance of different parts of the input."
+        },
+        {
+            "term": "MLP",
+            "definition": "Multilayer Perceptron, a type of feedforward neural network."
+        }
+    ]
+}

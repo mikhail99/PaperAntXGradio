@@ -43,13 +43,16 @@ class MermaidSignature(dspy.Signature):
     )
 
 class ImplementationBlueprintSignature(dspy.Signature):
-    """From a paper's title, abstract, and a key section, generate a concise implementation blueprint."""
+    """From a paper's title, abstract, a key section, and its domain dictionary, generate a concise implementation blueprint."""
 
     title = dspy.InputField(
         desc="The title of the scientific paper."
     )
     abstract = dspy.InputField(
         desc="The abstract of the scientific paper."
+    )
+    domain_dictionary = dspy.InputField(
+        desc="A JSON string of terms and definitions relevant to the paper section."
     )
     paper_section = dspy.InputField(
         desc="A key section of the paper (e.g., Introduction or Methodology) that describes the core contribution."

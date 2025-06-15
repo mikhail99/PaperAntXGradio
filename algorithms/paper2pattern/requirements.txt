@@ -1,0 +1,7 @@
+dspy-ai
+beautifulsoup4
+ollama
+torch
+transformers
+sentence-transformers
+pydantic 

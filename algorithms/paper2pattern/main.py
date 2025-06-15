@@ -5,6 +5,7 @@ import dspy
 
 from src.dspy_config import configure_dspy
 from src.modules import DictionaryExtractor, BlueprintExtractor, ImportanceAssessor
+from src.html_section_splitter import html_section_splitting
 
 def find_section_content(sections, title_keyword):
     """Finds the content of the first section that contains a keyword in its title."""
@@ -105,6 +106,7 @@ def run_blueprint_extraction(paper_id, sections):
     output_dir = os.path.join("outputs", paper_id)
     blueprint_path = os.path.join(output_dir, "blueprint.json")
     importance_path = os.path.join(output_dir, "importance.json")
+    dictionary_path = os.path.join(output_dir, "dictionary.json")
 
     # Load importance data
     if not os.path.exists(importance_path):
@@ -116,6 +118,17 @@ def run_blueprint_extraction(paper_id, sections):
         importance_map = {item['section_title']: item['is_important'] for item in importance_data}
     except (json.JSONDecodeError, FileNotFoundError):
         print(f"Error: Could not load or parse importance data from {importance_path}. Please run the 'assess' process first.")
+        return
+
+    # Load domain dictionary data
+    if not os.path.exists(dictionary_path):
+        print(f"Error: Domain dictionary not found at {dictionary_path}. Please run the 'dictionary' process first.")
+        return
+    try:
+        with open(dictionary_path, 'r') as f:
+            full_dictionary_by_section = json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        print(f"Error: Could not load or parse domain dictionary from {dictionary_path}. Please run 'dictionary' process first.")
         return
 
     # Load existing blueprints if the file exists
@@ -158,11 +171,16 @@ def run_blueprint_extraction(paper_id, sections):
             print(f"Skipping short section: '{section_title}'")
             continue
         
+        # Get the domain dictionary for this section
+        section_dictionary = full_dictionary_by_section.get(section_title, [])
+        section_dictionary_str = json.dumps(section_dictionary) if section_dictionary else "{}"
+
         print(f"Processing section: '{section_title}'...")
         result = extractor(
             title=paper_title,
             abstract=abstract_content,
-            paper_section=section_content
+            paper_section=section_content,
+            domain_dictionary=section_dictionary_str
         )
         
         full_blueprint.append({
@@ -281,9 +299,14 @@ if __name__ == '__main__':
     parser.add_argument(
         "process_type", 
         type=str, 
-        choices=['dictionary', 'blueprint', 'assess'],
-        help="The type of extraction to perform: 'dictionary', 'blueprint', or 'assess'."
+        choices=['dictionary', 'blueprint', 'assess', 'split'],
+        help="The type of processing to perform: 'split', 'assess', 'dictionary', or 'blueprint'."
     )
     args = parser.parse_args()
     
-    main(args.paper_id, args.process_type)
+    # The 'split' process is special as it doesn't need pre-loaded sections or dspy config
+    if args.process_type == 'split':
+        print(f"Starting HTML section splitting for paper: {args.paper_id}")
+        html_section_splitting(args.paper_id)
+    else:
+        main(args.paper_id, args.process_type)

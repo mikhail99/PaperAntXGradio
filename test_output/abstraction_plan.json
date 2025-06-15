@@ -1,0 +1,422 @@
+{
+  "abstraction_planning_results": {
+    "raw_abstractions": [
+      {
+        "name": "transformer_abstract",
+        "type": "architecture",
+        "description": "Transformer architecture with attention mechanism",
+        "confidence": 0.95,
+        "detection_method": "hybrid",
+        "section_source": "Abstract",
+        "keywords": [
+          "transformer"
+        ],
+        "context": "...ng. Our method uses deep learning techniques with transformer architecture.",
+        "metadata": {
+          "line_number": null
+        }
+      },
+      {
+        "name": "cnn_methodology",
+        "type": "architecture",
+        "description": "Convolutional Neural Network architecture",
+        "confidence": 0.9,
+        "detection_method": "hybrid",
+        "section_source": "Methodology",
+        "keywords": [
+          "cnn"
+        ],
+        "context": "...matrix operations\nStep 2: Feature extraction with CNN layers\nStep 3: Attention mechanism for sequence p...",
+        "metadata": {
+          "line_number": null
+        }
+      },
+      {
+        "name": "deep_learning_abstract",
+        "type": "method",
+        "description": "Deep learning methodology for feature extraction",
+        "confidence": 0.85,
+        "detection_method": "hybrid",
+        "section_source": "Abstract",
+        "keywords": [
+          "deep learning"
+        ],
+        "context": "...ork approach for data processing. Our method uses deep learning techniques with transformer architecture.",
+        "metadata": {
+          "line_number": null
+        }
+      },
+      {
+        "name": "attention_methodology",
+        "type": "technique",
+        "description": "Attention mechanism for sequence processing",
+        "confidence": 0.85,
+        "detection_method": "hybrid",
+        "section_source": "Methodology",
+        "keywords": [
+          "attention"
+        ],
+        "context": "...tep 2: Feature extraction with CNN layers\nStep 3: Attention mechanism for sequence processing\nThe algorithm c...",
+        "metadata": {
+          "line_number": null
+        }
+      },
+      {
+        "name": "algorithm_from_Methodology",
+        "type": "algorithm",
+        "description": "Detected algorithm. involving: cnn, complexity, step 1, algorithm, step 3. Context: Step 1: Data preprocessing using matrix operations...",
+        "confidence": 0.8,
+        "detection_method": "hybrid",
+        "section_source": "Methodology",
+        "keywords": [
+          "cnn",
+          "complexity",
+          "step 1",
+          "algorithm",
+          "step 3",
+          "step 2"
+        ],
+        "context": "Step 1: Data preprocessing using matrix operations; Step 2: Feature extraction with CNN layers; Step 2: Feature extraction with CNN layers",
+        "metadata": {
+          "line_number": null
+        }
+      },
+      {
+        "name": "workflow_from_Methodology",
+        "type": "workflow",
+        "description": "Detected workflow. involving: step 2, step 1, sequence, step 3. Context: Step 1: Data preprocessing using matrix operations...",
+        "confidence": 0.8,
+        "detection_method": "hybrid",
+        "section_source": "Methodology",
+        "keywords": [
+          "step 2",
+          "step 1",
+          "sequence",
+          "step 3"
+        ],
+        "context": "Step 1: Data preprocessing using matrix operations; Step 2: Feature extraction with CNN layers; Step 3: Attention mechanism for sequence processing",
+        "metadata": {
+          "line_number": null
+        }
+      },
+      {
+        "name": "matrix_operations_methodology",
+        "type": "method",
+        "description": "Matrix operations for data transformation",
+        "confidence": 0.75,
+        "detection_method": "hybrid",
+        "section_source": "Methodology",
+        "keywords": [
+          "matrix operations"
+        ],
+        "context": "Step 1: Data preprocessing using matrix operations\nStep 2: Feature extraction with CNN layers\nStep 3...",
+        "metadata": {
+          "line_number": null
+        }
+      },
+      {
+        "name": "algorithm_from_Abstract",
+        "type": "algorithm",
+        "description": "Detected algorithm. involving: transformer, neural network, deep learning. Context: This paper presents a novel neural network approach for data processing. Our method uses deep learni...",
+        "confidence": 0.6000000000000001,
+        "detection_method": "rule-based",
+        "section_source": "Abstract",
+        "keywords": [
+          "transformer",
+          "neural network",
+          "deep learning"
+        ],
+        "context": "This paper presents a novel neural network approach for data processing. Our method uses deep learning techniques with transformer architecture.",
+        "metadata": {
+          "line_number": null
+        }
+      },
+      {
+        "name": "technique_from_Abstract",
+        "type": "technique",
+        "description": "Detected technique. involving: method, approach. Context: This paper presents a novel neural network approach for data processing. Our method uses deep learni...",
+        "confidence": 0.4,
+        "detection_method": "rule-based",
+        "section_source": "Abstract",
+        "keywords": [
+          "method",
+          "approach"
+        ],
+        "context": "This paper presents a novel neural network approach for data processing. Our method uses deep learning techniques with transformer architecture.",
+        "metadata": {
+          "line_number": null
+        }
+      }
+    ],
+    "categorized_abstractions": [
+      {
+        "abstraction": {
+          "name": "transformer_abstract",
+          "type": "architecture",
+          "description": "Transformer architecture with attention mechanism",
+          "confidence": 0.95,
+          "detection_method": "hybrid",
+          "section_source": "Abstract",
+          "keywords": [
+            "transformer"
+          ],
+          "context": "...ng. Our method uses deep learning techniques with transformer architecture.",
+          "metadata": {
+            "line_number": null
+          }
+        },
+        "category": "Neural Architecture",
+        "subcategory": "Network Design",
+        "importance_score": 1.0,
+        "relationships": [
+          "algorithm_from_Abstract"
+        ],
+        "implementation_complexity": "high"
+      },
+      {
+        "abstraction": {
+          "name": "cnn_methodology",
+          "type": "architecture",
+          "description": "Convolutional Neural Network architecture",
+          "confidence": 0.9,
+          "detection_method": "hybrid",
+          "section_source": "Methodology",
+          "keywords": [
+            "cnn"
+          ],
+          "context": "...matrix operations\nStep 2: Feature extraction with CNN layers\nStep 3: Attention mechanism for sequence p...",
+          "metadata": {
+            "line_number": null
+          }
+        },
+        "category": "Neural Architecture",
+        "subcategory": "Network Design",
+        "importance_score": 1.0,
+        "relationships": [
+          "algorithm_from_Methodology"
+        ],
+        "implementation_complexity": "high"
+      },
+      {
+        "abstraction": {
+          "name": "algorithm_from_Methodology",
+          "type": "algorithm",
+          "description": "Detected algorithm. involving: cnn, complexity, step 1, algorithm, step 3. Context: Step 1: Data preprocessing using matrix operations...",
+          "confidence": 0.8,
+          "detection_method": "hybrid",
+          "section_source": "Methodology",
+          "keywords": [
+            "cnn",
+            "complexity",
+            "step 1",
+            "algorithm",
+            "step 3",
+            "step 2"
+          ],
+          "context": "Step 1: Data preprocessing using matrix operations; Step 2: Feature extraction with CNN layers; Step 2: Feature extraction with CNN layers",
+          "metadata": {
+            "line_number": null
+          }
+        },
+        "category": "Computational",
+        "subcategory": "General Algorithm",
+        "importance_score": 1.0,
+        "relationships": [
+          "cnn_methodology",
+          "workflow_from_Methodology"
+        ],
+        "implementation_complexity": "medium"
+      },
+      {
+        "abstraction": {
+          "name": "deep_learning_abstract",
+          "type": "method",
+          "description": "Deep learning methodology for feature extraction",
+          "confidence": 0.85,
+          "detection_method": "hybrid",
+          "section_source": "Abstract",
+          "keywords": [
+            "deep learning"
+          ],
+          "context": "...ork approach for data processing. Our method uses deep learning techniques with transformer architecture.",
+          "metadata": {
+            "line_number": null
+          }
+        },
+        "category": "Methodology",
+        "subcategory": "General Method",
+        "importance_score": 0.95,
+        "relationships": [
+          "algorithm_from_Abstract"
+        ],
+        "implementation_complexity": "high"
+      },
+      {
+        "abstraction": {
+          "name": "attention_methodology",
+          "type": "technique",
+          "description": "Attention mechanism for sequence processing",
+          "confidence": 0.85,
+          "detection_method": "hybrid",
+          "section_source": "Methodology",
+          "keywords": [
+            "attention"
+          ],
+          "context": "...tep 2: Feature extraction with CNN layers\nStep 3: Attention mechanism for sequence processing\nThe algorithm c...",
+          "metadata": {
+            "line_number": null
+          }
+        },
+        "category": "Implementation",
+        "subcategory": "Technical Approach",
+        "importance_score": 0.95,
+        "relationships": [],
+        "implementation_complexity": "medium"
+      },
+      {
+        "abstraction": {
+          "name": "workflow_from_Methodology",
+          "type": "workflow",
+          "description": "Detected workflow. involving: step 2, step 1, sequence, step 3. Context: Step 1: Data preprocessing using matrix operations...",
+          "confidence": 0.8,
+          "detection_method": "hybrid",
+          "section_source": "Methodology",
+          "keywords": [
+            "step 2",
+            "step 1",
+            "sequence",
+            "step 3"
+          ],
+          "context": "Step 1: Data preprocessing using matrix operations; Step 2: Feature extraction with CNN layers; Step 3: Attention mechanism for sequence processing",
+          "metadata": {
+            "line_number": null
+          }
+        },
+        "category": "Process",
+        "subcategory": "Workflow Design",
+        "importance_score": 0.9,
+        "relationships": [
+          "algorithm_from_Methodology"
+        ],
+        "implementation_complexity": "low"
+      },
+      {
+        "abstraction": {
+          "name": "matrix_operations_methodology",
+          "type": "method",
+          "description": "Matrix operations for data transformation",
+          "confidence": 0.75,
+          "detection_method": "hybrid",
+          "section_source": "Methodology",
+          "keywords": [
+            "matrix operations"
+          ],
+          "context": "Step 1: Data preprocessing using matrix operations\nStep 2: Feature extraction with CNN layers\nStep 3...",
+          "metadata": {
+            "line_number": null
+          }
+        },
+        "category": "Methodology",
+        "subcategory": "General Method",
+        "importance_score": 0.85,
+        "relationships": [],
+        "implementation_complexity": "low"
+      },
+      {
+        "abstraction": {
+          "name": "algorithm_from_Abstract",
+          "type": "algorithm",
+          "description": "Detected algorithm. involving: transformer, neural network, deep learning. Context: This paper presents a novel neural network approach for data processing. Our method uses deep learni...",
+          "confidence": 0.6000000000000001,
+          "detection_method": "rule-based",
+          "section_source": "Abstract",
+          "keywords": [
+            "transformer",
+            "neural network",
+            "deep learning"
+          ],
+          "context": "This paper presents a novel neural network approach for data processing. Our method uses deep learning techniques with transformer architecture.",
+          "metadata": {
+            "line_number": null
+          }
+        },
+        "category": "Computational",
+        "subcategory": "General Algorithm",
+        "importance_score": 0.8,
+        "relationships": [
+          "transformer_abstract",
+          "deep_learning_abstract"
+        ],
+        "implementation_complexity": "high"
+      },
+      {
+        "abstraction": {
+          "name": "technique_from_Abstract",
+          "type": "technique",
+          "description": "Detected technique. involving: method, approach. Context: This paper presents a novel neural network approach for data processing. Our method uses deep learni...",
+          "confidence": 0.4,
+          "detection_method": "rule-based",
+          "section_source": "Abstract",
+          "keywords": [
+            "method",
+            "approach"
+          ],
+          "context": "This paper presents a novel neural network approach for data processing. Our method uses deep learning techniques with transformer architecture.",
+          "metadata": {
+            "line_number": null
+          }
+        },
+        "category": "Implementation",
+        "subcategory": "Technical Approach",
+        "importance_score": 0.5,
+        "relationships": [],
+        "implementation_complexity": "low"
+      }
+    ],
+    "abstraction_summary": {
+      "total_categorized": 9,
+      "type_distribution": {
+        "architecture": 2,
+        "algorithm": 2,
+        "method": 2,
+        "technique": 2,
+        "workflow": 1
+      },
+      "category_distribution": {
+        "Neural Architecture": 2,
+        "Computational": 2,
+        "Methodology": 2,
+        "Implementation": 2,
+        "Process": 1
+      },
+      "complexity_distribution": {
+        "low": 3,
+        "medium": 2,
+        "high": 4
+      },
+      "average_importance": 0.8833333333333333
+    },
+    "detection_metadata": {
+      "detection_method": "hybrid",
+      "total_found": 9,
+      "sections_analyzed": 2
+    }
+  },
+  "previous_planning": {
+    "selected_sections": [
+      {
+        "title": "Abstract",
+        "content": "This paper presents a novel neural network approach for data processing. Our method uses deep learning techniques with transformer architecture.",
+        "section_type": "abstract"
+      },
+      {
+        "title": "Methodology",
+        "content": "Step 1: Data preprocessing using matrix operations\nStep 2: Feature extraction with CNN layers\nStep 3: Attention mechanism for sequence processing\nThe algorithm complexity is O(n log n) for the preprocessing phase.",
+        "section_type": "methodology"
+      }
+    ],
+    "planning_summary": {
+      "sections_selected": 2
+    }
+  }
+}

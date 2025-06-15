@@ -45,7 +45,7 @@ This document outlines the development steps for the paper pattern extraction pr
 
 - [x] **Create DSPy Module:** In `/src/modules.py`, create a `DictionaryExtractor(dspy.Module)` that uses `dspy.ChainOfThought` with the `DomainDictionarySignature`.
 
-- [ ] **Update Main Script:** Modify `main.py` to:
+- [x] **Update Main Script:** Modify `main.py` to:
     1. Take a paper ID as an argument.
     2. Load the paper's "Methodology" section from `/outputs/[paper_id]/sections.json`.
     3. Pass the section to the `DictionaryExtractor`.
