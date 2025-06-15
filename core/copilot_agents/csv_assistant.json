@@ -1,0 +1,67 @@
+{
+  "name": "CSV Assistant",
+  "description": "An assistant that can load and query data from CSV files on the local filesystem.",
+  "model_prompt": "You are a helpful assistant with access to tools for reading and analyzing CSV files. When asked about a file, first use the `load_csv` tool with the provided file path. Then use the other available tools to answer questions about the data. Always check the headers and summary first to understand the data structure before attempting to query it.",
+  "mcp_info": {
+    "server_id": "managed_csv",
+    "tools": [
+      {
+        "name": "load_csv",
+        "description": "Loads a CSV file from the local filesystem into memory for querying. Expands user home directory `~`.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "file_path": {
+              "type": "string",
+              "description": "The local path to the CSV file (e.g., '~/Downloads/data.csv')."
+            }
+          },
+          "required": ["file_path"]
+        }
+      },
+      {
+        "name": "get_csv_headers",
+        "description": "Returns the column headers of the currently loaded CSV file as a comma-separated string.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "show_head",
+        "description": "Displays the first few rows of the loaded CSV file.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "rows": {
+              "type": "integer",
+              "description": "The number of rows to display from the top of the file. Defaults to 5."
+            }
+          }
+        }
+      },
+      {
+        "name": "get_summary",
+        "description": "Provides a summary of the loaded CSV file, including column data types, non-null counts, and descriptive statistics for numerical columns.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "query_data",
+        "description": "Queries the loaded CSV data using a pandas query expression. Example: 'Age > 30', '`Country` == \"USA\" and `Salary` > 50000'. Column names with spaces or special characters should be enclosed in backticks ``.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query_expression": {
+              "type": "string",
+              "description": "A string containing the pandas query expression."
+            }
+          },
+          "required": ["query_expression"]
+        }
+      }
+    ]
+  }
+}
