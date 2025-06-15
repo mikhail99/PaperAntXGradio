@@ -33,20 +33,30 @@ class MCPServerManager:
             raise e
 
     def _discover_managed_servers(self) -> Dict[str, Dict[str, Any]]:
+        """Dynamically discovers MCP server scripts in the 'mcp_servers' directory."""
         servers_dir = os.path.join(os.path.dirname(__file__), 'mcp_servers')
-        calculator_script = os.path.join(servers_dir, 'calculator_server.py')
-        csv_script = os.path.join(servers_dir, 'csv_server.py')
+        discovered_servers: Dict[str, Dict[str, Any]] = {}
+        
+        if not os.path.isdir(servers_dir):
+            print(f"Warning: MCP servers directory not found at '{servers_dir}'")
+            return {}
 
-        return {
-            "managed_calculator": {
-                "command": sys.executable,
-                "args": [calculator_script],
-            },
-            "managed_csv": {
-                "command": sys.executable,
-                "args": [csv_script],
-            }
-        }
+        print("Discovering managed MCP servers...")
+        for filename in os.listdir(servers_dir):
+            if filename.endswith(".py") and not filename.startswith("__"):
+                # e.g., 'calculator_server.py' -> 'calculator_server'
+                server_name = os.path.splitext(filename)[0]
+                # e.g., 'calculator_server' -> 'managed_calculator'
+                server_id = f"managed_{server_name.replace('_server', '')}"
+                script_path = os.path.join(servers_dir, filename)
+
+                discovered_servers[server_id] = {
+                    "command": sys.executable,
+                    "args": [script_path],
+                }
+                print(f"  - Discovered '{server_id}' -> {script_path}")
+        
+        return discovered_servers
 
     async def get_session(self, server_id: str) -> Optional[ClientSession]:
         if server_id in self.active_sessions:
