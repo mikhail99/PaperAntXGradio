@@ -15,16 +15,6 @@ CHROMA_DB_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "1_library
 COLLECTION_NAME = "HuggingFaceDailyPapers"
 
 
-def check_and_log_gpu_usage():
-    """Checks for GPU availability and logs the information."""
-    try:
-        import torch
-        if torch.cuda.is_available():
-            print(f"GPU detected. Using '{torch.cuda.get_device_name(0)}' for embeddings.")
-        else:
-            print("No GPU detected. Using CPU for embeddings.")
-    except ImportError:
-        print("PyTorch not found. Embeddings will be computed on CPU by default.")
 
 
 def get_paper_entries_from_json(json_path):
@@ -144,7 +134,6 @@ def main():
     print(f"Ensuring ChromaDB output directory exists at: {CHROMA_DB_DIR}")
     os.makedirs(CHROMA_DB_DIR, exist_ok=True)
     
-    check_and_log_gpu_usage()
 
     manager = CollectionsManager(persist_directory=CHROMA_DB_DIR)
 

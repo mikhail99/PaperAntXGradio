@@ -215,6 +215,13 @@ class CollectionsManager:
         self.collections[collection_id] = collection
         return collection
 
+    def get_collection_by_name(self, name: str) -> Optional[Collection]:
+        """Finds and returns a collection by its name from the in-memory cache."""
+        for collection in self.collections.values():
+            if collection.name == name:
+                return collection
+        return None
+
     def update_collection(
         self, collection_id: str, name: Optional[str] = None, description: Optional[str] = None
     ) -> Optional[Collection]:
