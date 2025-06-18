@@ -12,7 +12,7 @@ from core.collections_manager import CollectionsManager
 
 # --- Global PaperQA Configuration (base settings) ---
 
-llm_model = "ollama/gemma3:27b"
+llm_model = "ollama/gemma3:4b"
 embedding_model = "ollama/nomic-embed-text:latest"
 
 my_settings = get_local_llm_settings(llm_model, embedding_model)

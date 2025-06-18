@@ -1,10 +1,12 @@
 import gradio as gr
 from core.collections_manager import CollectionsManager
 from core.proposal_agent_service import ProposalAgentService
+from core.analysis_storage_service import AnalysisStorageService
 
 # --- Initialize Services ---
 collections_manager = CollectionsManager()
 proposal_agent_service = ProposalAgentService()
+analysis_storage_service = AnalysisStorageService()
 
 # --- UI Helper Functions ---
 def get_collection_options():
@@ -51,10 +53,10 @@ def create_research_plan_tab(state):
                     literature_summary_md = gr.Markdown("*(Waiting for agent...)*")
                 
                 with gr.Accordion("2. Proposed Research Plan", open=False) as plan_accordion:
-                    research_plan_md = gr.Markdown("*(Waiting for agent...)*")
+                    research_plan_md = gr.Markdown("*(Waiting for literature review...)*")
 
                 with gr.Accordion("3. Novelty Assessment", open=False) as novelty_accordion:
-                    novelty_assessment_md = gr.Markdown("*(Waiting for agent...)*")
+                    novelty_assessment_md = gr.Markdown("*(Waiting for plan...)*")
 
                 with gr.Accordion("4. Full Research Proposal", open=False) as proposal_accordion:
                     final_proposal_md = gr.Markdown("*(Waiting for agent...)*", elem_id="final-proposal-card")
@@ -83,6 +85,7 @@ def create_research_plan_tab(state):
                 proposal_accordion: gr.update(open=False),
             }
 
+            final_state_for_saving = None
             try:
                 # Stream results from the agent
                 async for step_data in proposal_agent_service.run_agent(collection_id, research_direction):
@@ -132,12 +135,21 @@ def create_research_plan_tab(state):
                         updates[status_md] = "Status: **Novelty Assessed.** Writing full proposal..."
                         updates[proposal_accordion] = gr.update(open=True)
 
+                    if current_state:
+                        final_state_for_saving = current_state
+                    
                     if "markdown_proposal" in current_state:
                         updates[final_proposal_md] = current_state["markdown_proposal"]
                         updates[status_md] = "Status: **Proposal Complete!**"
                     
                     if updates:
                         yield updates
+
+                # After the loop finishes successfully, save the final analysis
+                if final_state_for_saving:
+                    analysis_storage_service.save_analysis(
+                        collection_id, research_direction, final_state_for_saving
+                    )
 
             except Exception as e:
                 import traceback

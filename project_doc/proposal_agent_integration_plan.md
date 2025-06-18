@@ -18,6 +18,10 @@ This document outlines the steps to integrate the `proposal_agent` into the Grad
 
 - [x] **Change Output to Markdown:** In `core/proposal_agent/prompts.py`, update the `write_proposal_prompt` to request output in Markdown format instead of LaTeX.
 
+- [x] **Automatic Saving of Analysis Results:**
+    - [x] Implemented `AnalysisStorageService` to save each agent run as a JSON file in `data/collections/<collection_name>/research_proposals/`.
+    - [x] Saving is automatic after each successful agent run.
+
 ## Phase 2: Frontend Integration
 
 - [x] **Update Research Plan UI:** Modify `ui/ui_research_plan.py`.

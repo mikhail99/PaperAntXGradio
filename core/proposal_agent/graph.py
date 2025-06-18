@@ -12,8 +12,8 @@ MAX_REFLECTION_PAPERS = 10
 MAX_LIT_REVIEW_LOOPS = 2
 
 # --- LLM and Tool Initialization ---
-json_llm = ChatOllama(model="gemma3:27b", format="json", temperature=0.0)
-text_llm = ChatOllama(model="gemma3:27b", temperature=0.0) # For text generation
+json_llm = ChatOllama(model="gemma3:4b", format="json", temperature=0.0)
+text_llm = ChatOllama(model="gemma3:4b", temperature=0.0) # For text generation
 paper_search_tool = PaperSearchTool()
 paperqa_service = PaperQAService()
 
