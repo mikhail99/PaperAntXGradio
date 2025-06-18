@@ -128,6 +128,7 @@ def formulate_plan(state: ProposalAgentState) -> ProposalAgentState:
 
 def assess_plan_novelty(state: ProposalAgentState) -> ProposalAgentState:
     current_reflection_count = state.get('reflection_papers_count', 0)
+    collection_id = state.get('collection_id')
     
     if current_reflection_count >= MAX_REFLECTION_PAPERS:
         print(f"Reflection paper limit reached ({MAX_REFLECTION_PAPERS}). Assuming plan is novel.")
@@ -139,7 +140,11 @@ def assess_plan_novelty(state: ProposalAgentState) -> ProposalAgentState:
         )
         return {"novelty_assessment": assessment}
     
-    similar_papers = paper_search_tool.find_similar_papers(state['research_plan'], n_results=min(5, MAX_REFLECTION_PAPERS - current_reflection_count))
+    similar_papers = paper_search_tool.find_similar_papers(
+        state['research_plan'], 
+        n_results=min(5, MAX_REFLECTION_PAPERS - current_reflection_count),
+        collection_id=collection_id
+    )
     prompt = ChatPromptTemplate.from_template(prompts.assess_novelty_prompt)
     chain = prompt | json_llm.with_structured_output(NoveltyAssessment)
     assessment = chain.invoke({

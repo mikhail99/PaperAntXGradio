@@ -75,3 +75,6 @@ class ProposalAgentState(TypedDict, total=False):
     # Paper Limits
     research_papers_count: int
     reflection_papers_count: int
+    
+    # Collection
+    collection_id: str

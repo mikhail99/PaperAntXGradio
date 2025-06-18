@@ -7,10 +7,19 @@ class PaperSearchTool:
     def __init__(self, db_path="chroma_db", collection_name="papers"):
         self.client = chromadb.PersistentClient(path=db_path)
         self.embedding_function = embedding_functions.DefaultEmbeddingFunction()
+        self.default_collection_name = collection_name
         self.collection = self.client.get_or_create_collection(
             name=collection_name,
             embedding_function=self.embedding_function
         )
+
+    def get_collection(self, collection_id=None):
+        if collection_id:
+            return self.client.get_or_create_collection(
+                name=collection_id,
+                embedding_function=self.embedding_function
+            )
+        return self.collection
 
     def search_arxiv(self, query: str, max_results: int = 5) -> list[Paper]:
         """Searches ArXiv for papers and adds them to the ChromaDB."""
@@ -52,9 +61,10 @@ class PaperSearchTool:
 
         return papers_to_add
 
-    def get_relevant_papers_from_db(self, query: str, n_results: int = 10) -> list[Paper]:
+    def get_relevant_papers_from_db(self, query: str, n_results: int = 10, collection_id=None) -> list[Paper]:
         """Retrieves relevant papers from ChromaDB based on a query."""
-        results = self.collection.query(
+        collection = self.get_collection(collection_id)
+        results = collection.query(
             query_texts=[query],
             n_results=n_results
         )
@@ -73,9 +83,10 @@ class PaperSearchTool:
         
         return papers
 
-    def find_similar_papers(self, research_plan: str, n_results: int = 3) -> list[dict]:
+    def find_similar_papers(self, research_plan: str, n_results: int = 3, collection_id=None) -> list[dict]:
         """Queries ChromaDB to find papers similar to the research plan."""
-        results = self.collection.query(
+        collection = self.get_collection(collection_id)
+        results = collection.query(
             query_texts=[research_plan],
             n_results=n_results
         )

@@ -4,15 +4,17 @@ This document outlines the steps to integrate the `proposal_agent` into the Grad
 
 ## Phase 1: Backend Refactoring
 
-- [ ] **Create `ProposalAgentService`:** Create a new service file, `core/proposal_agent_service.py`, to manage the proposal generation graph and its execution. This will be similar to `core/paperqa_service.py`.
+- [x] **Create `ProposalAgentService`:** Create a new service file, `core/proposal_agent_service.py`, to manage the proposal generation graph and its execution. This will be similar to `core/paperqa_service.py`.
 
 - [ ] **Adapt Agent for `PaperQA`:** Modify the `core/proposal_agent/graph.py`.
     - [ ] Replace the `search_and_summarize` node's logic. It should now call our existing `paperqa_service.query_documents` using the user-selected collection and research direction.
+    - [ ] Limit the number of literature review loops (e.g., 3). Stop early if the reflection step determines the literature is sufficient.
+    - [ ] After each loop, accumulate the new summary with previous ones. The accumulated summary is always passed to the next reflection step.
     - [ ] The result from `paperqa_service` will directly become the `literature_summary` in the agent's state.
     - [ ] Remove all ArXiv-related search logic. The agent must only use the specified collection.
 
-- [ ] **Adjust Novelty Assessment:** Modify the `assess_plan_novelty` node in `core/proposal_agent/graph.py`.
-    - [ ] Update its paper search to be limited to the user-selected collection, instead of searching globally. The `PaperSearchTool` might need a small adjustment to accept a collection name.
+- [x] **Adjust Novelty Assessment:** Modify the `assess_plan_novelty` node in `core/proposal_agent/graph.py`.
+    - [x] Update its paper search to be limited to the user-selected collection, instead of searching globally. The `PaperSearchTool` might need a small adjustment to accept a collection name.
 
 - [x] **Change Output to Markdown:** In `core/proposal_agent/prompts.py`, update the `write_proposal_prompt` to request output in Markdown format instead of LaTeX.
 
