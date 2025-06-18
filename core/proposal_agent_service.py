@@ -39,6 +39,9 @@ class ProposalAgentService:
             "papers": [],
             "research_papers_count": 0,
             "reflection_papers_count": 0,
+            "literature_summaries": [],
+            "literature_review_loops": 0,
+            "query_index": 0,
             # We pass the service instance so nodes can use it
             "services": {"paperqa": self.paperqa_service}
         }

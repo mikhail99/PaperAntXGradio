@@ -85,21 +85,45 @@ def create_research_plan_tab(state):
 
             try:
                 # Stream results from the agent
-                async for step_result in proposal_agent_service.run_agent(collection_id, research_direction):
+                async for step_data in proposal_agent_service.run_agent(collection_id, research_direction):
                     updates = {}
-                    
-                    if "literature_summary" in step_result:
-                        updates[literature_summary_md] = step_result["literature_summary"]
-                        updates[status_md] = "Status: **Literature Review Complete.** Formulating research plan..."
-                        updates[plan_accordion] = gr.update(open=True)
+                    step_name = step_data.get("step")
+                    current_state = step_data.get("state")
 
-                    if "research_plan" in step_result:
-                        updates[research_plan_md] = step_result["research_plan"]
+                    if not step_name or not current_state:
+                        continue
+
+                    # Update status with the current running step
+                    if step_name == "run_single_query":
+                        # The 'query_index' in the state is the *next* index to be run.
+                        # So, the one we just finished is index - 1.
+                        finished_query_index = current_state.get('query_index', 1) -1
+                        total_queries = len(current_state.get('search_queries', []))
+                        updates[status_md] = f"Status: **Query {finished_query_index + 1}/{total_queries} complete.**"
+                    else:
+                        updates[status_md] = f"Status: **Running: {step_name}...**"
+                    
+                    if "literature_summary" in current_state:
+                        # Show all queries and their results as markdown
+                        queries = current_state.get("search_queries", [])
+                        summaries = current_state.get("literature_summaries", [])
+                        summary_md = ""
+                        for i, (q, s) in enumerate(zip(queries, summaries), 1):
+                            summary_md += f"**Query {i}:** {q}\n\n**Result:**\n{s}\n\n---\n\n"
+                        updates[literature_summary_md] = summary_md if summary_md else current_state["literature_summary"]
+                        if step_name == "run_single_query":
+                            updates[summary_accordion] = gr.update(open=True)
+                        elif step_name == "reflect_on_summary":
+                            updates[status_md] = "Status: **Literature Review Complete.** Formulating research plan..."
+                            updates[plan_accordion] = gr.update(open=True)
+
+                    if "research_plan" in current_state:
+                        updates[research_plan_md] = current_state["research_plan"]
                         updates[status_md] = "Status: **Research Plan Generated.** Assessing novelty..."
                         updates[novelty_accordion] = gr.update(open=True)
 
-                    if "novelty_assessment" in step_result:
-                        assessment = step_result["novelty_assessment"]
+                    if "novelty_assessment" in current_state:
+                        assessment = current_state["novelty_assessment"]
                         novelty_text = f"**Is the plan novel?** {assessment.is_novel}\n\n"
                         novelty_text += f"**Justification:**\n{assessment.justification}\n\n"
                         if assessment.similar_papers:
@@ -108,8 +132,8 @@ def create_research_plan_tab(state):
                         updates[status_md] = "Status: **Novelty Assessed.** Writing full proposal..."
                         updates[proposal_accordion] = gr.update(open=True)
 
-                    if "markdown_proposal" in step_result:
-                        updates[final_proposal_md] = step_result["markdown_proposal"]
+                    if "markdown_proposal" in current_state:
+                        updates[final_proposal_md] = current_state["markdown_proposal"]
                         updates[status_md] = "Status: **Proposal Complete!**"
                     
                     if updates:

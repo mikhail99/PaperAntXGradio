@@ -33,9 +33,10 @@ Papers:
 
 # 3. Reflection on Literature
 reflect_on_literature_prompt = """
-You are an expert research strategist. Analyze the provided literature summary to identify knowledge gaps.
-Based on the summary, determine if the information is sufficient to formulate a novel research plan.
-If not, generate a list of follow-up questions to address the gaps.
+You are a critical and efficient research strategist. Your goal is to formulate a research plan with the minimum necessary information.
+Analyze the provided literature summary. Determine if it provides a reasonable basis for a research plan.
+Only if the summary is clearly and critically insufficient, set "is_sufficient" to false and generate a maximum of 2-3 essential follow-up questions.
+Otherwise, set "is_sufficient" to true.
 
 Format the output as a JSON object with the keys "is_sufficient", "knowledge_gap", and "follow_up_queries".
 
@@ -56,10 +57,9 @@ Literature Summary: {literature_summary}
 # 5. Novelty Assessment
 assess_novelty_prompt = """
 You are a critical reviewer. Assess the novelty of the proposed research plan by comparing it against the summaries of similar papers found in the database.
-Is the plan sufficiently different to be considered novel?
-Provide a justification for your assessment and a list of URLs for the most similar papers.
+Is the plan sufficiently different to be considered novel? Provide a justification for your assessment.
 
-Format the output as a JSON object with the keys "is_novel", "justification", and "similar_papers".
+Format the output as a JSON object with the keys "is_novel" and "justification".
 
 Proposed Research Plan:
 {research_plan}

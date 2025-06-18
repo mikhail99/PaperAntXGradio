@@ -27,8 +27,8 @@ class Reflection(BaseModel):
 class NoveltyAssessment(BaseModel):
     """Assessment of the research plan's novelty."""
     is_novel: bool = Field(description="Is the research plan novel enough to proceed?")
-    similar_papers: list[str] = Field(description="List of URLs for similar papers found.")
     justification: str = Field(description="Justification for the novelty assessment.")
+    similar_papers: list[dict] = Field(default=[], description="List of similar papers found, with title and url.")
 
 class ExperimentProtocol(BaseModel):
     """Detailed plan for experiments."""
@@ -53,8 +53,11 @@ class ProposalAgentState(TypedDict, total=False):
     # Core Research
     topic: str
     search_queries: Annotated[list[str], operator.add]
+    query_index: int
     papers: Annotated[list[Paper], operator.add]
     literature_summary: str
+    literature_summaries: list[str]
+    literature_review_loops: int
     reflection: Reflection
 
     # Planning & Design

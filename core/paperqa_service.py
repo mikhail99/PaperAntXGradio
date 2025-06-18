@@ -8,6 +8,7 @@ from typing import Dict, Any
 
 from paperqa import Docs
 from core.utils import get_local_llm_settings
+from core.collections_manager import CollectionsManager
 
 # --- Global PaperQA Configuration (base settings) ---
 
@@ -15,20 +16,28 @@ llm_model = "ollama/gemma3:27b"
 embedding_model = "ollama/nomic-embed-text:latest"
 
 my_settings = get_local_llm_settings(llm_model, embedding_model)
+collections_manager = CollectionsManager()
 
 
 class PaperQAService:
     async def query_documents(
-        self, collection_name: str, question: str
+        self, collection_id: str, question: str
     ) -> Dict[str, Any]:
         """
         Queries a pre-built PaperQA cache for a given collection.
         It loads a Docs object from a pickle file and uses it to answer a question.
         Returns a dictionary with 'answer_text', 'formatted_evidence', and 'error'.
         """
-        if not collection_name:
-            error_msg = "No collection name provided."
+        if not collection_id:
+            error_msg = "No collection ID provided."
             return {"answer_text": "", "formatted_evidence": "", "error": error_msg}
+        
+        collection = collections_manager.get_collection(collection_id)
+        if not collection:
+            error_msg = f"Collection with ID '{collection_id}' not found."
+            return {"answer_text": "", "formatted_evidence": "", "error": error_msg}
+        
+        collection_name = collection.name
 
         try:
             # 1. Define path to the cache file
