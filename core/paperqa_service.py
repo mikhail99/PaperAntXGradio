@@ -44,6 +44,17 @@ class PaperQAService:
                 docs = pickle.load(f)
             print(f"Cache loaded successfully. Contains {len(docs.docs)} documents.")
 
+            # Create a map from citation string to its dockey for debugging
+            citation_to_dockey_map = {}
+            for text_obj in docs.texts:
+                try:
+                    doc = text_obj.doc
+                    citation_text = doc.citation
+                    dockey = doc.dockey
+                    citation_to_dockey_map[citation_text] = dockey
+                except Exception as e:
+                    print(f"Could not get dockey for a document: {e}")
+
             # 3. Ask the question using the loaded docs and settings
             print(f"Querying PaperQA with: '{question}'")
             response = await docs.aquery(question, settings=my_settings)
@@ -51,6 +62,17 @@ class PaperQAService:
 
             answer_text = response.formatted_answer if response and response.formatted_answer else "No answer found by PaperQA."
             
+            # HACK: The formatted_answer sometimes includes the question. We strip it here.
+            # More robust version that removes the first line if it's identical to the question.
+            lines = answer_text.strip().split('\\n')
+            if lines and lines[0].strip() == question.strip():
+                answer_text = '\\n'.join(lines[1:]).strip()
+
+            # The previous attempt to add links was buggy. Reverting to the simpler version for now.
+            # # Replace plain-text citations with citations + dockey
+            # for citation, dockey in citation_to_dockey_map.items():
+            #     answer_text = answer_text.replace(citation, f"{citation} [ID: {dockey}]")
+
             return {"answer_text": answer_text, "formatted_evidence": "", "error": None}
 
         except Exception as e:

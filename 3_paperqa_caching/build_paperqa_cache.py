@@ -79,8 +79,10 @@ async def build_cache_from_collection(collection_name: str):
             print(f"\nWarning: PDF for article '{article.title}' not found at {pdf_path}. Skipping.")
             continue
             
-        docname = format_docname(article)
+        # The citation is the human-readable part
         citation = format_docname(article)
+        # The docname will be the machine-readable arXiv ID
+        docname = article.id
         
         # The settings object carries all configuration.
         await docs.aadd(path=str(pdf_path), docname=docname, citation=citation, settings=llm_settings)
