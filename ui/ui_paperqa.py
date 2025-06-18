@@ -1,21 +1,14 @@
 import gradio as gr
 from core.collections_manager import CollectionsManager
-from core.data_models import Article # Assuming Article is used or can be imported
-# import time # No longer needed
-import asyncio
-# import tempfile # No longer needed directly in UI
-# from pathlib import Path # No longer needed directly in UI
 import os
 import html
 
-# from paperqa import Docs, Settings # No longer needed directly in UI
-# from paperqa.settings import AgentSettings, IndexSettings # No longer needed directly in UI
-from core.paperqa_service import PaperQAService # Import the new service
+from core.paperqa_service import PaperQAService
 
 # --- Initialize PaperQA Service ---
 paperqa_service = PaperQAService()
 
-manager = CollectionsManager(persist_directory="data/chroma_db_store")
+manager = CollectionsManager()
 
 # Helper to get collection options and descriptions
 def get_collection_options():
@@ -25,16 +18,13 @@ def get_collection_description(collection_id):
     c = manager.get_collection(collection_id)
     return c.description if c else ""
 
-def extract_pdf_path_from_notes(notes: str) -> str | None:
-    if not notes:
-        return None
-    lines = notes.splitlines()
-    for line in lines:
-        if line.startswith("Local PDF: "):
-            return line.replace("Local PDF: ", "").strip()
-    return None
-
 def create_paperqa_tab(state):
+    if not manager:
+        with gr.TabItem("📝 PaperQA"):
+            gr.Markdown("## Collections Not Found")
+            gr.Markdown(f"Could not load collections from the specified directory: `{CHROMA_DB_DIR}`.")
+        return
+
     with gr.TabItem("📝 PaperQA"):
         with gr.Row():
             with gr.Column():
@@ -84,34 +74,15 @@ def create_paperqa_tab(state):
                     history_radio: gr.update(choices=history_radio.choices, value=selected_history_value.value)
                 }
                 return
+            collection_name = collection.name
 
-            # Build a list of Article objects with valid local PDFs
-            valid_articles = []
-            for article in collection.articles.values():
-                pdf_path = extract_pdf_path_from_notes(getattr(article, 'notes', ''))
-                if pdf_path and os.path.exists(pdf_path):
-                    valid_articles.append(article)
-                elif pdf_path:
-                    print(f"Warning: PDF path found ({pdf_path}) but file does not exist.")
-
-            if not valid_articles:
-                yield {
-                    loading_md: gr.update(visible=False),
-                    answer_card: "No valid PDF documents with existing files found in the selected collection.",
-                    history_state: current_history,
-                    selected_history_value: selected_history_value.value,
-                    history_radio: gr.update(choices=history_radio.choices, value=selected_history_value.value)
-                }
-                return
-            
             yield {
-                loading_md: gr.update(value="_Processing with PaperQA... This may take a while._", visible=True),
+                loading_md: gr.update(value="_Querying PaperQA cache..._", visible=True),
                 answer_card: "Processing..."
             }
 
-            # Pass the list of Article objects to the service
-            service_response = await paperqa_service.query_documents(valid_articles[:10], question) # HACK: Limit to 10 articles
-            print("HACK: Limit to 10 articles")
+            # Pass the collection name to the service
+            service_response = await paperqa_service.query_documents(collection_name, question)
             
             new_history_list = list(current_history)
             answer_text_to_store = ""

@@ -4,9 +4,10 @@ from core.article_manager import ArticleManager
 from core.data_models import Collection, Article
 import html
 from typing import List
+import os
 
 # Initialize managers (in a real app, you might want to pass these in or use a singleton)
-manager = CollectionsManager(persist_directory="data/chroma_db_store")
+manager = CollectionsManager()
 print("All collections:", manager.get_all_collections())
 article_manager = ArticleManager(manager)
 
@@ -31,8 +32,8 @@ def articles_table_value(articles_list: List[Article]):
             "": "",
         }.get(a.rating, "")
         tags_text = ", ".join(a.tags)
-        data.append([a.title, ", ".join(a.authors), rating_icon, tags_text])
-    headers = ["Title", "Authors", "Rating", "Tags"]
+        data.append([a.title, a.abstract, rating_icon, tags_text])
+    headers = ["Title", "Abstract", "Rating", "Tags"]
     return {"data": data, "headers": headers}
 
 def get_articles_for_collection(collection_id):
@@ -49,7 +50,7 @@ def create_articles_tab(state):
     initial_desc_val = "<i>No collection selected.</i>"
     initial_tag_choices_val = []
     initial_articles_df_data_rows = []
-    df_headers = ["Title", "Authors", "Rating", "Tags"]
+    df_headers = ["Title", "Abstract", "Rating", "Tags"]
 
     global filtered_articles # Ensure we can set this global on initial load
 
@@ -67,7 +68,7 @@ def create_articles_tab(state):
                 "favorite": "★", "accept": "✓", "reject": "✗", None: "", "": "",
             }.get(a.rating, "")
             tags_text = ", ".join(a.tags)
-            initial_articles_df_data_rows.append([a.title, ", ".join(a.authors), rating_icon, tags_text])
+            initial_articles_df_data_rows.append([a.title, a.abstract, rating_icon, tags_text])
     else:
         filtered_articles = [] # Initialize if no collection
 

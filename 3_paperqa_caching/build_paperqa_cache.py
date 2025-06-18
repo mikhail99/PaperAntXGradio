@@ -18,6 +18,7 @@ from core.utils import get_local_llm_settings
 # --- Configuration ---
 LLM_MODEL = "ollama/gemma3:4b"
 EMBEDDING_MODEL = "ollama/nomic-embed-text:latest"
+SOURCE_CHROMA_DB_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "1_library_chroma_db_output")
 
 # --- Helper Functions ---
 
@@ -48,26 +49,18 @@ async def build_cache_from_collection(collection_name: str):
     # 1. Define paths based on the collection name
     base_collection_path = Path("data/collections") / collection_name
     pdf_folder = base_collection_path / "pdfs"
-    chroma_db_path = base_collection_path / "chromadb"
     # The cache is now a single pickle file
     cache_file_path = base_collection_path / "paperqa_cache.pkl"
 
-    if not chroma_db_path.exists() or not pdf_folder.exists():
-        print(f"Error: Required directories 'chromadb' or 'pdfs' not found in {base_collection_path}")
-        return
+
 
     # Create the output directory if it doesn't exist
     cache_file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # 2. Load articles from the collection's ChromaDB
-    print(f"Loading article metadata from: {chroma_db_path}")
-    manager = CollectionsManager(persist_directory=str(chroma_db_path))
-    collection = manager.get_collection_by_name(collection_name)
-    if not collection:
-        print(f"Error: Collection '{collection_name}' not found in the database.")
-        return
-        
-    articles: List[Article] = list(collection.articles.values())
+
+    chromadb_manager = CollectionsManager(persist_directory=SOURCE_CHROMA_DB_DIR)
+    chrimadb_collection = chromadb_manager.get_collection_by_name(collection_name)    
+    articles: List[Article] = list(chrimadb_collection.articles.values())
     if not articles:
         print("No articles found in the collection. Nothing to cache.")
         return
@@ -104,5 +97,5 @@ async def build_cache_from_collection(collection_name: str):
 
 if __name__ == "__main__":
     # Build a PaperQA cache for a curated collection using its ChromaDB for metadata.
-    collection_name = "LLM_Resoning_Agents_Papers"
+    collection_name = "LLM_Reasoning_Agents"
     asyncio.run(build_cache_from_collection(collection_name)) 

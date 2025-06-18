@@ -86,10 +86,8 @@ def main(new_collection_name: str, new_collection_description: str):
 
     # 1. Set up all necessary paths and directories for the new collection
     new_collection_dir = os.path.join(DEST_BASE_PATH, new_collection_name)
-    new_chroma_db_dir = os.path.join(new_collection_dir, "chromadb")
     new_pdfs_dir = os.path.join(new_collection_dir, "pdfs")
 
-    os.makedirs(new_chroma_db_dir, exist_ok=True)
     os.makedirs(new_pdfs_dir, exist_ok=True)
     print(f"Created directories for new collection at: {new_collection_dir}")
 
@@ -145,15 +143,14 @@ def main(new_collection_name: str, new_collection_description: str):
         return
 
     # 6. Create the new collection and add the filtered papers
-    dest_manager = CollectionsManager(persist_directory=new_chroma_db_dir)
-    new_collection = dest_manager.create_collection(
+    new_collection = source_manager.create_collection(
         name=new_collection_name,
         description=new_collection_description
     )
 
     for article in tqdm(relevant_articles, desc="Adding papers to new collection"):
         try:
-            dest_manager.add_article(new_collection.id, article)
+            source_manager.add_article(new_collection.id, article)
         except Exception as e:
             print(f"Failed to add article {article.id} to new collection: {e}")
 
@@ -165,11 +162,27 @@ def main(new_collection_name: str, new_collection_description: str):
         download_pdf(article.id, new_pdfs_dir)
 
     print("Script finished successfully.")
+    
+    print("\n--- Debugging Information ---")
+    all_collections_summary = source_manager.get_all_collections()
+    if not all_collections_summary:
+        print("No collections found.")
+    else:
+        print(f"Found {len(all_collections_summary)} collections:")
+        for coll_summary in all_collections_summary:
+            collection = source_manager.get_collection(coll_summary.id)
+            if collection:
+                num_articles = len(collection.articles)
+                print(f"- Collection: '{collection.name}' contains {num_articles} articles.")
+            else:
+                 print(f"- Collection: '{coll_summary.name}' could not be loaded.")
+    print("---------------------------\n")
+
 
 
 if __name__ == "__main__":
     # --- Define the new collection here ---
-    collection_name = "LLM_Resoning_Agents_Papers"
+    collection_name = "LLM_Reasoning_Agents"
     collection_description = "Papers about LLM reasoning agents, coding agents, problem solving agents, etc."
     
     print(f"Initializing collection '{collection_name}'...")

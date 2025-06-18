@@ -6,10 +6,10 @@ from datetime import datetime
 
 from .data_models import Collection, Tag, Article
 from .chroma_service import ChromaService
-
+SOURCE_CHROMA_DB_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "1_library_chroma_db_output")
 
 class CollectionsManager:
-    def __init__(self, persist_directory: str = "data/chroma_db_store") -> None:
+    def __init__(self, persist_directory: str = SOURCE_CHROMA_DB_DIR) -> None:
         """Initialize CollectionsManager with ChromaDB backend"""
         self.chroma_service = ChromaService(persist_directory=persist_directory)
         self.collections: Dict[str, Collection] = {}

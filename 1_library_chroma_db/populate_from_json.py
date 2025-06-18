@@ -114,16 +114,14 @@ def add_papers_to_collection(manager: CollectionsManager, collection_id: str):
         )
         articles_to_add.append(article)
 
-    if articles_to_add:
-        print(f"Adding {len(articles_to_add)} new papers to collection '{collection.name}'...")
-        for article_obj in tqdm(articles_to_add, desc="Adding papers to collection"):
-            try:
-                manager.add_article(collection_id, article_obj)
-            except Exception as e:
-                print(f"Failed to add article {article_obj.id} ({article_obj.title}): {e}")
+    articles_to_add = articles_to_add[:100]
+    print(f"Adding {len(articles_to_add)} new papers to collection '{collection.name}'...")
+    for article_obj in tqdm(articles_to_add, desc="Adding papers to collection"):
+        try:
+            manager.add_article(collection_id, article_obj)
+        except Exception as e:
+            print(f"Failed to add article {article_obj.id} ({article_obj.title}): {e}")
         print(f"Finished adding {len(articles_to_add)} new papers.")
-    else:
-        print("No new papers to add (all papers from JSON already exist in the collection).")
     
     if skipped_count > 0:
         print(f"Skipped {skipped_count} papers that already exist in the collection.")
@@ -137,6 +135,7 @@ def main():
 
     manager = CollectionsManager(persist_directory=CHROMA_DB_DIR)
 
+    
     collection = create_or_get_collection(
         manager,
         COLLECTION_NAME,
@@ -147,8 +146,27 @@ def main():
         add_papers_to_collection(manager, collection.id)
     else:
         print(f"Could not create or get collection '{COLLECTION_NAME}'. Aborting.")
-    
+   
+ 
     print("Finished processing papers for ChromaDB.")
+
+
+    
+    print("\n--- Debugging Information ---")
+    all_collections_summary = manager.get_all_collections()
+    if not all_collections_summary:
+        print("No collections found.")
+    else:
+        print(f"Found {len(all_collections_summary)} collections:")
+        for coll_summary in all_collections_summary:
+            collection = manager.get_collection(coll_summary.id)
+            if collection:
+                num_articles = len(collection.articles)
+                print(f"- Collection: '{collection.name}' contains {num_articles} articles.")
+            else:
+                 print(f"- Collection: '{coll_summary.name}' could not be loaded.")
+    print("---------------------------\n")
+
 
 if __name__ == "__main__":
     main() 

@@ -1,106 +1,57 @@
 # core/paperqa_service.py
 import asyncio
-import tempfile
+import pickle
 from pathlib import Path
 import os
-import html
-from typing import List, Dict, Any, Tuple
+from typing import Dict, Any
 
-from paperqa import Docs, Settings
-from paperqa.settings import AgentSettings, IndexSettings
-from core.data_models import Article
-from time import sleep
+from paperqa import Docs
+from core.utils import get_local_llm_settings
+
 # --- Global PaperQA Configuration (base settings) ---
 
 llm_model = "ollama/gemma3:27b"
 embedding_model = "ollama/nomic-embed-text:latest"
 
-from core.utils import get_local_llm_settings
-my_settings=get_local_llm_settings(llm_model, embedding_model)
+my_settings = get_local_llm_settings(llm_model, embedding_model)
 
-
-def extract_pdf_path_from_notes(notes: str) -> str | None:
-    if not notes:
-        return None
-    lines = notes.splitlines()
-    for line in lines:
-        if line.startswith("Local PDF: "):
-            return line.replace("Local PDF: ", "").strip()
-    return None
 
 class PaperQAService:
-
     async def query_documents(
-        self, articles: List[Article], question: str
+        self, collection_name: str, question: str
     ) -> Dict[str, Any]:
         """
-        Processes a list of Article objects with PaperQA and answers a question.
-        Each Article should have a local PDF path (in notes or a dedicated field).
+        Queries a pre-built PaperQA cache for a given collection.
+        It loads a Docs object from a pickle file and uses it to answer a question.
         Returns a dictionary with 'answer_text', 'formatted_evidence', and 'error'.
         """
-        if not articles:
-            return {"answer_text": "No articles provided.", "formatted_evidence": "", "error": None}
+        if not collection_name:
+            error_msg = "No collection name provided."
+            return {"answer_text": "", "formatted_evidence": "", "error": error_msg}
 
         try:
-            docs = Docs()
-            print(f"Adding {len(articles)} articles to PaperQA Docs...")
-            added_count = 0
-            for i, article in enumerate(articles):
-                pdf_path = extract_pdf_path_from_notes(getattr(article, 'notes', ''))
-                if not pdf_path or not os.path.exists(pdf_path):
-                    print(f"File does not exist, skipping: {pdf_path}")
-                    continue
-                arxiv_id = getattr(article, 'id', None)
-                if arxiv_id and arxiv_id.endswith(('v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9')):
-                    arxiv_id = arxiv_id[:-2]
-                # Compose metadata and summary
-                metadata = {
-                    "arxiv_id": arxiv_id,
-                    "title": getattr(article, 'title', None),
-                    "authors": getattr(article, 'authors', None),
-                    "tags": getattr(article, 'tags', None),
-                    "abstract": getattr(article, 'abstract', None),
-                    "publication_date": str(getattr(article, 'publication_date', '')),
-                }
-                summary = article.abstract or article.title or ""
-                doi= f"10.48550/arXiv.{arxiv_id}"
-                try:
-                    await docs.aadd(
-                        pdf_path,
-                        citation=f"arXiv:{arxiv_id}",
-                        docname=f"arXiv:{arxiv_id}",
-                        dockey=f"arXiv:{arxiv_id}",
-                        title=article.title,
-                        authors=article.authors,
-                        doi=doi,
-                        settings=my_settings,
-                    )
-                    print(f"Document added: {pdf_path}")
-                    
-                    sleep(10)
-                    print("HACK")
-                    added_count += 1
-                except Exception as e:
-                    print(f"Error adding document {pdf_path}: {str(e)}")
-                    continue
+            # 1. Define path to the cache file
+            cache_file_path = Path("data/collections") / collection_name / "paperqa_cache.pkl"
 
-            if added_count == 0:
-                return {"answer_text": "No valid PDF documents could be processed.", "formatted_evidence": "", "error": None}
+            if not cache_file_path.exists():
+                error_msg = f"Cache file not found at {cache_file_path}. Please build the cache for this collection first."
+                print(error_msg)
+                return {"answer_text": "", "formatted_evidence": "", "error": error_msg}
 
+            # 2. Load the Docs object from the pickle file
+            print(f"Loading PaperQA cache from: {cache_file_path}")
+            with open(cache_file_path, "rb") as f:
+                docs = pickle.load(f)
+            print(f"Cache loaded successfully. Contains {len(docs.docs)} documents.")
+
+            # 3. Ask the question using the loaded docs and settings
             print(f"Querying PaperQA with: '{question}'")
             response = await docs.aquery(question, settings=my_settings)
-
             print("PaperQA query finished.")
 
             answer_text = response.formatted_answer if response and response.formatted_answer else "No answer found by PaperQA."
-            
-            contexts_md = ""
-            #if response and response.contexts:
-            #    for i, ctx in enumerate(response.contexts):
-            #        contexts_md += f"\n{i + 1}. **Source:** {ctx.citation} (Score: {ctx.score:.2f})\n"
-            #        contexts_md += f"> {ctx.context}\n\n" # Raw context
-            #else:
-            #    contexts_md += "_No specific evidence found by PaperQA._\n"
+            # Context formatting is commented out as in the original file
+            contexts_md = response.context
             
             return {"answer_text": answer_text, "formatted_evidence": contexts_md, "error": None}
 
