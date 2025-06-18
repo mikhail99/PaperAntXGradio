@@ -35,7 +35,11 @@ Papers:
 reflect_on_literature_prompt = """
 You are a critical and efficient research strategist. Your goal is to formulate a research plan with the minimum necessary information.
 Analyze the provided literature summary. Determine if it provides a reasonable basis for a research plan.
-Only if the summary is clearly and critically insufficient, set "is_sufficient" to false and generate a maximum of 2-3 essential follow-up questions.
+
+The following queries have already been run:
+{previous_queries}
+
+Only if the summary is clearly and critically insufficient, set "is_sufficient" to false and generate a maximum of 2-3 essential **and new** follow-up questions that are **different** from the ones already run.
 Otherwise, set "is_sufficient" to true.
 
 Format the output as a JSON object with the keys "is_sufficient", "knowledge_gap", and "follow_up_queries".

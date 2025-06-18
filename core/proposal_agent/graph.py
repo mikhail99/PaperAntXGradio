@@ -12,8 +12,8 @@ MAX_REFLECTION_PAPERS = 10
 MAX_LIT_REVIEW_LOOPS = 2
 
 # --- LLM and Tool Initialization ---
-json_llm = ChatOllama(model="gemma3:4b", format="json", temperature=0.0)
-text_llm = ChatOllama(model="gemma3:4b", temperature=0.0) # For text generation
+json_llm = ChatOllama(model="gemma3:4b", format="json", temperature=0.7)
+text_llm = ChatOllama(model="gemma3:4b", temperature=0.7) # For text generation
 paper_search_tool = PaperSearchTool()
 paperqa_service = PaperQAService()
 
@@ -73,7 +73,10 @@ def reflect_on_summary(state: ProposalAgentState) -> ProposalAgentState:
     
     prompt = ChatPromptTemplate.from_template(prompts.reflect_on_literature_prompt)
     chain = prompt | json_llm.with_structured_output(Reflection)
-    reflection = chain.invoke({"literature_summary": state['literature_summary']})
+    reflection = chain.invoke({
+        "literature_summary": state['literature_summary'],
+        "previous_queries": state['search_queries']
+    })
     
     # Reset query index for the next potential research loop
     return {
@@ -174,10 +177,22 @@ def should_run_query(state: ProposalAgentState) -> str:
 
 def should_continue_research(state: ProposalAgentState) -> str:
     loops = state.get('literature_review_loops', 0)
+    
+    # Stop condition 1: literature is sufficient
     if state['reflection'].is_sufficient:
         return "formulate_plan"
+        
+    # Stop condition 2: max loops reached
     if loops >= MAX_LIT_REVIEW_LOOPS:
+        print(f"--- Max literature review loops ({MAX_LIT_REVIEW_LOOPS}) reached. Proceeding to formulate plan. ---")
         return "formulate_plan"
+
+    # Stop condition 3: not sufficient, but no follow-up queries to run.
+    if not state['reflection'].follow_up_queries:
+        print("--- Literature review is not sufficient, but no follow-up queries were provided. Proceeding to formulate plan. ---")
+        return "formulate_plan"
+        
+    # Otherwise, continue research
     return "plan_followup_research"
 
 def is_plan_novel(state: ProposalAgentState) -> str:
