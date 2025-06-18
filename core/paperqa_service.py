@@ -3,6 +3,7 @@ import asyncio
 import pickle
 from pathlib import Path
 import os
+import re
 from typing import Dict, Any
 
 from paperqa import Docs
@@ -44,16 +45,32 @@ class PaperQAService:
                 docs = pickle.load(f)
             print(f"Cache loaded successfully. Contains {len(docs.docs)} documents.")
 
-            # Create a map from citation string to its dockey for debugging
-            citation_to_dockey_map = {}
+            # Create a map from citation string to its link
+            citation_to_link_map = {}
             for text_obj in docs.texts:
                 try:
                     doc = text_obj.doc
                     citation_text = doc.citation
-                    dockey = doc.dockey
-                    citation_to_dockey_map[citation_text] = dockey
+                    link = None
+
+                    # 1. Try to find a direct URL in the citation string
+                    url_match = re.search(r'https?://[^\s,]+', citation_text)
+                    if url_match:
+                        # Clean trailing characters like periods or commas
+                        link = url_match.group(0).rstrip('.,')
+
+                    # 2. If no URL, try to find an arXiv ID
+                    elif 'arXiv:' in citation_text:
+                        arxiv_match = re.search(r'arXiv:(\d{4}\.\d{4,5})', citation_text)
+                        if arxiv_match:
+                            arxiv_id = arxiv_match.group(1)
+                            link = f"https://arxiv.org/abs/{arxiv_id}"
+
+                    # 3. If a link was found, add it to the map for replacement later
+                    if link:
+                        citation_to_link_map[citation_text] = link
                 except Exception as e:
-                    print(f"Could not get dockey for a document: {e}")
+                    print(f"Could not create link for a document: {e}")
 
             # 3. Ask the question using the loaded docs and settings
             print(f"Querying PaperQA with: '{question}'")
@@ -63,15 +80,36 @@ class PaperQAService:
             answer_text = response.formatted_answer if response and response.formatted_answer else "No answer found by PaperQA."
             
             # HACK: The formatted_answer sometimes includes the question. We strip it here.
-            # More robust version that removes the first line if it's identical to the question.
-            lines = answer_text.strip().split('\\n')
-            if lines and lines[0].strip() == question.strip():
-                answer_text = '\\n'.join(lines[1:]).strip()
+            # Final attempt: A more aggressive regex approach to remove the question
+            stripped_question = re.escape(question.strip())
+            # This regex looks for an optional "Question: " prefix and then the question text,
+            # ignoring leading/trailing whitespace and case. It removes the entire line.
+            pattern = re.compile(r"^\s*(Question:\s*)?" + stripped_question + r"\s*$", re.IGNORECASE | re.MULTILINE)
+            answer_text = pattern.sub('', answer_text).strip()
 
-            # The previous attempt to add links was buggy. Reverting to the simpler version for now.
-            # # Replace plain-text citations with citations + dockey
-            # for citation, dockey in citation_to_dockey_map.items():
-            #     answer_text = answer_text.replace(citation, f"{citation} [ID: {dockey}]")
+            # --- Definitive Link Replacement: Two-Stage Find and Replace ---
+
+            # Stage 1: Find all potential citations in the text and map them to links
+            citations_to_replace = {}
+            for full_citation, link in citation_to_link_map.items():
+                # Extract author (everything before the first comma) and year for a more robust match
+                author_match = re.search(r'^([^,]+)', full_citation)
+                year_match = re.search(r'(\d{4})', full_citation)
+
+                if author_match and year_match:
+                    author = author_match.group(1).strip()
+                    year = year_match.group(1).strip()
+                    
+                    # Flexible regex to find citations like (Author et al., Year)
+                    citation_pattern = re.compile(f"\(.*?{re.escape(author)}[^)]*?{re.escape(year)}.*?\)")
+                    
+                    for match in citation_pattern.finditer(answer_text):
+                        # Store the exact text that was matched and its corresponding link
+                        citations_to_replace[match.group(0)] = link
+
+            # Stage 2: Replace the found citations with markdown links
+            for text, link in citations_to_replace.items():
+                answer_text = answer_text.replace(text, f"[{text}]({link})")
 
             return {"answer_text": answer_text, "formatted_evidence": "", "error": None}
 
