@@ -1,7 +1,6 @@
 import arxiv
 import chromadb
 from chromadb.utils import embedding_functions
-from slugify import slugify
 from proposal_agent.state import Paper
 
 class PaperSearchTool:

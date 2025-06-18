@@ -4,7 +4,7 @@ from ui.ui_collections import create_collections_tab
 from ui.ui_articles import create_articles_tab
 from ui.ui_copilot import create_copilot_tab
 from ui.ui_paperqa import create_paperqa_tab
-from ui.ui_mindmap import create_mindmap_tab
+from ui.ui_research_plan import create_research_plan_tab
 from ui.ui_library import create_library_tab
 from ui.custom_css import CUSTOM_CSS
 from core.article_manager import ArticleManager
@@ -28,7 +28,7 @@ def main():
         with gr.Tabs():
             create_articles_tab(state)
             create_paperqa_tab(state)
-            create_mindmap_tab(state)
+            create_research_plan_tab(state)
             create_copilot_tab(state, copilot_service)
             create_collections_tab(state)
             create_library_tab(state)
