@@ -63,7 +63,7 @@ class ProposalAgentState(TypedDict, total=False):
     experiment_protocol: ExperimentProtocol
 
     # Writing & Refinement
-    latex_proposal: str
+    markdown_proposal: str
     critique: ProposalCritique
     
     # Control Flow

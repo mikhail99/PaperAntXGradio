@@ -1,9 +1,9 @@
 from langgraph.graph import StateGraph, END, START
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
-from proposal_agent.state import ProposalAgentState, Reflection, NoveltyAssessment, ExperimentProtocol, ProposalCritique, QueryList
-from proposal_agent.tools import PaperSearchTool
-import proposal_agent.prompts as prompts
+from core.proposal_agent.state import ProposalAgentState, Reflection, NoveltyAssessment, ExperimentProtocol, ProposalCritique, QueryList
+from core.proposal_agent.tools import PaperSearchTool
+import core.proposal_agent.prompts as prompts
 
 # --- Agent Configuration ---
 MAX_RESEARCH_PAPERS = 30
@@ -167,12 +167,12 @@ def write_proposal(state: ProposalAgentState) -> ProposalAgentState:
         "research_plan": state['research_plan'],
         "experiment_protocol": state['experiment_protocol'].model_dump_json()
     })
-    return {"latex_proposal": proposal.content}
+    return {"markdown_proposal": proposal.content}
 
 def review_proposal(state: ProposalAgentState) -> ProposalAgentState:
     prompt = ChatPromptTemplate.from_template(prompts.review_proposal_prompt)
     chain = prompt | json_llm.with_structured_output(ProposalCritique)
-    critique = chain.invoke({"latex_proposal": state['latex_proposal']})
+    critique = chain.invoke({"markdown_proposal": state['markdown_proposal']})
     return {"critique": critique}
 
 def plan_followup_research(state: ProposalAgentState) -> ProposalAgentState:

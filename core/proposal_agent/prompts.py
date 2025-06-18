@@ -81,7 +81,7 @@ Research Plan:
 
 # 7. Proposal Writing
 write_proposal_prompt = """
-You are an automated scientific writer. Synthesize the following artifacts into a single, coherent, and professionally formatted research proposal in LaTeX.
+You are an automated scientific writer. Synthesize the following artifacts into a single, coherent, and professionally formatted research proposal in markdown.
 The proposal should have sections for Introduction, Related Work (from the literature summary), Proposed Method (from the research plan), and Experimental Setup (from the experiment protocol).
 
 Literature Summary:
@@ -96,11 +96,11 @@ Experiment Protocol:
 
 # 8. Proposal Review
 review_proposal_prompt = """
-You are a peer reviewer. Critically evaluate the generated LaTeX research proposal.
+You are a peer reviewer. Critically evaluate the generated markdown research proposal.
 Identify its strengths and weaknesses. Determine if a revision is required and provide specific, actionable suggestions for improvement.
 
 Format the output as a JSON object with the keys "strengths", "weaknesses", "revision_required", and "suggested_changes".
 
-LaTeX Proposal:
-{latex_proposal}
+Markdown Proposal:
+{markdown_proposal}
 """

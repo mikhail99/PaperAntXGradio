@@ -1,7 +1,7 @@
 import arxiv
 import chromadb
 from chromadb.utils import embedding_functions
-from proposal_agent.state import Paper
+from core.proposal_agent.state import Paper
 
 class PaperSearchTool:
     def __init__(self, db_path="chroma_db", collection_name="papers"):
