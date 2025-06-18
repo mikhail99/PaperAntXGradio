@@ -9,6 +9,15 @@ import os
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def get_local_llm_settings(llm_model, embedding_model) -> Settings:
+    # This is the prompt that was causing the question to be repeated.
+    # By defining our own, we can control the output format.
+    qa_prompt = (
+        "Answer the question '{question}' based on the provided context.\n"
+        "Cite the sources using the keys provided in the context.\n"
+        "If the context is insufficient, respond with 'I cannot answer this question based on the provided context.'\n\n"
+        "Context:\n{context}"
+    )
+
     local_llm_config = {
     "model_list": [
         {
@@ -27,7 +36,7 @@ def get_local_llm_settings(llm_model, embedding_model) -> Settings:
 
     my_settings=Settings(
         llm=llm_model,
-        prompts={'use_json': False},
+        prompts={'use_json': False, 'qa': qa_prompt},
         parsing={'use_doc_details': False},
         llm_config=local_llm_config,
         summary_llm=llm_model,

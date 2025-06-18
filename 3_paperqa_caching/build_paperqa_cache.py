@@ -80,9 +80,10 @@ async def build_cache_from_collection(collection_name: str):
             continue
             
         docname = format_docname(article)
+        citation = format_docname(article)
         
         # The settings object carries all configuration.
-        await docs.aadd(path=str(pdf_path), docname=docname, settings=llm_settings)
+        await docs.aadd(path=str(pdf_path), docname=docname, citation=citation, settings=llm_settings)
 
     # 5. Save the populated Docs object to a pickle file
     print(f"\nSaving populated cache to: {cache_file_path}")

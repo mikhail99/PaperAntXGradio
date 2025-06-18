@@ -50,10 +50,8 @@ class PaperQAService:
             print("PaperQA query finished.")
 
             answer_text = response.formatted_answer if response and response.formatted_answer else "No answer found by PaperQA."
-            # Context formatting is commented out as in the original file
-            contexts_md = response.context
             
-            return {"answer_text": answer_text, "formatted_evidence": contexts_md, "error": None}
+            return {"answer_text": answer_text, "formatted_evidence": "", "error": None}
 
         except Exception as e:
             error_message = f"Error during PaperQA processing: {str(e)}"
