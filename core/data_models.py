@@ -15,6 +15,7 @@ class Article(BaseModel):
     authors: List[str]
     abstract: str
     publication_date: Union[datetime, str]
+    url: Optional[str] = None
     tags: List[str] = []
     favorite: bool = False
     rating: Optional[str] = None  # "accept", "reject", or None

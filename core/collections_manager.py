@@ -45,6 +45,7 @@ class CollectionsManager:
             "citation_count": article.citation_count,
             "notes": article.notes,
             "abstract": article.abstract,
+            "url": article.url,
         }
 
     def metadata_to_article(self, article_id: str, metadata: Dict[str, Any], document: str = "") -> Article:
@@ -65,6 +66,7 @@ class CollectionsManager:
             authors=metadata.get("authors", []),
             abstract=abstract,
             publication_date=metadata.get("publication_date", datetime.now().isoformat()),
+            url=metadata.get("url"),
             tags=metadata.get("tags", []),
             favorite=metadata.get("favorite", False),
             rating=metadata.get("rating"),

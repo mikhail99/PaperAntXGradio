@@ -12,7 +12,7 @@ manager = CollectionsManager()
 
 # Helper to get collection options and descriptions
 def get_collection_options():
-    return [(c.name, c.id) for c in manager.get_all_collections() if not c.archived]
+    return [c.name for c in manager.get_all_collections() if not c.archived]
 
 def get_collection_description(collection_name):
     c = manager.get_collection(collection_name)

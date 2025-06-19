@@ -11,7 +11,7 @@ analysis_storage_service = AnalysisStorageService()
 # --- UI Helper Functions ---
 def get_collection_options():
     """Returns a list of (name, id) for active collections."""
-    return [(c.name, c.id) for c in collections_manager.get_all_collections() if not c.archived]
+    return [c.name for c in collections_manager.get_all_collections() if not c.archived]
 
 def get_collection_description(collection_name):
     """Gets the description of a collection by its ID."""

@@ -151,13 +151,17 @@ def assess_plan_novelty(state: ProposalAgentState) -> ProposalAgentState:
     # Get assessment from LLM
     prompt = ChatPromptTemplate.from_template(prompts.assess_novelty_prompt)
     chain = prompt | json_llm.with_structured_output(NoveltyAssessment)
+    
+    # Format the similar papers for the prompt string
+    similar_papers_str = "\n".join([f"- {p.title}: {p.url}" for p in similar_papers])
+    
     assessment = chain.invoke({
         "research_plan": latest_plan,
-        "similar_papers": "\n".join([f"- {p['title']}: {p['url']}" for p in similar_papers])
+        "similar_papers": similar_papers_str
     })
     
-    # Manually add the papers to the assessment object
-    assessment.similar_papers = similar_papers
+    # Manually add the papers to the assessment object as a list of dicts
+    assessment.similar_papers = [p.model_dump() for p in similar_papers]
     
     return {"novelty_assessment": [assessment]}
 '''
