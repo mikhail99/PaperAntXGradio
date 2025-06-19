@@ -31,27 +31,25 @@ class ProposalAgentService:
         Yields:
             A dictionary representing the current state of the agent's process.
         """
-        # Initial state for the graph
-        initial_state: ProposalAgentState = {
-            "messages": [("user", question)],
+        # Keep track of the full state as the agent runs
+        current_state = {
+            "topic": question,
             "collection_id": collection_id,
             "local_papers_only": local_papers_only,
-            "papers": [],
-            "research_papers_count": 0,
-            "reflection_papers_count": 0,
+            "search_queries": [],
             "literature_summaries": [],
-            "literature_review_loops": 0,
-            "query_index": 0,
-            # We pass the service instance so nodes can use it
-            "services": {"paperqa": self.paperqa_service}
+            "research_plan": [],
+            "novelty_assessment": []
         }
 
         # Stream the graph execution
-        async for step in self.graph.astream(initial_state):
+        async for step in self.graph.astream(current_state):
             # step is a dictionary where the key is the node name
             # and the value is the updated state.
             step_name = list(step.keys())[0]
-            current_state = step[step_name]
+            
+            # Merge the update into our current state
+            current_state.update(step[step_name])
             
             yield {
                 "step": step_name,

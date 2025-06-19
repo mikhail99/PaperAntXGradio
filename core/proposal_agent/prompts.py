@@ -1,22 +1,29 @@
 # Prompts for the Research Proposal Agent
 
 # 1. Query Generation
-generate_queries_prompt = """
-You are an expert at generating academic search queries.
-Based on the research topic "{topic}", generate a list of {num_queries} diverse and specific search queries for the ArXiv search engine.
-Format the output as a JSON object with a single key "queries" containing a list of strings.
+generate_query_prompt = """
+You are an expert at generating academic search queries. Your goal is to generate one novel query at a time to explore a research topic.
+Based on the research topic "{topic}", and the identified knowledge gap (if any), generate a single new search query for the ArXiv search engine. Avoid generating queries that are similar to the ones already tried.
+
+Research Topic: {topic}
+Identified Knowledge Gap: {knowledge_gap}
+Previously tried queries:
+{previous_queries}
+
+Your task is to generate the next query. 
+- If an "Identified Knowledge Gap" is provided, formulate a query that specifically addresses this gap.
+- If the knowledge gap is empty, generate a new, broader query based on the "Research Topic".
+- The query MUST be different from the "Previously tried queries".
+
+Format the output as a JSON object with a single key "query" containing the new query string.
 
 Example:
 Topic: "The impact of transformers on natural language processing"
+Knowledge Gap: "The performance of transformer models on low-resource languages is not well understood."
+Previously tried queries: ["transformer architecture in NLP", "self-attention mechanism for language models"]
 ```json
 {{
-    "queries": [
-        "transformer architecture in NLP",
-        "self-attention mechanism for language models",
-        "BERT and its variants performance",
-        "GPT-3 few-shot learning capabilities",
-        "efficient transformers for long sequences"
-    ]
+    "query": "transformer models for low-resource language translation"
 }}
 ```
 """

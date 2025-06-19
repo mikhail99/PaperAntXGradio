@@ -96,48 +96,60 @@ def create_research_plan_tab(state):
                     if not step_name or not current_state:
                         continue
 
-                    # Update status with the current running step
+                    # --- Status Updates ---
                     if step_name == "run_single_query":
-                        # The 'query_index' in the state is the *next* index to be run.
-                        # So, the one we just finished is index - 1.
-                        finished_query_index = current_state.get('query_index', 1) -1
-                        total_queries = len(current_state.get('search_queries', []))
-                        updates[status_md] = f"Status: **Query {finished_query_index + 1}/{total_queries} complete.**"
+                        query_count = len(current_state.get('search_queries', []))
+                        updates[status_md] = f"Status: **Query {query_count} complete.** Reflecting on summary..."
                     else:
                         updates[status_md] = f"Status: **Running: {step_name}...**"
-                    
-                    if "literature_summary" in current_state:
-                        # Show all queries and their results as markdown
+
+                    # --- Display Literature Review History ---
+                    if "literature_summaries" in current_state:
                         queries = current_state.get("search_queries", [])
                         summaries = current_state.get("literature_summaries", [])
                         summary_md = ""
                         for i, (q, s) in enumerate(zip(queries, summaries), 1):
-                            summary_md += f"**Query {i}:** {q}\n\n**Result:**\n{s}\n\n---\n\n"
-                        updates[literature_summary_md] = summary_md if summary_md else current_state["literature_summary"]
-                        if step_name == "run_single_query":
-                            updates[summary_accordion] = gr.update(open=True)
-                        elif step_name == "reflect_on_summary":
+                            summary_md += f"**Query {i}:** `{q}`\n\n**Result:**\n{s}\n\n---\n\n"
+                        updates[literature_summary_md] = summary_md if summary_md else "*(No summaries generated yet...)*"
+                        
+                        if step_name == "reflect_on_summary":
                             updates[status_md] = "Status: **Literature Review Complete.** Formulating research plan..."
                             updates[plan_accordion] = gr.update(open=True)
 
-                    if "research_plan" in current_state:
-                        updates[research_plan_md] = current_state["research_plan"]
-                        updates[status_md] = "Status: **Research Plan Generated.** Assessing novelty..."
+                    # --- Display Research Plan History ---
+                    if "research_plan" in current_state and current_state["research_plan"]:
+                        plans = current_state.get("research_plan", [])
+                        plan_md = ""
+                        for i, p in enumerate(plans, 1):
+                            plan_md += f"### Plan Attempt {i}\n\n{p}\n\n---\n\n"
+                        updates[research_plan_md] = plan_md
+                        updates[status_md] = f"Status: **Research Plan {len(plans)} Generated.** Assessing novelty..."
                         updates[novelty_accordion] = gr.update(open=True)
 
-                    if "novelty_assessment" in current_state:
-                        assessment = current_state["novelty_assessment"]
-                        novelty_text = f"**Is the plan novel?** {assessment.is_novel}\n\n"
-                        novelty_text += f"**Justification:**\n{assessment.justification}\n\n"
-                        if assessment.similar_papers:
-                            novelty_text += "**Similar Papers Found:**\n" + "\n".join(f"- {p.get('title', 'N/A')}" for p in assessment.similar_papers)
-                        updates[novelty_assessment_md] = novelty_text
-                        updates[status_md] = "Status: **Novelty Assessed.** Writing full proposal..."
-                        updates[proposal_accordion] = gr.update(open=True)
+                    # --- Display Novelty Assessment History ---
+                    if "novelty_assessment" in current_state and current_state["novelty_assessment"]:
+                        assessments = current_state.get("novelty_assessment", [])
+                        novelty_md = ""
+                        for i, assessment in enumerate(assessments, 1):
+                            novelty_md += f"### Assessment for Plan {i}\n\n"
+                            novelty_md += f"**Is the plan novel?** {assessment.is_novel}\n\n"
+                            novelty_md += f"**Justification:**\n{assessment.justification}\n\n"
+                            if assessment.similar_papers:
+                                novelty_md += "**Similar Papers Found:**\n" + "\n".join(f"- {p.get('title', 'N/A')}" for p in assessment.similar_papers)
+                            novelty_md += "\n\n---\n\n"
+                        updates[novelty_assessment_md] = novelty_md
+                        
+                        # Decide status based on latest assessment
+                        if assessments[-1].is_novel:
+                             updates[status_md] = f"Status: **Plan {len(assessments)} is Novel.** Process complete."
+                        else:
+                             updates[status_md] = f"Status: **Plan {len(assessments)} is Not Novel.** Generating a new query..."
+
 
                     if current_state:
                         final_state_for_saving = current_state
                     
+                    # This part is currently unreachable as per the new graph design, but left for future use
                     if "markdown_proposal" in current_state:
                         updates[final_proposal_md] = current_state["markdown_proposal"]
                         updates[status_md] = "Status: **Proposal Complete!**"
