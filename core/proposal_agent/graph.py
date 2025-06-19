@@ -2,14 +2,14 @@ from langgraph.graph import StateGraph, END, START
 from typing import Literal
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
-from core.proposal_agent.state import ProposalAgentState, SummaryReflection, NoveltyAssessment
+from core.proposal_agent.state import ProposalAgentState, SummaryReflection, NoveltyAssessment, SingleQuery
 from core.proposal_agent.tools import PaperSearchTool
 import core.proposal_agent.prompts as prompts
 from core.paperqa_service import PaperQAService
 
 # --- Agent Configuration ---
 
-MOCK_MODE = True # Set to True to run in mock mode without real API calls
+MOCK_MODE = False # Set to True to run in mock mode without real API calls
 
 MAX_LIT_REVIEW_LOOPS = 5
 MAX_NOVELTY_LOOPS = 5

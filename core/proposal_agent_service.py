@@ -47,9 +47,14 @@ class ProposalAgentService:
             # step is a dictionary where the key is the node name
             # and the value is the updated state.
             step_name = list(step.keys())[0]
+            update_diff = step[step_name]
             
-            # Merge the update into our current state
-            current_state.update(step[step_name])
+            # Manually merge the lists for accumulating fields
+            for key, value in update_diff.items():
+                if isinstance(value, list) and key in current_state:
+                    current_state[key].extend(value)
+                else:
+                    current_state[key] = value
             
             yield {
                 "step": step_name,
