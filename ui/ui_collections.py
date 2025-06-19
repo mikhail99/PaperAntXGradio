@@ -96,6 +96,6 @@ def create_collections_tab(state):
 
         # Bind callbacks
         create_btn.click(handle_create_collection, [name_box, desc_box, tags_box], [collections_df, status])
-        collections_df.select(handle_select_collection, None, [name_box, desc_box, tags_box, state["selected_collection_id"]])
-        update_btn.click(handle_update_collection, [state["selected_collection_id"], name_box, desc_box, tags_box], [collections_df, status])
-        archive_btn.click(handle_archive_collection, [state["selected_collection_id"]], [collections_df, status]) 
+        collections_df.select(handle_select_collection, None, [name_box, desc_box, tags_box, state["selected_collection_name"]])
+        update_btn.click(handle_update_collection, [state["selected_collection_name"], name_box, desc_box, tags_box], [collections_df, status])
+        archive_btn.click(handle_archive_collection, [state["selected_collection_name"]], [collections_df, status]) 

@@ -21,20 +21,20 @@ collections_manager = CollectionsManager()
 
 class PaperQAService:
     async def query_documents(
-        self, collection_id: str, question: str
+        self, collection_name: str, question: str
     ) -> Dict[str, Any]:
         """
         Queries a pre-built PaperQA cache for a given collection.
         It loads a Docs object from a pickle file and uses it to answer a question.
         Returns a dictionary with 'answer_text', 'formatted_evidence', and 'error'.
         """
-        if not collection_id:
-            error_msg = "No collection ID provided."
+        if not collection_name:
+            error_msg = "No collection name provided."
             return {"answer_text": "", "formatted_evidence": "", "error": error_msg}
         
-        collection = collections_manager.get_collection(collection_id)
+        collection = collections_manager.get_collection(collection_name)
         if not collection:
-            error_msg = f"Collection with ID '{collection_id}' not found."
+            error_msg = f"Collection with ID '{collection_name}' not found."
             return {"answer_text": "", "formatted_evidence": "", "error": error_msg}
         
         collection_name = collection.name

@@ -38,14 +38,14 @@ class AnalysisStorageService:
         # Assume other types are directly serializable
         return obj
 
-    def save_analysis(self, collection_id: str, research_direction: str, final_state: Dict[str, Any]):
+    def save_analysis(self, collection_name: str, research_direction: str, final_state: Dict[str, Any]):
         """
         Saves the final state of an agent analysis to a JSON file.
         The file is stored in a 'research_proposals' subdirectory of the collection's folder.
         """
-        collection = self.collections_manager.get_collection(collection_id)
+        collection = self.collections_manager.get_collection(collection_name)
         if not collection:
-            print(f"Error saving analysis: Collection with ID '{collection_id}' not found.")
+            print(f"Error saving analysis: Collection with name '{collection_name}' not found.")
             return
 
         try:

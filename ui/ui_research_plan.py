@@ -13,9 +13,9 @@ def get_collection_options():
     """Returns a list of (name, id) for active collections."""
     return [(c.name, c.id) for c in collections_manager.get_all_collections() if not c.archived]
 
-def get_collection_description(collection_id):
+def get_collection_description(collection_name):
     """Gets the description of a collection by its ID."""
-    c = collections_manager.get_collection(collection_id)
+    c = collections_manager.get_collection(collection_name)
     return c.description if c else ""
 
 # --- Gradio UI Definition ---
@@ -62,13 +62,13 @@ def create_research_plan_tab(state):
                     final_proposal_md = gr.Markdown("*(Waiting for agent...)*", elem_id="final-proposal-card")
         
         # --- Helper Functions for UI Updates ---
-        def update_collection_desc(collection_id):
-            desc = get_collection_description(collection_id)
+        def update_collection_desc(collection_name):
+            desc = get_collection_description(collection_name)
             return gr.update(value=desc or "<i>No description available.</i>")
 
-        async def handle_generate_proposal(collection_id, research_direction):
+        async def handle_generate_proposal(collection_name, research_direction):
             """Main handler to run the proposal agent and stream results to the UI."""
-            if not collection_id or not research_direction.strip():
+            if not collection_name or not research_direction.strip():
                 yield {status_md: gr.update(value="Status: **Error** - Please select a collection and enter a research direction.")}
                 return
 
@@ -88,7 +88,7 @@ def create_research_plan_tab(state):
             final_state_for_saving = None
             try:
                 # Stream results from the agent
-                async for step_data in proposal_agent_service.run_agent(collection_id, research_direction):
+                async for step_data in proposal_agent_service.run_agent(collection_name, research_direction):
                     updates = {}
                     step_name = step_data.get("step")
                     current_state = step_data.get("state")
@@ -160,7 +160,7 @@ def create_research_plan_tab(state):
                 # After the loop finishes successfully, save the final analysis
                 if final_state_for_saving:
                     analysis_storage_service.save_analysis(
-                        collection_id, research_direction, final_state_for_saving
+                        collection_name, research_direction, final_state_for_saving
                     )
 
             except Exception as e:

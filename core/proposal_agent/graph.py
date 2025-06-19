@@ -6,7 +6,7 @@ from core.proposal_agent.state import ProposalAgentState, SummaryReflection, Nov
 from core.proposal_agent.tools import PaperSearchTool
 import core.proposal_agent.prompts as prompts
 from core.paperqa_service import PaperQAService
-
+from core.collections_manager import CollectionsManager
 # --- Agent Configuration ---
 
 MOCK_MODE = False # Set to True to run in mock mode without real API calls
@@ -17,7 +17,7 @@ MAX_NOVELTY_LOOPS = 5
 # --- LLM and Tool Initialization ---
 json_llm = ChatOllama(model="gemma3:4b", format="json", temperature=0.7)
 text_llm = ChatOllama(model="gemma3:4b", temperature=0.7) # For text generation
-paper_search_tool = PaperSearchTool()
+paper_search_tool = CollectionsManager()
 paperqa_service = PaperQAService()
 
 # --- Graph Nodes ---
@@ -66,11 +66,11 @@ async def run_single_query(state: ProposalAgentState) -> ProposalAgentState:
     if MOCK_MODE:
         return {"literature_summaries": [f"--- MOCK SUMMARY for query: '{query}' ---"]}
 
-    collection_id = state['collection_id']
+    collection_name = state['collection_name']
     
     # Run the query
     print(f"Running query: '{query}'")
-    response = await paperqa_service.query_documents(collection_id, query)
+    response = await paperqa_service.query_documents(collection_name, query)
     
     if response and not response.get("error"):
         new_summary = response.get("answer_text", "")
@@ -136,16 +136,16 @@ def assess_plan_novelty(state: ProposalAgentState) -> ProposalAgentState:
         )
         return {"novelty_assessment": [mock_assessment]}
 
-    collection_id = state.get('collection_id')
+    collection_name = state.get('collection_name')
     
     # Assess the novelty of the most recent research plan
     latest_plan = state['research_plan'][-1]
     
     # Find similar papers
-    similar_papers = paper_search_tool.find_similar_papers(
-        latest_plan, 
-        n_results=3, # Simplified for now
-        collection_id=collection_id
+    similar_papers = paper_search_tool.search_articles(
+        query=latest_plan, 
+        limit=3, # Simplified for now
+        collection_name=collection_name
     )
     
     # Get assessment from LLM

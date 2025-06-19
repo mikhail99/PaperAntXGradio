@@ -14,8 +14,8 @@ manager = CollectionsManager()
 def get_collection_options():
     return [(c.name, c.id) for c in manager.get_all_collections() if not c.archived]
 
-def get_collection_description(collection_id):
-    c = manager.get_collection(collection_id)
+def get_collection_description(collection_name):
+    c = manager.get_collection(collection_name)
     return c.description if c else ""
 
 def create_paperqa_tab(state):
@@ -39,19 +39,19 @@ def create_paperqa_tab(state):
                 
         loading_md = gr.Markdown("", visible=False)
 
-        def update_collection_desc(collection_id):
-            desc = get_collection_description(collection_id)
+        def update_collection_desc(collection_name):
+            desc = get_collection_description(collection_name)
             return desc or "<i>No description available.</i>"
 
-        async def handle_ask(collection_id, question):
-            if not collection_id or not question.strip():
+        async def handle_ask(collection_name, question):
+            if not collection_name or not question.strip():
                 yield {
                     loading_md: gr.update(visible=False),
                     answer_card: "Please select a collection and enter a question."
                 }
                 return
             
-            collection = manager.get_collection(collection_id)
+            collection = manager.get_collection(collection_name)
             if not collection:
                 yield {
                     loading_md: gr.update(visible=False),

@@ -31,7 +31,6 @@ class Article(BaseModel):
             return datetime.now()
 
 class Collection(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid4()))
     name: str
     description: str
     tags: Dict[str, Tag] = {}

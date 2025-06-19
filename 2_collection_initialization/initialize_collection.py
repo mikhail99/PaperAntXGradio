@@ -15,7 +15,6 @@ import dspy
 
 # --- Configuration ---
 # Source ChromaDB where the main library of papers is stored
-SOURCE_CHROMA_DB_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "1_library_chroma_db_output")
 SOURCE_COLLECTION_NAME = "HuggingFaceDailyPapers"
 
 # Base path where new curated collections will be stored
@@ -25,7 +24,7 @@ DEST_BASE_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "collecti
 OLLAMA_BASE_URL = "http://localhost:11434"
 # As requested, using 'gemma3:4b'. Make sure this model is available in your Ollama instance.
 OLLAMA_MODEL = "gemma3:4b"
-TOP_K_SEARCH = 50  # Number of initial papers to retrieve for filtering
+TOP_K_SEARCH = 100  # Number of initial papers to retrieve for filtering
 
 
 # --- DSPy Setup ---
@@ -93,11 +92,11 @@ def main(new_collection_name: str, new_collection_description: str):
 
 
     # 3. Connect to the source ChromaDB and find the main collection by name
-    source_manager = CollectionsManager(persist_directory=SOURCE_CHROMA_DB_DIR)
+    source_manager = CollectionsManager()
     source_collection = source_manager.get_collection_by_name(SOURCE_COLLECTION_NAME)
 
     if not source_collection:
-        print(f"Error: Source collection '{SOURCE_COLLECTION_NAME}' not found in {SOURCE_CHROMA_DB_DIR}")
+        print(f"Error: Source collection  not found ")
         return
 
     print(f"Searching for top {TOP_K_SEARCH} relevant papers from '{SOURCE_COLLECTION_NAME}'...")
@@ -105,7 +104,7 @@ def main(new_collection_name: str, new_collection_description: str):
     # 4. Perform semantic search to get candidate papers
     try:
         retrieved_articles = source_manager.search_articles(
-            collection_id=source_collection.id,
+            collection_name=source_collection.name,
             query=new_collection_description,
             limit=TOP_K_SEARCH
         )
@@ -143,6 +142,7 @@ def main(new_collection_name: str, new_collection_description: str):
         return
 
     # 6. Create the new collection and add the filtered papers
+    # HACK should get get_or_create_collection
     new_collection = source_manager.create_collection(
         name=new_collection_name,
         description=new_collection_description
@@ -150,14 +150,14 @@ def main(new_collection_name: str, new_collection_description: str):
 
     for article in tqdm(relevant_articles, desc="Adding papers to new collection"):
         try:
-            source_manager.add_article(new_collection.id, article)
+            source_manager.add_article(new_collection.name, article)
         except Exception as e:
             print(f"Failed to add article {article.id} to new collection: {e}")
 
     print(f"Successfully created new collection '{new_collection_name}' with {len(relevant_articles)} papers.")
 
     # 7. Download PDFs for the newly added papers
-    print("Downloading PDFs for the new collection...")
+    print("Downloading PDFs for the new collection...") 
     for article in tqdm(relevant_articles, desc="Downloading PDFs"):
         download_pdf(article.id, new_pdfs_dir)
 
@@ -170,7 +170,7 @@ def main(new_collection_name: str, new_collection_description: str):
     else:
         print(f"Found {len(all_collections_summary)} collections:")
         for coll_summary in all_collections_summary:
-            collection = source_manager.get_collection(coll_summary.id)
+            collection = source_manager.get_collection(coll_summary.name)
             if collection:
                 num_articles = len(collection.articles)
                 print(f"- Collection: '{collection.name}' contains {num_articles} articles.")

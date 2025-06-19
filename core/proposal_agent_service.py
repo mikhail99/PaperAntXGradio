@@ -16,7 +16,7 @@ class ProposalAgentService:
 
     async def run_agent(
         self,
-        collection_id: str,
+        collection_name: str,
         question: str,
         local_papers_only: bool = True
     ) -> AsyncGenerator[Dict[str, Any], None]:
@@ -24,7 +24,7 @@ class ProposalAgentService:
         Runs the proposal agent graph and yields the state at each step.
 
         Args:
-            collection_id: The ID of the collection to research.
+            collection_name: The ID of the collection to research.
             question: The user's research question/direction.
             local_papers_only: If True, only search within the local ChromaDB.
 
@@ -34,7 +34,7 @@ class ProposalAgentService:
         # Keep track of the full state as the agent runs
         current_state = {
             "topic": question,
-            "collection_id": collection_id,
+            "collection_name": collection_name,
             "local_papers_only": local_papers_only,
             "search_queries": [],
             "literature_summaries": [],

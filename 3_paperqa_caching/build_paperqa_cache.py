@@ -18,7 +18,7 @@ from core.utils import get_local_llm_settings
 # --- Configuration ---
 LLM_MODEL = "ollama/gemma3:4b"
 EMBEDDING_MODEL = "ollama/nomic-embed-text:latest"
-SOURCE_CHROMA_DB_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "1_library_chroma_db_output")
+
 
 # --- Helper Functions ---
 
@@ -58,7 +58,7 @@ async def build_cache_from_collection(collection_name: str):
     cache_file_path.parent.mkdir(parents=True, exist_ok=True)
 
 
-    chromadb_manager = CollectionsManager(persist_directory=SOURCE_CHROMA_DB_DIR)
+    chromadb_manager = CollectionsManager()
     chrimadb_collection = chromadb_manager.get_collection_by_name(collection_name)    
     articles: List[Article] = list(chrimadb_collection.articles.values())
     if not articles:

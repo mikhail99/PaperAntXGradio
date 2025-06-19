@@ -50,7 +50,7 @@ class ProposalCritique(BaseModel):
 class ProposalAgentState(TypedDict, total=False):
 
     # Collection
-    collection_id: str
+    collection_name: str
     # Core Research
     topic: str
     search_queries: Annotated[list[str], operator.add]
