@@ -1,108 +1,126 @@
 # core/paperqa_service.py
 import asyncio
-import tempfile
+import pickle
 from pathlib import Path
 import os
-import html
-from typing import List, Dict, Any, Tuple
+import re
+from typing import Dict, Any
 
-from paperqa import Docs, Settings
-from paperqa.settings import AgentSettings, IndexSettings
-from core.data_models import Article
-from time import sleep
+from paperqa import Docs
+from core.utils import get_local_llm_settings
+from core.collections_manager import CollectionsManager
+
 # --- Global PaperQA Configuration (base settings) ---
 
-llm_model = "ollama/gemma3:27b"
+llm_model = "ollama/gemma3:4b"
 embedding_model = "ollama/nomic-embed-text:latest"
 
-from core.utils import get_local_llm_settings
-my_settings=get_local_llm_settings(llm_model, embedding_model)
+my_settings = get_local_llm_settings(llm_model, embedding_model)
+collections_manager = CollectionsManager()
 
-
-def extract_pdf_path_from_notes(notes: str) -> str | None:
-    if not notes:
-        return None
-    lines = notes.splitlines()
-    for line in lines:
-        if line.startswith("Local PDF: "):
-            return line.replace("Local PDF: ", "").strip()
-    return None
 
 class PaperQAService:
-
     async def query_documents(
-        self, articles: List[Article], question: str
+        self, collection_name: str, question: str
     ) -> Dict[str, Any]:
         """
-        Processes a list of Article objects with PaperQA and answers a question.
-        Each Article should have a local PDF path (in notes or a dedicated field).
+        Queries a pre-built PaperQA cache for a given collection.
+        It loads a Docs object from a pickle file and uses it to answer a question.
         Returns a dictionary with 'answer_text', 'formatted_evidence', and 'error'.
         """
-        if not articles:
-            return {"answer_text": "No articles provided.", "formatted_evidence": "", "error": None}
+        if not collection_name:
+            error_msg = "No collection name provided."
+            return {"answer_text": "", "formatted_evidence": "", "error": error_msg}
+        
+        collection = collections_manager.get_collection(collection_name)
+        if not collection:
+            error_msg = f"Collection with ID '{collection_name}' not found."
+            return {"answer_text": "", "formatted_evidence": "", "error": error_msg}
+        
+        collection_name = collection.name
 
         try:
-            docs = Docs()
-            print(f"Adding {len(articles)} articles to PaperQA Docs...")
-            added_count = 0
-            for i, article in enumerate(articles):
-                pdf_path = extract_pdf_path_from_notes(getattr(article, 'notes', ''))
-                if not pdf_path or not os.path.exists(pdf_path):
-                    print(f"File does not exist, skipping: {pdf_path}")
-                    continue
-                arxiv_id = getattr(article, 'id', None)
-                if arxiv_id and arxiv_id.endswith(('v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9')):
-                    arxiv_id = arxiv_id[:-2]
-                # Compose metadata and summary
-                metadata = {
-                    "arxiv_id": arxiv_id,
-                    "title": getattr(article, 'title', None),
-                    "authors": getattr(article, 'authors', None),
-                    "tags": getattr(article, 'tags', None),
-                    "abstract": getattr(article, 'abstract', None),
-                    "publication_date": str(getattr(article, 'publication_date', '')),
-                }
-                summary = article.abstract or article.title or ""
-                doi= f"10.48550/arXiv.{arxiv_id}"
+            # 1. Define path to the cache file
+            cache_file_path = Path("data/collections") / collection_name / "paperqa_cache.pkl"
+
+            if not cache_file_path.exists():
+                error_msg = f"Cache file not found at {cache_file_path}. Please build the cache for this collection first."
+                print(error_msg)
+                return {"answer_text": "", "formatted_evidence": "", "error": error_msg}
+
+            # 2. Load the Docs object from the pickle file
+            print(f"Loading PaperQA cache from: {cache_file_path}")
+            with open(cache_file_path, "rb") as f:
+                docs = pickle.load(f)
+            print(f"Cache loaded successfully. Contains {len(docs.docs)} documents.")
+
+            # Create a map from citation string to its link
+            citation_to_link_map = {}
+            for text_obj in docs.texts:
                 try:
-                    await docs.aadd(
-                        pdf_path,
-                        citation=f"arXiv:{arxiv_id}",
-                        docname=f"arXiv:{arxiv_id}",
-                        dockey=f"arXiv:{arxiv_id}",
-                        title=article.title,
-                        authors=article.authors,
-                        doi=doi,
-                        settings=my_settings,
-                    )
-                    print(f"Document added: {pdf_path}")
-                    
-                    sleep(10)
-                    print("HACK")
-                    added_count += 1
+                    doc = text_obj.doc
+                    citation_text = doc.citation
+                    link = None
+
+                    # 1. Try to find a direct URL in the citation string
+                    url_match = re.search(r'https?://[^\s,]+', citation_text)
+                    if url_match:
+                        # Clean trailing characters like periods or commas
+                        link = url_match.group(0).rstrip('.,')
+
+                    # 2. If no URL, try to find an arXiv ID
+                    elif 'arXiv:' in citation_text:
+                        arxiv_match = re.search(r'arXiv:(\d{4}\.\d{4,5})', citation_text)
+                        if arxiv_match:
+                            arxiv_id = arxiv_match.group(1)
+                            link = f"https://arxiv.org/abs/{arxiv_id}"
+
+                    # 3. If a link was found, add it to the map for replacement later
+                    if link:
+                        citation_to_link_map[citation_text] = link
                 except Exception as e:
-                    print(f"Error adding document {pdf_path}: {str(e)}")
-                    continue
+                    print(f"Could not create link for a document: {e}")
 
-            if added_count == 0:
-                return {"answer_text": "No valid PDF documents could be processed.", "formatted_evidence": "", "error": None}
-
+            # 3. Ask the question using the loaded docs and settings
             print(f"Querying PaperQA with: '{question}'")
             response = await docs.aquery(question, settings=my_settings)
-
             print("PaperQA query finished.")
 
             answer_text = response.formatted_answer if response and response.formatted_answer else "No answer found by PaperQA."
             
-            contexts_md = ""
-            #if response and response.contexts:
-            #    for i, ctx in enumerate(response.contexts):
-            #        contexts_md += f"\n{i + 1}. **Source:** {ctx.citation} (Score: {ctx.score:.2f})\n"
-            #        contexts_md += f"> {ctx.context}\n\n" # Raw context
-            #else:
-            #    contexts_md += "_No specific evidence found by PaperQA._\n"
-            
-            return {"answer_text": answer_text, "formatted_evidence": contexts_md, "error": None}
+            # HACK: The formatted_answer sometimes includes the question. We strip it here.
+            # Final attempt: A more aggressive regex approach to remove the question
+            stripped_question = re.escape(question.strip())
+            # This regex looks for an optional "Question: " prefix and then the question text,
+            # ignoring leading/trailing whitespace and case. It removes the entire line.
+            pattern = re.compile(r"^\s*(Question:\s*)?" + stripped_question + r"\s*$", re.IGNORECASE | re.MULTILINE)
+            answer_text = pattern.sub('', answer_text).strip()
+
+            # --- Definitive Link Replacement: Two-Stage Find and Replace ---
+
+            # Stage 1: Find all potential citations in the text and map them to links
+            citations_to_replace = {}
+            for full_citation, link in citation_to_link_map.items():
+                # Extract author (everything before the first comma) and year for a more robust match
+                author_match = re.search(r'^([^,]+)', full_citation)
+                year_match = re.search(r'(\d{4})', full_citation)
+
+                if author_match and year_match:
+                    author = author_match.group(1).strip()
+                    year = year_match.group(1).strip()
+                    
+                    # Flexible regex to find citations like (Author et al., Year)
+                    citation_pattern = re.compile(f"\(.*?{re.escape(author)}[^)]*?{re.escape(year)}.*?\)")
+                    
+                    for match in citation_pattern.finditer(answer_text):
+                        # Store the exact text that was matched and its corresponding link
+                        citations_to_replace[match.group(0)] = link
+
+            # Stage 2: Replace the found citations with markdown links
+            for text, link in citations_to_replace.items():
+                answer_text = answer_text.replace(text, f"[{text}]({link})")
+
+            return {"answer_text": answer_text, "formatted_evidence": "", "error": None}
 
         except Exception as e:
             error_message = f"Error during PaperQA processing: {str(e)}"

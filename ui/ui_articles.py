@@ -4,17 +4,18 @@ from core.article_manager import ArticleManager
 from core.data_models import Collection, Article
 import html
 from typing import List
+import os
 
 # Initialize managers (in a real app, you might want to pass these in or use a singleton)
-manager = CollectionsManager(persist_directory="data/chroma_db_store")
+manager = CollectionsManager()
 print("All collections:", manager.get_all_collections())
 article_manager = ArticleManager(manager)
 
 # Helper for table - this global will store the currently displayed/filtered articles
 filtered_articles: List[Article] = []
 
-def get_collection_description(collection_id):
-    c = manager.get_collection(collection_id)
+def get_collection_description(collection_name):
+    c = manager.get_collection(collection_name)
     return c.description if c else ""
 
 def articles_table_value(articles_list: List[Article]):
@@ -31,43 +32,43 @@ def articles_table_value(articles_list: List[Article]):
             "": "",
         }.get(a.rating, "")
         tags_text = ", ".join(a.tags)
-        data.append([a.title, ", ".join(a.authors), rating_icon, tags_text])
-    headers = ["Title", "Authors", "Rating", "Tags"]
+        data.append([a.title, a.abstract, rating_icon, tags_text])
+    headers = ["Title", "Abstract", "Rating", "Tags"]
     return {"data": data, "headers": headers}
 
-def get_articles_for_collection(collection_id):
-    collection = manager.get_collection(collection_id)
+def get_articles_for_collection(collection_name):
+    collection = manager.get_collection(collection_name)
     if not collection:
         return []
     return list(collection.articles.values())
 
 def create_articles_tab(state):
-    collection_options = [(c.name, c.id) for c in manager.get_all_collections() if not c.archived]
-    initial_collection_id = collection_options[0][1] if collection_options else None
+    collection_options = [c.name for c in manager.get_all_collections() if not c.archived]
+    initial_collection_name = collection_options[0] if collection_options else None
 
     # Determine initial values for UI components
     initial_desc_val = "<i>No collection selected.</i>"
     initial_tag_choices_val = []
     initial_articles_df_data_rows = []
-    df_headers = ["Title", "Authors", "Rating", "Tags"]
+    df_headers = ["Title", "Abstract", "Rating", "Tags"]
 
     global filtered_articles # Ensure we can set this global on initial load
 
-    if initial_collection_id:
-        initial_desc_val = get_collection_description(initial_collection_id) or "<i>No description available.</i>"
+    if initial_collection_name:
+        initial_desc_val = get_collection_description(initial_collection_name) or "<i>No description available.</i>"
         
-        _collection_for_tags = manager.get_collection(initial_collection_id)
+        _collection_for_tags = manager.get_collection(initial_collection_name)
         if _collection_for_tags:
             initial_tag_choices_val = [tag.name for tag in _collection_for_tags.tags.values()]
         
-        _initial_articles_list = get_articles_for_collection(initial_collection_id)
+        _initial_articles_list = get_articles_for_collection(initial_collection_name)
         filtered_articles = _initial_articles_list # Set global here for the selection callback
         for a in _initial_articles_list:
             rating_icon = {
                 "favorite": "★", "accept": "✓", "reject": "✗", None: "", "": "",
             }.get(a.rating, "")
             tags_text = ", ".join(a.tags)
-            initial_articles_df_data_rows.append([a.title, ", ".join(a.authors), rating_icon, tags_text])
+            initial_articles_df_data_rows.append([a.title, a.abstract, rating_icon, tags_text])
     else:
         filtered_articles = [] # Initialize if no collection
 
@@ -78,7 +79,7 @@ def create_articles_tab(state):
                 collection_dropdown = gr.Dropdown(
                     choices=collection_options,
                     label="Collection",
-                    value=initial_collection_id,
+                    value=initial_collection_name,
                     interactive=True,
                 )
                 collection_desc_md = gr.Markdown(value=initial_desc_val) # Use pre-calculated initial value
@@ -136,7 +137,7 @@ def create_articles_tab(state):
                 fetch_add_btn = gr.Button("Fetch and Add Article", elem_classes=["primary"])
 
         # --- Callbacks ---
-        def handle_article_select(evt: gr.SelectData, collection_id):
+        def handle_article_select(evt: gr.SelectData, collection_name):
             try:
                 global filtered_articles
                 if not evt.index or len(evt.index) == 0:
@@ -155,11 +156,11 @@ def create_articles_tab(state):
                 print(f"Error selecting article: {str(e)}")
                 return "", "", None, "", "<i>No article selected</i>", "<i>No article selected</i>"
 
-        def auto_refresh_articles(collection_id, search_text, selected_tags):
+        def auto_refresh_articles(collection_name, search_text, selected_tags):
             try:
-                if not collection_id:
+                if not collection_name:
                     return articles_table_value([])
-                articles = get_articles_for_collection(collection_id)
+                articles = get_articles_for_collection(collection_name)
                 if search_text.strip():
                     search_lower = search_text.strip().lower()
                     articles = [a for a in articles if search_lower in a.title.lower() or search_lower in a.abstract.lower()]
@@ -170,38 +171,38 @@ def create_articles_tab(state):
                 print(f"Error filtering articles: {str(e)}")
                 return articles_table_value([])
 
-        def handle_save_article(collection_id, article_id, notes, tags_str, rating):
+        def handle_save_article(collection_name, article_id, notes, tags_str, rating):
             if not article_id:
-                return "**No article selected**", articles_table_value(get_articles_for_collection(collection_id))
+                return "**No article selected**", articles_table_value(get_articles_for_collection(collection_name))
             try:
-                article = article_manager.get_article(collection_id, article_id)
+                article = article_manager.get_article(collection_name, article_id)
                 if not article:
-                    return "**Article not found**", articles_table_value(get_articles_for_collection(collection_id))
+                    return "**Article not found**", articles_table_value(get_articles_for_collection(collection_name))
                 article.notes = notes
                 article.tags = [t.strip() for t in tags_str.split(",") if t.strip()]
                 article.rating = rating
-                updated = article_manager.update_article(collection_id, article)
+                updated = article_manager.update_article(collection_name, article)
                 status = "**Article updated**" if updated else "**Failed to update article**"
-                updated_articles = get_articles_for_collection(collection_id)
+                updated_articles = get_articles_for_collection(collection_name)
                 return status, articles_table_value(updated_articles)
             except Exception as e:
                 error_msg = f"**Error updating article: {str(e)}**"
                 print(error_msg)
-                updated_articles = get_articles_for_collection(collection_id)
+                updated_articles = get_articles_for_collection(collection_name)
                 return error_msg, articles_table_value(updated_articles)
 
-        def handle_semantic_search(collection_id, query):
-            if not collection_id or not query.strip():
+        def handle_semantic_search(collection_name, query):
+            if not collection_name or not query.strip():
                 return articles_table_value([])
             try:
-                articles = manager.search_articles(collection_id, query, limit=20)
+                articles = manager.search_articles(collection_name, query, limit=20)
                 return articles_table_value(articles)
             except Exception as e:
                 print(f"Error in semantic search: {str(e)}")
                 return articles_table_value([])
 
-        def update_collection_desc(collection_id):
-            desc = get_collection_description(collection_id)
+        def update_collection_desc(collection_name):
+            desc = get_collection_description(collection_name)
             return desc or "<i>No description available.</i>"
 
         # Bind callbacks
@@ -210,8 +211,8 @@ def create_articles_tab(state):
         semantic_search_btn.click(handle_semantic_search, [collection_dropdown, semantic_search_box], [articles_df])
         collection_dropdown.change(update_collection_desc, collection_dropdown, collection_desc_md)
 
-        def update_tag_filter_dropdown(collection_id):
-            collection = manager.get_collection(collection_id)
+        def update_tag_filter_dropdown(collection_name):
+            collection = manager.get_collection(collection_name)
             if not collection:
                 return gr.update(choices=[])
             tag_names = [tag.name for tag in collection.tags.values()]

@@ -7,7 +7,7 @@ from paperqa.agents.search import get_directory_index
 from paperqa.agents import build_index
 import os
 from time import sleep
-llm_model ="ollama/gemma3:27b"
+llm_model ="ollama/gemma3:4b"
 embedding_model = "ollama/nomic-embed-text:latest"
 
 from core.utils import get_local_llm_settings

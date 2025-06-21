@@ -50,63 +50,59 @@ class ChromaService:
                 deserialized[key] = value
         return deserialized
     
-    def create_collection(self, collection_id: str, metadata: Optional[Dict[str, Any]] = None) :
+    def create_collection(self, collection_name: str, metadata: Optional[Dict[str, Any]] = None) :
         """Create a new ChromaDB collection for a PaperAnt collection"""
         try:
             prepared_metadata = self._prepare_metadata(metadata or {})
             return self.client.create_collection(
-                name=collection_id,
+                name=collection_name,
                 #embedding_function=self.embedding_function,
                 metadata=prepared_metadata
             )
         except ValueError:
             # Collection might already exist
-            collection = self.get_collection(collection_id)
+            collection = self.get_collection(collection_name)
             if collection and metadata:
                 # Update metadata if collection exists
                 prepared_metadata = self._prepare_metadata(metadata)
                 collection.metadata = prepared_metadata
             return collection
     
-    def get_collection(self, collection_id: str):
+    def get_collection(self, collection_name: str):
         """Get a ChromaDB collection by ID"""
-        try:
-            collection = self.client.get_collection(
-                name=collection_id,
+        return self.client.get_collection(
+                name=collection_name,
                 #embedding_function=self.embedding_function
             )
-            return collection
-        except ValueError:
-            # Collection doesn't exist
-            return None
+
     
-    def get_collection_metadata(self, collection_id: str) -> Optional[Dict[str, Any]]:
+    def get_collection_metadata(self, collection_name: str) -> Optional[Dict[str, Any]]:
         """Get a collection's metadata, deserializing any JSON strings"""
-        collection = self.get_collection(collection_id)
+        collection = self.get_collection(collection_name)
         if not collection:
             return None
         
         return self._deserialize_metadata(collection.metadata or {})
     
-    def update_collection_metadata(self, collection_id: str, metadata: Dict[str, Any]) -> bool:
+    def update_collection_metadata(self, collection_name: str, metadata: Dict[str, Any]) -> bool:
         """Update a collection's metadata"""
         raise NotImplementedError("Not implemented")
     
-    def delete_collection(self, collection_id: str) -> bool:
+    def delete_collection(self, collection_name: str) -> bool:
         """Delete a ChromaDB collection"""
         try:
-            self.client.delete_collection(name=collection_id)
+            self.client.delete_collection(name=collection_name)
             return True
         except ValueError:
             # Collection doesn't exist
             return False
     
-    def add_articles(self, collection_id: str, articles: List[Dict[str, Any]]) -> bool:
+    def add_articles(self, collection_name: str, articles: List[Dict[str, Any]]) -> bool:
         """Add articles to a ChromaDB collection
         
         articles: List of dicts with keys: id, title, abstract, and metadata
         """
-        collection = self.get_collection(collection_id)
+        collection = self.get_collection(collection_name)
         if not collection:
             return False
         
@@ -130,9 +126,9 @@ class ChromaService:
             print(f"Error adding articles to ChromaDB: {e}")
             return False
     
-    def update_article(self, collection_id: str, article_id: str, document: str, metadata: Dict[str, Any]) -> bool:
+    def update_article(self, collection_name: str, article_id: str, document: str, metadata: Dict[str, Any]) -> bool:
         """Update an article in a ChromaDB collection"""
-        collection = self.get_collection(collection_id)
+        collection = self.get_collection(collection_name)
         if not collection:
             return False
         
@@ -149,9 +145,9 @@ class ChromaService:
             print(f"Error updating article in ChromaDB: {e}")
             return False
     
-    def delete_article(self, collection_id: str, article_id: str) -> bool:
+    def delete_article(self, collection_name: str, article_id: str) -> bool:
         """Delete an article from a ChromaDB collection"""
-        collection = self.get_collection(collection_id)
+        collection = self.get_collection(collection_name)
         if not collection:
             return False
         
@@ -162,9 +158,9 @@ class ChromaService:
             print(f"Error deleting article from ChromaDB: {e}")
             return False
     
-    def get_articles(self, collection_id: str, where: Optional[Dict[str, Any]] = None, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_articles(self, collection_name: str, where: Optional[Dict[str, Any]] = None, limit: int = 100) -> List[Dict[str, Any]]:
         """Get articles from a ChromaDB collection with optional filtering"""
-        collection = self.get_collection(collection_id)
+        collection = self.get_collection(collection_name)
         if not collection:
             return []
         
@@ -191,9 +187,9 @@ class ChromaService:
             print(f"Error retrieving articles from ChromaDB: {e}")
             return []
     
-    def search_articles(self, collection_id: str, query: str, where: Optional[Dict[str, Any]] = None, limit: int = 10) -> List[Dict[str, Any]]:
+    def search_articles(self, collection_name: str, query: str, where: Optional[Dict[str, Any]] = None, limit: int = 10) -> List[Dict[str, Any]]:
         """Search for articles in a ChromaDB collection by semantic similarity"""
-        collection = self.get_collection(collection_id)
+        collection = self.get_collection(collection_name)
         if not collection:
             return []
         

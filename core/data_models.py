@@ -15,6 +15,7 @@ class Article(BaseModel):
     authors: List[str]
     abstract: str
     publication_date: Union[datetime, str]
+    url: Optional[str] = None
     tags: List[str] = []
     favorite: bool = False
     rating: Optional[str] = None  # "accept", "reject", or None
@@ -31,7 +32,6 @@ class Article(BaseModel):
             return datetime.now()
 
 class Collection(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid4()))
     name: str
     description: str
     tags: Dict[str, Tag] = {}
