@@ -114,7 +114,7 @@ def create_copilot_tab(state, copilot_service: CopilotService):
                     with gr.Accordion("LLM Settings", open=False):
                         llm_provider_selector = gr.Radio(
                             label="LLM Provider",
-                            choices=["gemini", "openai", "anthropic"],
+                            choices=["gemini", "openai", "anthropic", "ollama"],
                             value=copilot_service.llm_service.default_provider,
                             interactive=True,
                         )
@@ -191,6 +191,8 @@ def create_copilot_tab(state, copilot_service: CopilotService):
                     return copilot_service.llm_service.openai_model
                 elif provider == "anthropic":
                     return copilot_service.llm_service.anthropic_model
+                elif provider == "ollama":
+                    return copilot_service.llm_service.ollama_model
                 return "" # Should not happen
 
             def on_chat_message(agent_name, message, ui_history, llm_history, provider, model):

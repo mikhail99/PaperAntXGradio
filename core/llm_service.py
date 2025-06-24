@@ -5,6 +5,7 @@ import openai
 #import anthropic
 import json
 from typing import List, Dict, Optional, Generator, Any
+from langchain_ollama import ChatOllama
 
 dotenv.load_dotenv()
 
@@ -23,10 +24,11 @@ class LLMService:
         self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
         
         # Provider and Models
-        self.default_provider = os.getenv("DEFAULT_LLM_PROVIDER", "gemini").lower()
+        self.default_provider = os.getenv("DEFAULT_LLM_PROVIDER", "ollama").lower()
         self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
         self.openai_model = os.getenv("OPENAI_MODEL", "gpt-4o")
         self.anthropic_model = os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
+        self.ollama_model = os.getenv("OLLAMA_MODEL", "gemma3:4b")
 
         self.openai_client = None
         self.anthropic_client = None
@@ -53,8 +55,10 @@ class LLMService:
                 yield from self._call_openai(messages, system_prompt, tools, model)
             elif provider == "anthropic":
                 yield from self._call_anthropic(messages, system_prompt, tools, model)
+            elif provider == "ollama":
+                yield from self._call_ollama(messages, system_prompt, tools, model)
             else:
-                yield {"type": "error", "content": f"Error: Unsupported LLM provider '{provider}'. Supported providers are 'gemini', 'openai', 'anthropic'."}
+                yield {"type": "error", "content": f"Error: Unsupported LLM provider '{provider}'. Supported providers are 'gemini', 'openai', 'anthropic', 'ollama'."}
         except Exception as e:
             error_message = f"Error calling LLM provider '{provider}': {e}"
             print(f"ERROR: {error_message}")
@@ -259,3 +263,43 @@ class LLMService:
                         # First chunk of a tool call comes in a content_block_start
                         # But we will use the full tool_use from message_delta
                         pass
+
+    def _call_ollama(self, messages: List[Dict[str, Any]], system_prompt: Optional[str], tools: Optional[List[Dict[str, Any]]], model: Optional[str]) -> Generator[Dict, None, None]:
+        """Handles streaming calls to a local Ollama model."""
+        model_name = model or self.ollama_model
+        
+        # Combine system prompt with user messages if present
+        full_messages = []
+        if system_prompt:
+            full_messages.append({"role": "system", "content": system_prompt})
+        full_messages.extend(messages)
+
+        print(f"--- Calling Ollama (model: {model_name}) ---")
+        print(f"Messages: {json.dumps(full_messages, indent=2)}")
+        print("------------------------------------------")
+
+        try:
+            llm = ChatOllama(model=model_name)
+            if tools:
+                # Note: Tool calling with Ollama in LangChain might have specific syntax.
+                # This binding is a standard approach.
+                llm_with_tools = llm.bind_tools(tools)
+                stream = llm_with_tools.stream(full_messages)
+            else:
+                stream = llm.stream(full_messages)
+
+            for chunk in stream:
+                if chunk.content:
+                    yield {"type": "text_chunk", "content": chunk.content}
+                if chunk.tool_calls:
+                    for tool_call in chunk.tool_calls:
+                         yield {
+                            "type": "tool_call",
+                            "tool_call": {
+                                "id": tool_call['id'],
+                                "name": tool_call['name'],
+                                "arguments": tool_call['args'],
+                            }
+                        }
+        except Exception as e:
+            yield {"type": "error", "content": f"Ollama API Error: {str(e)}"}

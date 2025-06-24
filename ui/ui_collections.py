@@ -8,7 +8,6 @@ def collections_to_rows(collections):
     rows = []
     for c in collections:
         rows.append([
-            c.id,
             c.name,
             c.description,
             c.archived,

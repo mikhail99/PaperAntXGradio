@@ -31,30 +31,26 @@ class ProposalAgentService:
         Yields:
             A dictionary representing the current state of the agent's process.
         """
-        # Keep track of the full state as the agent runs
-        current_state = {
-            "topic": question,
-            "collection_name": collection_name,
-            "local_papers_only": local_papers_only,
-            "search_queries": [],
-            "literature_summaries": [],
-            "research_plan": [],
-            "novelty_assessment": []
-        }
+        # Define the initial state for the new structure
+        initial_state = ProposalAgentState(
+            topic=question,
+            collection_name=collection_name,
+            local_papers_only=local_papers_only,
+            search_queries=[],
+            literature_summaries=[],
+            knowledge_gap={},
+            proposal_draft="",
+            review_team_feedback={},
+            final_review={},
+            proposal_revision_cycles=0
+        )
 
         # Stream the graph execution
-        async for step in self.graph.astream(current_state):
-            # step is a dictionary where the key is the node name
-            # and the value is the updated state.
+        async for step in self.graph.astream(initial_state):
             step_name = list(step.keys())[0]
-            update_diff = step[step_name]
-            
-            # Manually merge the lists for accumulating fields
-            for key, value in update_diff.items():
-                if isinstance(value, list) and key in current_state:
-                    current_state[key].extend(value)
-                else:
-                    current_state[key] = value
+            # The state is now managed by LangGraph, so we can yield the full
+            # state from the step directly.
+            current_state = step[step_name]
             
             yield {
                 "step": step_name,

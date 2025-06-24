@@ -33,7 +33,7 @@ This project provides a multi-stage pipeline for extracting structured informati
     ```
 
 2.  **Configure LLM:**
-    This project is configured to use a local Ollama model. Ensure you have Ollama installed and have pulled a model (e.g., `ollama pull gemma3:12b`). The model name is configured in `src/dspy_config.py`.
+    This project is configured to use a local Ollama model. Ensure you have Ollama installed and have pulled a model (e.g., `ollama pull gemma3:4b`). The model name is configured in `src/dspy_config.py`.
 
 3.  **Add a Paper:**
     -   Create a directory inside `/papers` named after the paper's ID (e.g., `/papers/arxiv:2504.0541v2`).

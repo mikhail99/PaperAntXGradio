@@ -185,3 +185,7 @@ class CopilotService:
                             "role": "tool",
                             "tool_results": tool_results
                         })
+                elif provider == 'ollama':
+                    # For Ollama (and standard OpenAI), each tool result is a separate message.
+                    for res in tool_results:
+                        messages.append({ "role": "tool", "tool_call_id": res["tool_call_id"], "content": res["content"] })

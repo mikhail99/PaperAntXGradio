@@ -1,290 +1,182 @@
-from langgraph.graph import StateGraph, END, START
-from typing import Literal
-from langchain_ollama import ChatOllama
+import json
+from pathlib import Path
+from typing import Literal, List, Dict, Any
+
 from langchain_core.prompts import ChatPromptTemplate
-from core.proposal_agent.state import ProposalAgentState, SummaryReflection, NoveltyAssessment, SingleQuery
-from core.proposal_agent.tools import PaperSearchTool
-import core.proposal_agent.prompts as prompts
+from langchain_ollama import ChatOllama
+from langgraph.graph import StateGraph, END, START
+
 from core.paperqa_service import PaperQAService
-from core.collections_manager import CollectionsManager
-# --- Agent Configuration ---
+from core.proposal_agent.state import ProposalAgentState, QueryList, KnowledgeGap, Critique, FinalReview
 
-MOCK_MODE = False # Set to True to run in mock mode without real API calls
+# --- Configuration ---
 
-MAX_LIT_REVIEW_LOOPS = 5
-MAX_NOVELTY_LOOPS = 5
+# Load JSON configs
+CONFIG_PATH = Path(__file__).parent
+with open(CONFIG_PATH / "agent_config.json", "r") as f:
+    agent_config = json.load(f)
+with open(CONFIG_PATH / "prompts.json", "r") as f:
+    prompts = json.load(f)
 
-# --- LLM and Tool Initialization ---
+# Initialize models and services
 json_llm = ChatOllama(model="gemma3:4b", format="json", temperature=0.7)
-text_llm = ChatOllama(model="gemma3:4b", temperature=0.7) # For text generation
-paper_search_tool = CollectionsManager()
+text_llm = ChatOllama(model="gemma3:4b", temperature=0.7)
 paperqa_service = PaperQAService()
 
-# --- Graph Nodes ---
+# Map schema names from config to actual Python classes
+OUTPUT_SCHEMAS = {
+    "QueryList": QueryList,
+    "KnowledgeGap": KnowledgeGap,
+    "Critique": Critique,
+    "FinalReview": FinalReview,
+    "string": None # For simple text outputs
+}
 
-def generate_query(state: ProposalAgentState) -> ProposalAgentState:
-    """Generates a single, novel search query based on reflection."""
-    print("--- Running node: generate_query ---")
-    topic = state['topic']
-    previous_queries = state.get('search_queries', [])
-    reflection = state.get('reflection')
-    knowledge_gap = reflection.knowledge_gap if reflection else ""
+MAX_PROPOSAL_REVISIONS = 3
 
-    prompt = ChatPromptTemplate.from_template(prompts.generate_query_prompt)
+# --- Node Factory (Creates node functions from config) ---
 
-    if MOCK_MODE:
-        formatted_prompt = prompt.format(
-            topic=topic, 
-            previous_queries="\\n".join(previous_queries),
-            knowledge_gap=knowledge_gap
-        )
-        return {"search_queries": [f"--- MOCK QUERY ---\n{formatted_prompt}"]}
+def create_llm_node(node_name: str, node_config: Dict[str, Any]):
+    """Factory function to create a generic LLM-based graph node."""
+    
+    prompt_template = prompts[node_config["prompt_key"]]
+    prompt = ChatPromptTemplate.from_template(prompt_template)
+    output_schema = OUTPUT_SCHEMAS.get(node_config["output_schema"])
 
-    structured_llm = json_llm.with_structured_output(SingleQuery)
-    chain = prompt | structured_llm
-    
-    # Invoke with topic and previous queries
-    result = chain.invoke({
-        "topic": topic, 
-        "previous_queries": "\n".join(previous_queries),
-        "knowledge_gap": knowledge_gap
-    })
-    
-    new_query = result.query
-    
-    # The new query is added to the history via operator.add in the state
-    return {
-        "search_queries": [new_query] 
-    }
-
-async def run_single_query(state: ProposalAgentState) -> ProposalAgentState:
-    """Runs a single PaperQA query and appends the result to the literature summary."""
-    print("--- Running node: run_single_query ---")
-    
-    query = state['search_queries'][-1]
-    
-    if MOCK_MODE:
-        return {"literature_summaries": [f"--- MOCK SUMMARY for query: '{query}' ---"]}
-
-    collection_name = state['collection_name']
-    
-    # Run the query
-    print(f"Running query: '{query}'")
-    response = await paperqa_service.query_documents(collection_name, query)
-    
-    if response and not response.get("error"):
-        new_summary = response.get("answer_text", "")
-    else:
-        new_summary = f"Error processing query: {query}. Details: {response.get('error', 'Unknown error')}"
+    def _node(state: ProposalAgentState) -> Dict[str, Any]:
+        print(f"--- Running node: {node_name} ---")
         
+        # Use a structured output model if a schema is specified
+        if output_schema:
+            llm = json_llm.with_structured_output(output_schema)
+        else:
+            llm = text_llm
+            
+        chain = prompt | llm
+        
+        # The result from an LLM node is a single object (or string).
+        # We need to return a dictionary to update the state.
+        # The key under which it's stored depends on the node's function in the graph.
+        result = chain.invoke(state)
 
-    print(f"New summary: {new_summary}")
-    return {"literature_summaries": [new_summary]}
+        # This is a simplification. The actual state update is handled
+        # by the graph structure itself when the node returns.
+        # For team members, the output is collected. For aggregators, it updates a specific field.
+        # This function just produces the core output.
+        return result
 
-def reflect_on_summary(state: ProposalAgentState) -> ProposalAgentState:
-    print("--- Running node: reflect_on_summary ---")
+    return _node
+
+def create_tool_node(node_name: str, node_config: Dict[str, Any]):
+    """Factory function for a tool-using node (currently specific to paperqa)."""
     
-    if MOCK_MODE:
-        loops = len(state.get("literature_summaries", []))
-        is_sufficient = loops >= 2 # Mock stop condition
-        mock_reflection = SummaryReflection(
-            is_sufficient=is_sufficient,
-            knowledge_gap="Mock: The summary is too short, need more details." if not is_sufficient else "Mock: The summary is now sufficient.",
-            follow_up_queries=[] 
-        )
-        return {"reflection": mock_reflection}
+    async def _node(state: ProposalAgentState) -> Dict[str, Any]:
+        print(f"--- Running node: {node_name} ---")
+        # This is built specifically for the literature review tool for now
+        query = state['search_queries'][-1] # Assumes one query at a time
+        collection_name = state['collection_name']
+        
+        print(f"Running query: '{query}'")
+        response = await paperqa_service.query_documents(collection_name, query)
+        
+        summary = response.get("answer_text", f"Error processing query: {query}")
+        return {"literature_summaries": [summary]}
 
-    # We now reflect on the entire history of summaries
-    all_summaries = "\n\n---\n\n".join(state.get('literature_summaries', []))
+    return _node
 
-    prompt = ChatPromptTemplate.from_template(prompts.reflect_on_literature_prompt)
-    chain = prompt | json_llm.with_structured_output(SummaryReflection)
-    reflection = chain.invoke({
-        "literature_summary": all_summaries,
-        "previous_queries": state.get('search_queries', [])
-    })
+# --- Special Aggregator & Non-LLM Nodes ---
+
+def deduplicate_queries_node(state: ProposalAgentState) -> Dict[str, List[str]]:
+    """A simple utility node to deduplicate queries from parallel runs."""
+    print("--- Running node: deduplicate_queries_node ---")
+    all_queries = state.get('search_queries', [])
+    unique_queries = list(dict.fromkeys(all_queries))
+    return {"search_queries": unique_queries}
+
+# --- Conditional Logic ---
+
+def is_proposal_approved(state: ProposalAgentState) -> Literal["approved", "revise", "max_revisions_reached"]:
+    """Checks the final review to decide if the proposal is done or needs revision."""
+    print("--- Running node: is_proposal_approved ---")
     
-    return {"reflection": reflection}
+    # Stop condition 1: max revisions reached
+    if state.get("proposal_revision_cycles", 0) >= MAX_PROPOSAL_REVISIONS:
+        print(f"--- Max proposal revisions ({MAX_PROPOSAL_REVISIONS}) reached. ENDING. ---")
+        return "max_revisions_reached"
 
-def formulate_plan(state: ProposalAgentState) -> ProposalAgentState:
-    print("--- Running node: formulate_plan ---")
+    # Stop condition 2: proposal is approved
+    if state.get('final_review') and state['final_review'].get('is_approved'):
+        print("--- Proposal approved. ENDING. ---")
+        return "approved"
+        
+    # Otherwise, continue to revise
+    print("--- Proposal needs revision. Looping back. ---")
+    return "revise"
+
+# --- Graph Construction ---
+
+def build_graph() -> StateGraph:
+    """Builds the LangGraph workflow from the JSON configuration."""
     
-    if MOCK_MODE:
-        mock_plan = f"--- MOCK PLAN based on knowledge gap: {state['reflection'].knowledge_gap} ---"
-        return {"research_plan": [mock_plan]}
+    builder = StateGraph(ProposalAgentState)
     
-    all_summaries = "\n\n---\n\n".join(state.get('literature_summaries', []))
+    # 1. Add all nodes defined in the config to the graph
+    for node_name, node_config in agent_config["nodes"].items():
+        # This part needs to be more robust. For now, we assume llm or tool node.
+        # In a real scenario, you'd have a mapping of types to factory functions.
+        if "prompt_key" in node_config:
+            node_func = create_llm_node(node_name, node_config)
+        else: # Assumes tool node
+            node_func = create_tool_node(node_name, node_config)
+        builder.add_node(node_name, node_func)
 
-    prompt = ChatPromptTemplate.from_template(prompts.formulate_plan_prompt)
-    chain = prompt | text_llm
-    plan = chain.invoke({
-        "knowledge_gap": state['reflection'].knowledge_gap,
-        "literature_summary": all_summaries
-    })
-    return {"research_plan": [plan.content]}
+    # Add special utility nodes
+    builder.add_node("deduplicate_queries_node", deduplicate_queries_node)
 
-def assess_plan_novelty(state: ProposalAgentState) -> ProposalAgentState:
-    print("--- Running node: assess_plan_novelty ---")
-
-    if MOCK_MODE:
-        loops = len(state.get("novelty_assessment", []))
-        is_novel = loops >= 1 # First plan is not novel, subsequent are
-        mock_assessment = NoveltyAssessment(
-            is_novel=is_novel,
-            justification="Mock: Plan is not novel, needs refinement." if not is_novel else "Mock: Plan is novel.",
-            similar_papers=[]
-        )
-        return {"novelty_assessment": [mock_assessment]}
-
-    collection_name = state.get('collection_name')
+    # 2. Define the static workflow using teams
     
-    # Assess the novelty of the most recent research plan
-    latest_plan = state['research_plan'][-1]
+    # Entry Point -> Query Generation Team
+    query_team_config = agent_config["teams"]["query_generation_team"]
+    for member in query_team_config["members"]:
+        builder.add_edge(START, member)
     
-    # Find similar papers
-    similar_papers = paper_search_tool.search_articles(
-        query=latest_plan, 
-        limit=3, # Simplified for now
-        collection_name=collection_name
+    # Query Team Members -> Aggregator
+    for member in query_team_config["members"]:
+        builder.add_edge(member, query_team_config["aggregator"])
+
+    # Query Team Aggregator -> Literature Review Team
+    lit_team_config = agent_config["teams"]["literature_review_team"]
+    for member in lit_team_config["members"]:
+        builder.add_edge(query_team_config["aggregator"], member)
+
+    # Literature Review Team Members -> Aggregator
+    for member in lit_team_config["members"]:
+        builder.add_edge(member, lit_team_config["aggregator"])
+
+    # Literature Review Aggregator -> Formulate Plan
+    builder.add_edge(lit_team_config["aggregator"], "formulate_plan")
+
+    # Formulate Plan -> Proposal Review Team
+    review_team_config = agent_config["teams"]["proposal_review_team"]
+    for member in review_team_config["members"]:
+        builder.add_edge("formulate_plan", member)
+
+    # Proposal Review Team Members -> Final Review Aggregator
+    for member in review_team_config["members"]:
+        builder.add_edge(member, review_team_config["aggregator"])
+    
+    # 3. Add conditional logic for the revision loop
+    builder.add_conditional_edges(
+        review_team_config["aggregator"],
+        is_proposal_approved,
+        {
+            "approved": END,
+            "max_revisions_reached": END,
+            "revise": "formulate_plan" # If rejected, go back to the planning stage
+        }
     )
-    
-    # Get assessment from LLM
-    prompt = ChatPromptTemplate.from_template(prompts.assess_novelty_prompt)
-    chain = prompt | json_llm.with_structured_output(NoveltyAssessment)
-    
-    # Format the similar papers for the prompt string
-    similar_papers_str = "\n".join([f"- {p.title}: {p.url}" for p in similar_papers])
-    
-    assessment = chain.invoke({
-        "research_plan": latest_plan,
-        "similar_papers": similar_papers_str
-    })
-    
-    # Manually add the papers to the assessment object as a list of dicts
-    assessment.similar_papers = [p.model_dump() for p in similar_papers]
-    
-    return {"novelty_assessment": [assessment]}
-'''
-def design_experiments(state: ProposalAgentState) -> ProposalAgentState:
-    print("--- Running node: design_experiments ---")
 
-    if MOCK_MODE:
-        mock_protocol = ExperimentProtocol(
-            steps=["Mock experiment step 1", "Mock experiment step 2"],
-            success_criteria="Mock success criteria: Get a mock result."
-        )
-        return {"experiment_protocol": mock_protocol}
+    return builder.compile()
 
-    prompt = ChatPromptTemplate.from_template(prompts.design_experiments_prompt)
-    chain = prompt | json_llm.with_structured_output(ExperimentProtocol)
-    protocol = chain.invoke({"research_plan": state['research_plan'][-1]})
-    return {"experiment_protocol": protocol}
-
-def write_proposal(state: ProposalAgentState) -> ProposalAgentState:
-    print("--- Running node: write_proposal ---")
-
-    if MOCK_MODE:
-        mock_proposal = f"""# --- MOCK PROPOSAL ---
-## Research Plan
-{state['research_plan'][-1]}
-## Experiments
-{state['experiment_protocol'].model_dump_json(indent=2)}
-"""
-        return {"markdown_proposal": mock_proposal}
-
-    prompt = ChatPromptTemplate.from_template(prompts.write_proposal_prompt)
-    chain = prompt | text_llm
-    proposal = chain.invoke({
-        "literature_summary": state['literature_summary'],
-        "research_plan": state['research_plan'][-1],
-        "experiment_protocol": state['experiment_protocol'].model_dump_json()
-    })
-    return {"markdown_proposal": proposal.content}
-
-def review_proposal(state: ProposalAgentState) -> ProposalAgentState:
-    print("--- Running node: review_proposal ---")
-
-    if MOCK_MODE:
-        mock_critique = ProposalCritique(
-            critique="This is a mock critique. The proposal looks fine for a mock proposal.",
-            suggestions=["Mock suggestion: Add more mocks."]
-        )
-        return {"critique": mock_critique}
-
-    prompt = ChatPromptTemplate.from_template(prompts.review_proposal_prompt)
-    chain = prompt | json_llm.with_structured_output(ProposalCritique)
-    critique = chain.invoke({"markdown_proposal": state['markdown_proposal']})
-    return {"critique": critique}
-'''
-# --- Conditional Edges ---
-
-def is_summary_sufficient(state: ProposalAgentState) -> Literal["is_sufficient", "reached_max_review_loops", "not_sufficient"]:
-    """Determines whether to continue the research loop or formulate a plan."""
-   
- 
-    # Stop condition 1: literature is sufficient
-    if state['reflection'].is_sufficient:
-        print("--- Literature sufficient. Proceeding to formulate plan. ---")
-        return "is_sufficient"
-        
-    # Stop condition 2: max loops reached
-    loops = len(state["literature_summaries"])
-    if loops >= MAX_LIT_REVIEW_LOOPS:
-        print(f"--- Max literature review loops ({MAX_LIT_REVIEW_LOOPS}) reached. Proceeding to formulate plan. ---")
-        return "reached_max_review_loops"
-        
-    # Otherwise, continue research
-    print("--- Continuing research. Generating new query. ---")
-    return "not_sufficient"
-
-def is_plan_novel(state: ProposalAgentState) -> Literal["is_novel", "not_novel", "reached_max_novelty_loops"]:
-    loops = len(state["novelty_assessment"])
-    if loops >= MAX_NOVELTY_LOOPS:
-        print(f"--- Max novelty loops ({MAX_NOVELTY_LOOPS}) reached. Proceeding to formulate plan. ---")
-        return "reached_max_novelty_loops"
-    return "is_novel" if state['novelty_assessment'][-1].is_novel else "not_novel"
-
-
-
-# --- Graph Definition ---
-builder = StateGraph(ProposalAgentState)
-
-builder.add_node("generate_query", generate_query)
-builder.add_node("run_single_query", run_single_query)
-builder.add_node("reflect_on_summary", reflect_on_summary)
-builder.add_node("formulate_plan", formulate_plan)
-builder.add_node("assess_plan_novelty", assess_plan_novelty)
-#builder.add_node("review_proposal", review_proposal)
-
-builder.add_edge(START, "generate_query")
-builder.add_edge("generate_query", "run_single_query")
-builder.add_edge("run_single_query", "reflect_on_summary")
-
-builder.add_conditional_edges(
-    "reflect_on_summary",
-    is_summary_sufficient,
-    {
-        "is_sufficient": "formulate_plan",
-        "reached_max_review_loops":  "formulate_plan",
-        "not_sufficient": "generate_query"
-    }
-)
-
-builder.add_edge("formulate_plan", "assess_plan_novelty")
-builder.add_conditional_edges(
-    "assess_plan_novelty", 
-    is_plan_novel,
-    {
-        "is_novel": END,
-        "not_novel": "generate_query",
-        "reached_max_novelty_loops": END
-    }
-)
-
-#builder.add_edge("design_experiments", "write_proposal")
-#builder.add_edge("write_proposal", END)
-#builder.add_edge("write_proposal", "review_proposal")
-#builder.add_conditional_edges("review_proposal", should_revise_proposal)
-
-graph = builder.compile()
-
+# --- Export the compiled graph ---
+graph = build_graph() 
