@@ -26,7 +26,7 @@ def main():
         article_manager = ArticleManager(collections_manager)
         mcp_server_manager = MCPServerManager()
         copilot_service = CopilotService(collections_manager, article_manager, llm_service, mcp_server_manager)
-        proposal_agent_ui_service = ProposalAgentUIService()
+        proposal_agent_ui_service = ProposalAgentUIService(collections_manager)
 
         with gr.Tabs():
             create_articles_tab(state)

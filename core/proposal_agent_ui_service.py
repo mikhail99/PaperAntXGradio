@@ -2,23 +2,32 @@ import json
 import re
 from pathlib import Path
 from typing import Dict, Any, List
+import webbrowser
+import os
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 from pydantic import BaseModel, create_model
 
+from core.collections_manager import CollectionsManager
+
 # --- Configuration & Initialization ---
 
-# Load configs once
 CONFIG_PATH = Path(__file__).parent / "proposal_agent"
-with open(CONFIG_PATH / "agent_config.json", "r") as f:
-    agent_config = json.load(f)
-with open(CONFIG_PATH / "prompts.json", "r") as f:
-    prompts = json.load(f)
+
+def _load_configs() -> (Dict[str, Any], Dict[str, Any]):
+    """Loads agent and prompt configs from their JSON files."""
+    with open(CONFIG_PATH / "agent_config.json", "r") as f:
+        agent_config = json.load(f)
+    with open(CONFIG_PATH / "prompts.json", "r") as f:
+        prompts = json.load(f)
+    return agent_config, prompts
+
+agent_config, prompts = _load_configs()
 
 # Initialize models
-json_llm = ChatOllama(model="gemma3:4b", format="json", temperature=0)
-text_llm = ChatOllama(model="gemma3:4b", temperature=0.7)
+json_llm = ChatOllama(model="gemma2:9b", format="json", temperature=0)
+text_llm = ChatOllama(model="gemma2:9b", temperature=0.7)
 
 
 class ProposalAgentUIService:
@@ -26,6 +35,25 @@ class ProposalAgentUIService:
     A service to support a UI for debugging individual proposal agent nodes.
     This is distinct from the main ProposalAgentService that runs the whole graph.
     """
+    def __init__(self, collections_manager: CollectionsManager):
+        self.collections_manager = collections_manager
+        self.reload() # Load configs on init
+
+    def reload(self):
+        """Reloads the agent and prompt configurations from disk."""
+        print("Reloading Proposal Agent UI Service configuration...")
+        global agent_config, prompts
+        agent_config, prompts = _load_configs()
+        print("Configuration reloaded.")
+
+    def get_collection_names(self) -> List[str]:
+        """Returns a list of available collection names."""
+        collections = self.collections_manager.get_all_collections()
+        return [c.name for c in collections]
+
+    def get_config_file_path(self) -> str:
+        """Returns the absolute path to the agent config file."""
+        return str(CONFIG_PATH / "agent_config.json")
 
     def get_teams_config(self) -> Dict[str, Any]:
         """Returns the 'teams' part of the agent configuration."""
