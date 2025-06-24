@@ -1,0 +1,796 @@
+\appendix
+
+
+% Plan for supplementary material
+
+% \begin{itemize}
+%     \item details on the prompt for each tools
+%     \item prompt used for the llm-based evaluator for math500
+%     \item prompt used for cognitive prompting and native
+%     \item example of execution / when using the tools
+%     \item more analysis results - correlation of num tool calls vs. correctness
+%     \item standard error on runs
+%     \item should we include self-consistency results?
+%     \item how often do the native answer include stuffs which can recall the use of the tools? - meaning examine,, reconsider, think.... ---> 
+% \end{itemize}
+
+
+
+\section{Experiments Details}
+
+In this section, we provide more details on the experiments.
+Specifically, we include the prompts used for the baseline, for the cognitive prompting experiments and for each cognitive tool implementation.
+
+\subsection{Baseline}
+
+We establish our baseline on Qwen2.5-(7B, 32B) Instruct, Llama3.1-8B Instruct, and Llama3.3-70B Instruct and GPT-4.1 models by prompting the LLM with the question we want to have an answer for. We only append the sentence: \textit{"Solve the math problem: "} to each question and do not change the system prompt of the model. The final prompt to the LLM looks like: \\
+
+\begin{center}
+\fbox{\parbox{0.8\textwidth}{
+\textbf{Solve the math problem:} `Rick is thinking of a positive factor of $14$ and Steve is thinking of a positive factor of $42$. If Rick and Steve are thinking of the same number, how many possible numbers could they be thinking of?'}}
+\end{center}
+
+We also use this format on all user prompts for the following experiments.
+
+
+\subsection{Cognitive Prompting}
+
+For the cognitive prompting strategy, we use the prompts released in \cite{Kramer2024}, which is as follows:
+
+\begin{tcolorbox}[
+    colback=gray!10,
+    colframe=black,
+    arc=4pt,
+    boxrule=1pt,
+    title=\textbf{Cognitive Prompting (prompt)},
+    fonttitle=\bfseries,
+    enhanced,
+    left=4pt,
+    right=4pt,
+    top=4pt,
+    bottom=4pt,
+    breakable
+]
+Solve the following math problem by following each step of
+cognitive operations from the list below. For each step, provide your
+reasoning and calculations before moving on to the next step.\\
+
+Cognitive Operations:
+\begin{enumerate}[left=0pt, ]
+    \item Goal Clarification: Restate the problem in your own words.
+    \item Decomposition: List the given information.
+    \item Filtering: Identify what you need to find.
+    \item Reorganization: Assign variables to the unknowns.
+    \item Pattern Recognition: define each variable clearly.
+    \item Abstraction: Set up equations based on the problem.
+    \item Generalization: Solve the equations step by step.
+    \item Integration: Verify your solution with the given information.
+\end{enumerate}
+
+Your Response: Please start with "Restate the problem in your
+own words" and proceed through each cognitive operation step by
+step, providing detailed reasoning and calculations for each.
+
+Give the final answer using the format: `ANSWER: answer'.
+\end{tcolorbox}
+
+\subsection{Cogntive Tool Prompts}
+
+As explained in the main text, the cognitive tools that we introduce are implemented in a modular fashion.
+Each cognitive tool is implemented as a call to an LLM (same as the original one) but with a specific prompt tailored to the specifics of the tool.
+Below we present the prompt used for each cognitive tool:
+% \subsubsection*{Understand Question}
+\begin{tcolorbox}[
+    colback=gray!10,
+    colframe=black,
+    arc=4pt,
+    boxrule=1pt,
+    title=\textbf{Understand Question Prompt},
+    fonttitle=\bfseries,
+    enhanced,
+    left=4pt,
+    right=4pt,
+    top=4pt,
+    bottom=4pt
+]
+You are a mathematical reasoning assistant designed to analyze and break down complex mathematical problems into structured steps to help the system that actually solves problems. Your goal is to: 
+\begin{enumerate}[left=0pt, ]
+    \item Identify the core mathematical concepts involved (e.g., algebra, calculus, linear algebra).
+    \item Extract and categorize relevant symbols, variables, and functions.
+    \item Rephrase the problem into a step-by-step sequence that makes solving easier.
+    \item Highlight any known theorems or techniques that might be useful in solving the problem.
+    \item DO NOT provide any answer to the question, only provide instructions which will guide the upstream system."
+\end{enumerate}
+\end{tcolorbox}
+
+
+\begin{tcolorbox}[
+    colback=gray!10,
+    colframe=black,
+    arc=4pt,
+    boxrule=1pt,
+    title=\textbf{Recall Related Prompt},
+    fonttitle=\bfseries,
+    enhanced,
+    left=4pt,
+    right=4pt,
+    top=4pt,
+    bottom=4pt,
+    breakable
+]
+You are a retrieval assistant whose purpose is to help solve new mathematical problems by providing solved examples of analogous problems.\\
+
+Given a new math problem, your task is to:\\
+1. Identify 2 or 3 **similar problems** from your knowledge or training set that require **comparable mathematical concepts or reasoning steps**.\\
+2. For each similar problem:\\
+   - Provide the **full problem statement**.\\
+   - Provide a **complete step-by-step solution**, including relevant formulas, simplifications, or code.\\
+   - Highlight the **final answer**, preferably using LaTeX formatting (e.g., `\boxed{42}`).\\
+
+Do **not** solve the current problem. Instead, present only useful analogous examples that could help someone reason through it.\\
+
+Output Format:\\
+
+Analogous Example 1:\\
+Q: [Similar Problem 1]\\
+A: [Step-by-step solution...]\\
+Final Answer: \boxed{...}\\
+
+Analogous Example 2:\\
+Q: [Similar Problem 2]\\
+A: [Step-by-step solution...]\\
+Final Answer: \boxed{...}\\
+
+Analogous Example 3:\\
+Q: [Similar Problem 3]\\
+A: [Step-by-step solution...]\\
+Final Answer: \boxed{...}\\
+
+Some important notes to keep in mind.\\
+
+- Select examples with strong structural or conceptual similarity, not just keyword overlap.\\
+- Variation in surface details (numbers, variable names) is acceptable as long as the mathematical logic aligns.
+\end{tcolorbox}
+
+
+\begin{tcolorbox}[
+    colback=gray!10,
+    colframe=black,
+    arc=4pt,
+    boxrule=1pt,
+    title=\textbf{Examine Answer Prompt},
+    fonttitle=\bfseries,
+    enhanced,
+    left=4pt,
+    right=4pt,
+    top=4pt,
+    bottom=4pt,
+    breakable
+]
+You are an expert mathematical assistant tasked with **verifying and improving** solutions to complex mathematical problems. Your role is **not to solve the problem** but to critically analyze the provided solution for correctness, clarity, and completeness.
+You will be given a problem/question and the current reasoning that has been produced so far.\\
+
+\#\#\# **Your Task:**\\
+
+Follow a structured **verification process**:\\
+
+\#\#\# **1. Understanding the Problem**\\
+- Ensure the proposed solution correctly interprets the given problem.\\
+- Identify the core mathematical concepts involved (e.g., algebra, calculus, number theory).\\
+- Extract and categorize relevant symbols, variables, and functions.\\
+- Identify any implicit assumptions or missing constraints.\\
+
+\#\#\# **2. Verifying the Given Solution**\\
+- Clearly state what is the current answer of the problem.\\
+- Break the provided solution down into distinct logical steps.\\
+- Check for **logical consistency**, **mathematical correctness**, and **proper justification**.\\
+- Identify any **miscalculations, incorrect assumptions, or unjustified leaps** in reasoning.\\
+- Analyze the **edge cases** or conditions where the solution may fail.\\
+- Evaluate whether all necessary steps and justifications are present.\\
+
+\#\#\#\# **2.a) Testing and Validation (Problem-Derived Checks)**\\
+- Examine the original problem statement and extract any **constraints, conditions, identities, or testable properties** that a correct answer must satisfy.\\
+- Derive **test cases or evaluation criteria** based on those constraints.\\
+
+**If the proposed solution is a numerical answer:**\\
+- Plug the number into the original equation(s), inequality, or scenario to verify it satisfies all conditions.\\
+- Check whether it meets qualitative criteria (e.g., smallest, largest, integer, range bounds).\\
+
+**If the proposed solution is an expression or formula:**\\
+- **Symbolically substitute** the expression into the original problem statement or equations, and confirm that it satisfies all requirements.\\
+- Simplify or manipulate the expression to check **equivalence**, **domain correctness**, and **edge cases**.\\
+- Where applicable, test the expression against representative sample inputs derived from the problem.\\
+
+**For both cases:**\\
+- Clearly describe each test performed and the outcome.\\
+- State whether the provided answer (number or expression) **passes all derived problem-based tests**.\\
+
+\#\#\# **3. Suggesting Improvements**\\
+- If an error is found, explain **precisely what is wrong** and **why**.\\
+- Suggest possible fixes or improvements **without directly solving the problem**.\\
+- Propose alternative methods to solve the problem where relevant (e.g., algebraic vs. numerical, direct proof vs. counterexample).\\
+
+\#\#\# **4. Providing a Judgment**\\
+- Clearly state whether the proposed solution is **correct or incorrect**.\\
+- Justify your judgment with a concise explanation.\\
+- If incorrect, **recommend corrections** without providing a direct answer.\\
+
+\#\#\# **Guidelines to Follow:**\\
+- DO NOT provide the actual answer to the problem.\\
+- Focus only on verifying and critiquing the given solution.\\
+- Be rigorous in checking correctness but also constructive in suggesting improvements.\\
+- Explicitly say whether the answer is correct or incorrect\\
+
+Now, **critically analyze the solution**, highlight any mistakes, and suggest improvements where necessary."""
+\end{tcolorbox}
+
+\begin{tcolorbox}[
+    colback=gray!10,
+    colframe=black,
+    arc=4pt,
+    boxrule=1pt,
+    title=\textbf{Backtracking Prompt},
+    fonttitle=\bfseries,
+    enhanced,
+    left=4pt,
+    right=4pt,
+    top=4pt,
+    bottom=4pt,
+    breakable
+]
+You are a careful problem-solving assistant with the ability to backtrack from flawed logic.\\
+
+You will be given a math or logic problem and a reasoning trace. Your task is to:\\
+1. Analyze the reasoning and summarize it into different steps.\\
+2. Identify where the first error, bad assumption, or confusion occurs (if any).\\
+3. Propose how to revise the approach from that point onward, using the steps that you have defined.\\
+4. If the entire approach was invalid, suggest a better strategy from scratch.\\
+
+Use the following format for your response:\\
+
+**Identified Issues:**\\
+- Step X: Explain what is incorrect or suboptimal.\\
+- (Repeat for any additional steps if needed.)\\
+
+**Backtrack Point:**\\
+- Indicate the step where reasoning was still valid and you can continue from.\\
+
+**Revised Strategy (from backtrack point or new):**\\
+- Present a step-by-step strategy to solve the problem correctly from this point.\\
+---\\
+
+Be precise and critical. Avoid vague judgments. Always backtrack to the most recent correct step, unless no step is valid.
+"""
+\end{tcolorbox}
+
+
+We also provide below the prompt used for the ``code tool'', which is called whenever the LLM attempts to generate code during the reasoning process:
+
+\begin{tcolorbox}[
+    colback=gray!10,
+    colframe=black,
+    arc=4pt,
+    boxrule=1pt,
+    title=\textbf{Use Code Prompt},
+    fonttitle=\bfseries,
+    enhanced,
+    left=4pt,
+    right=4pt,
+    top=4pt,
+    bottom=4pt,
+    breakable
+]
+You are a Python coding assistant designed to generate correct and efficient code to solve a given problem or question.\\
+
+You will receive:\\
+- A **problem description** that outlines the task to solve.\\
+- Optionally, **chain-of-thought (CoT) reasoning** which may contain errors.\\
+- Optionally, a **previous attempt at code** and/or **error messages** if earlier attempts failed.\\
+
+Your tasks:\\
+
+1. **Analyze** the problem and any provided reasoning or code.\\
+2. If the reasoning or code contains **mistakes**, **ignore or fix them** as appropriate.\\
+3. Generate a **correct and clean Python solution** to the original problem.\\
+4. If provided with an error message, **identify the cause** and **refine the code** accordingly.\\
+5. Your code must be:\\
+    - **Correct**\\
+    - **Efficient**\\
+    - **Well-structured** and **readable**\\
+6. ALWAYS follow this format:\\
+
+Thought: your thinking process on how you want to solve the problem with code which can be helped by the previous reasoning or from scratch\\
+Code:\\
+    ```python
+    <your code here>
+    ```
+7. Ensure the code **prints the final result** using `print()`. The result must be printed explicitly.\\
+
+**Important rules:**\\
+
+- Think first before you give out the code\\
+- If necessary, re-derive the correct logic yourself.\\
+- Prioritize correctness, even if it means deviating from flawed prior steps.\\
+- ALWAYS explicitly PRINT the final result in the code with `print()`\\
+
+Now generate the code to solve the problem.
+\end{tcolorbox}
+
+
+
+
+
+
+\section{Evaluation}
+
+We instruct the LLM to give its answer following the format \textit{`Final Answer': answer}.
+For AIME 2024 and AMC we parse the final answer from the output of the LLM and compare it against the ground truth answer (numerical values) and calculate the accuracy of the predictions.
+For MATH500 which requires more elaborated answers, we evaluate responses using an llm-as-a-judge approach \citep{Zheng2023} using GPT-4.1 as a judge of the answers from the LLM.
+We give to the judge the parsed answers from the LLM and the ground truth and instructs it to say wether the parsed answer is correct or incorrect.
+The prompt used for the judge is as follows:
+
+\begin{tcolorbox}[
+    colback=gray!10,
+    colframe=black,
+    arc=4pt,
+    boxrule=1pt,
+    title=\textbf{Evaluation Prompt (LLM-as-a-judge)},
+    fonttitle=\bfseries,
+    enhanced,
+    left=4pt,
+    right=4pt,
+    top=4pt,
+    bottom=4pt,
+    breakable
+]
+The following two expressions are answers to a math problem. They can be given as direct numerical answers or as a full reasoning. You have to judge whether they are equivalent. Only perform trivial simplifications, but accept numerical answers which are correct within a reasonable numerical tolerance.\\
+
+Examples:\\
+
+    Expression 1: $2x+3$\\
+    Expression 2: $3+2x$\\
+
+Yes\\
+
+    Expression 1: 3/2\\
+    Expression 2: 1.5\\
+
+Yes\\
+
+    Expression 1: $x^2+2x+1$\\
+    Expression 2: $y^2+2y+1$\\
+
+No\\
+
+    Expression 1: $x^2+2x+1$\\
+    Expression 2: $(x+1)^2$\\
+
+Yes\\
+
+    Expression 1: 3245/5\\
+    Expression 2: 649\\
+
+Yes\\
+(trivial simplifications are allowed)\\
+
+    Expression 1: 2/(-3)\\
+    Expression 2: -2/3\\
+
+Yes\\
+(trivial simplifications are allowed)\\
+
+    Expression 1: 72 degrees\\
+    Expression 2: 72\\
+
+Yes\\
+(give benefit of the doubt to units)\\
+
+    Expression 1: 64\\
+    Expression 2: 64 square feet\\
+
+Yes\\
+(give benefit of the doubt to units)\\
+
+---\\
+
+YOUR TASK\\
+
+Respond with only "Yes" or "No" (without quotes). Do not include a rationale.\\
+
+    Expression 1: \%(expression1)s\\
+    Expression 2: \%(expression2)s\\
+\end{tcolorbox}
+
+\newpage
+
+% \section{Additional Results}
+
+% \subsection{Quantitative Results}
+
+% % SUMMARY OF TODOs:
+% % https://docs.google.com/spreadsheets/d/1RMkDq36E2QRLbKCKnh40geJzqgMtQRtSmEl4X9WpSAQ/edit?usp=sharing
+% % - llama-8b:
+% %    - amc:
+% %        direct_reason = 0.253012, 0.337349 (bebo)
+% %        vanilla = 0.204819
+% %    - aime24:
+% %        direct_reason = 0.103448, 0.133333 (bebo)
+% %        vanilla = 0.033333
+% %    - math500: direct_reason = (x2, bebo)
+% %    - smol: direct_reason = 1 !!!, vanilla = 48.7 $\pm$ 1.8 (1 and 9, bm2, saved)
+% % - llama-70b
+% %    - amc: direct_reason = 51.6 $\pm$ 0.7 (x16) (bm2, saved, other running: direct_reason (3), vanilla = (3))
+% %    - aime24: direct_reason = 31.7 $\pm$ 2 (x16) (bm2, saved, other running: direct_reason (2) + vanilla (2))
+% %    - math500: direct_reason = 2, vanilla = 2, running on BM2
+% %    - smol: direct_reason = 77.5 $\pm$ 1 (x16), vanilla = 52.8 $\pm$ 1.2 (x16) (bm2, saved)
+% % - qwen-7b:
+% %    - amc:
+% %    - aime24:
+% %    - math500: direct_reason = X (x4), vanilla = X (x4) (zuvela)
+% %    - smol: direct_reason = 76.8 $\pm$ 0.7 (x16), vanilla = 75.8 $\pm$ 1.1 (x16) (bm2, saved)
+% % - qwen-32b:
+% %    - amc:
+% %    - aime24: 
+% %    - math500: direct_reason = X (x4), vanilla = X (x4) (zuvela)
+% %    - smol: direct_reason = 81.5 $\pm$ 0.8 (x17), vanilla = 79.6 $\pm$ 1.4 (x16) (bm2, saved)
+
+% In this section, we provide additional quantitative results of the performance of our cognitive tools.
+% In particular, we run on average more than $8$ iterations of our pipeline and report the mean and standard error of the accuracy on AIME 2024, AMC and MATH500 datasets in \Cref{tab:main_results_w_errors}.
+
+% \begin{table}[h!]
+% \begin{center}
+% % \begin{small}
+% \begin{tabular}{@{}lllll@{}}
+% \toprule
+%     Model & AIME 2024 &  MATH500  & AMC & Avg \\
+
+%     \midrule    
+%     % Qwen2.5-7B Instruct & 12.5 $\pm$ 0.7 & 71 $\pm$ 1.3  & 43.9 $\pm$ 1.3 & 38.2 \\
+%     % Qwen2.5-7B Instruct + \textbf{cognitive tools} & \textcolor{blue}{14.6} $\pm$ 1.8 & \textcolor{blue}{73.7} $\pm$ 0.5 & \textcolor{blue}{47.0}  $\pm$ 0.5 & \textcolor{blue}{48.3} \\
+
+%     Qwen2.5-7B Instruct  &  12.5 $\pm$ 0.7  &  71.7 $\pm$ 1.3  &  43.9 $\pm$ 1.3  &  42.7 \\
+%     Qwen2.5-7B Instruct + \textbf{cognitive tools}  &  \textcolor{blue}{14.6} $\pm$ 1.8  &  \textcolor{blue}{73.7} $\pm$ 0.5  &  \textcolor{blue}{47.0} $\pm$ 0.5  &  \textcolor{blue}{45.1} \\
+    
+%     \midrule
+%     % Qwen2.5-32B Instruct & 16.9 $\pm$ 1.1 & 74.1 $\pm$ 0.7  & 52.8 $\pm$ 0.9 & 47.2 \\
+%     % Qwen2.5-32B Instruct + \textbf{cognitive tools} & \textcolor{blue}{31.1} $\pm$ 1.6 &  \textcolor{blue}{81.8} $\pm$ 0.6 & \textcolor{blue}{62.3} $\pm$ 2.0 & \textcolor{blue}{59.0} \\
+
+%     Qwen2.5-32B Instruct  &  17.2 $\pm$ 1.2  &  74.1 $\pm$ 0.7  &  52.6 $\pm$ 0.8  &  48.0 \\
+%     Qwen2.5-32B Instruct + \textbf{cognitive tools}  &  \textcolor{blue}{32.1} $\pm$ 1.9  &  \textcolor{blue}{81.8} $\pm$ 0.6  &  \textcolor{blue}{62.7} $\pm$ 1.2  &  \textcolor{blue}{58.9} \\
+    
+%     \midrule
+%     % Llama3.1-8B Instruct & 5.8 $\pm$ 0.8 & 41.8 & 20.3 $\pm$ 1.4 & 21.9 \\
+%     % Llama3.1-8B Instruct + \textbf{cognitive tools} & \textcolor{blue}{7.1} $\pm$ 2.0  & \textcolor{blue}{52.8} & \textcolor{blue}{26.9} $\pm$ 1.5 & \textcolor{blue}{33.3} \\
+
+%     Llama3.1-8B Instruct  &  5.8 $\pm$ 1.0  &  43.2 $\pm$ 0.5  &  20.3 $\pm$ 0.8  &  23.1 \\
+%     Llama3.1-8B Instruct + \textbf{cognitive tools}  &  \textcolor{blue}{8.8} $\pm$ 1.7  &  \textcolor{blue}{50.7} $\pm$ 1.0  &  \textcolor{blue}{28.0} $\pm$ 1.2  &  \textcolor{blue}{29.2} \\
+    
+%     \midrule    
+%     % Llama3.3-70B Instruct & 23.3 & 67.2 & 31.3 & 40.6  \\
+%     % Llama3.3-70B Instruct + \textbf{cognitive tools} & \textcolor{blue}{30.0}   &\textcolor{blue}{71.0} & \textcolor{blue}{53.0} & \textcolor{blue}{51.3} \\
+
+%     Llama3.3-70B Instruct  &  13.1 $\pm$ 1.0  &  57.0 $\pm$ 0.5  &  33.0 $\pm$ 0.9  &  34.4 \\
+%     Llama3.3-70B Instruct + \textbf{cognitive tools}  &  \textcolor{blue}{29.8} $\pm$ 1.2  &  \textcolor{blue}{74.7} $\pm$ 0.5  &  \textcolor{blue}{51.0} $\pm$ 0.5  &  \textcolor{blue}{51.8} \\
+    
+%     % phi-4 , 76 -> 76 (smolbenchmark)
+% \bottomrule
+% \end{tabular}
+% % \end{small}
+% \end{center}
+% \caption{Evaluation of our cognitive tools pipeline for different base LLMs on the math benchmarks detailed in the Methods section. The availability of cognitive tools enable LLMs to display robust reasoning which consistently results in significant improvement in pass@1 accuracy (the table shows averages over multiple runs, and uncertainty intervals representing standard error).}
+% \label{tab:main_results_w_errors}
+% \end{table}
+
+% Notice that the average accuracy scores in \Cref{tab:main_results_w_errors} are slightly different from the ones we provided in the main text, due to the larger number of repetitions over which we average to calculate these results (obtained with additional runs performed between the submission of the main text and the supplementary material).
+% In all cases, however, the main trends and results are still consistent with what we observed in the main text, i.e.\ cognitive tools show consistent improvements in performance over the baselines.
+% We aim to replace the table in the main text with this new one with better statistics as soon as we will have the chance, as well as the bar plot.
+
+% We also provide in \Cref{tab:influence_tool} results on the influence of each individual tool computed on the Smolbenchmark dataset by averaging over 16 repetitions.
+% The table reports the accuracy (pass@1) and the standard error obtained.
+
+% \begin{table}[h!]
+% \begin{center}
+% % \begin{small}
+% \begin{tabular}{@{}lllll@{}}
+% \toprule
+%     Tools &  Qwen2.5-7B & Qwen2.5-32B & Llama3.1-8B & Llama3.3-70B \\
+%     \midrule
+%     % baseline            & 75.8          & 79.6          & 48.9          & 52.8 \\
+%     % understand question & 78.6         & 82.5          & \textbf{59.4}  & \textbf{79.5} \\
+%     % recall related      & 76.1          & \textbf{84.2}          & 53.3         & 75.1 \\
+%     % examine answer      & 77.8  & 84.0          & 56.0          & 74.9 \\
+%     % backtracking        & \textbf{80.5}          & 82.9 & 46.0          & 78.2 \\
+
+%     baseline     & 75.8 $\pm$ 1.1     & 79.6 $\pm$ 1.4     & 48.7 $\pm$ 1.8     & 52.8 $\pm$ 1.2 \\
+%     understand question     & 78.6 $\pm$ 0.7     & 82.5 $\pm$ 0.8     & \textbf{59.4} $\pm$ 0.9     & \textbf{79.5} $\pm$ 0.8 \\
+%     recall related     & 76.1 $\pm$ 0.8     & \textbf{84.2} $\pm$ 0.8     & 53.2 $\pm$ 1.5     & 75.1 $\pm$ 0.8 \\
+%     examine answer     & 77.8 $\pm$ 0.8     & 84.0 $\pm$ 0.6     & 50.9 $\pm$ 1.3     & 74.9 $\pm$ 0.7 \\
+%     backtracking     & \textbf{80.5} $\pm$ 0.5     & 82.9 $\pm$ 0.8     & 57.2 $\pm$ 1.6     & 78.2 $\pm$ 1.0 \\
+% \bottomrule
+% \end{tabular}
+% % \end{small}
+% \end{center}
+% \caption{Accuracy of the `Instruct' version of the listed model on the Smolbenchmark dataset. `Baseline' indicates the performance of the plain model.
+% The subsequent rows indicate the performance of the models endowed with each specific cognitive tool.
+% Tools generally provide a boost over the baseline with different tools achieving the highest performance for different models.
+% The values in the table are average pass@1 accuracy over 16 repetitions, and uncertainty intervals represent standard error.}
+% \label{tab:influence_tool}
+% \end{table}
+
+
+
+% \subsection{Analysis on the use of tools}
+
+% An interesting question to answer is: \textit{how does the use of the tools correlate with the correctness of the answers?} We attempt to answer this question by doing an analysis of the use of the tools with respect to the correctness of the answers across the models on Smolbenchmark.
+
+% \paragraph{Tool use wrt. correctness}
+% \paragraph{Cognitive Tools and context length}
+% how much context length is needed/used everytime when we used the tools? should we answer this question?
+
+\newpage
+
+% \subsection{Qualitative Results}
+\subsection{Example Execution Trace}
+
+In this section, we consider an example question, taken from MATH500, answered both using the baseline LLM as well as with our cognitive tool pipeline. In particular, we provide the conversation trace obtained with the relatively small model Llama3.1-8B Instruct, to show how these tools help guiding the reasoning of smaller models.
+
+The question that is passed as user input is as follows:
+
+\begin{center}
+\fbox{\parbox{0.85\textwidth}{
+Solve the math problem: `Find the greatest common divisor of $3339$, $2961$, and $1491$.'}}
+\end{center}
+
+The actual correct answer is \textbf{21}.
+
+\vspace{0.1cm}
+
+% \begin{tcolorbox}[colback=lightgray, colframe=black, title=Original Question]
+% A train leaves city A heading to city B at 80 km/h. Another train leaves city B heading to city A at 60 km/h. They are 280 km apart. When and where do they meet?
+% \end{tcolorbox}
+
+% \vspace{1em}
+
+
+% \setlength{\extrarowheight}{2pt}
+
+% \begin{longtable}{>{\raggedright\arraybackslash}p{0.48\textwidth}|>{\raggedright\arraybackslash}p{0.48\textwidth}}
+% % \hline
+% \textbf{Native Output} & \textbf{Tool-Calling Output} \\
+% \hline
+% \endfirsthead
+
+% \hline
+% \textbf{Native Output} & \textbf{Tool-Calling Output} \\
+% \hline
+% \endhead
+\subsubsection*{Native response}
+
+\begin{tcolorbox}[colback=gray!5, colframe=black, arc=2pt, boxrule=0.5pt,]
+To find the greatest common divisor (GCD) of 3339, 2961, and 1491, we can follow these steps:\\
+
+1. Find the GCD of 3339 and 2961:\\
+
+   We can use the Euclidean algorithm to find the GCD.\\
+
+   3339 = 2961 * 1 + 378\\
+% {\color{red}
+% \begin{minipage}{\linewidth}
+% \textcolor{red}{
+2961 = 378 * 7 + 375\\
+378 = 375 * 1 + 3\\
+375 = 3 * 125 + 0\\
+
+The GCD of 3339 and 2961 is 3.\\
+
+2. Now, find the GCD of 3 and 1491:\\
+We can also use the Euclidean algorithm to find the GCD.\\
+
+1491 = 3 * 497 + 0\\
+
+The GCD of 3 and 1491 is 3.\\
+
+Since the GCD of 3339 and 2961 is 3, and the GCD of 3 and 1491 is 3, the GCD of 3339, 2961, and 1491 is also 3.\\
+
+\textcolor{red}{So, the greatest common divisor of 3339, 2961, and 1491 is 3.}\\
+% \end{minipage}
+% }
+\end{tcolorbox}
+
+% &
+\subsubsection*{Conversation trace with cognitive Tools}
+
+\begin{tcolorbox}[colback=green!5, colframe=black, arc=2pt, boxrule=0.5pt]
+To begin, I will call the `understand\_question' tool to break down the
+math question and provide more clear and detailed explanations of what’s
+being asked and what’s needed.\\
+
+\begin{lstlisting}[style=pythonstyle]
+print(understand_question({
+  'question': 'Find the GCD of 3339, 2961, 1491',
+  'model': 'math_problem'
+}))
+\end{lstlisting}
+\end{tcolorbox}
+
+% \\
+
+
+\begin{tcolorbox}[colback=lightblue, colframe=black, arc=2pt, breakable, title=Understand Question Tool]
+% [Tool: Understand Question]\\
+Observation:\\
+**Problem Analysis:**\\
+
+1. **Core Mathematical Concepts:** The problem involves finding the greatest common divisor (GCD) of three numbers, which is a fundamental concept in number theory.\\
+
+2. **Extracted Symbols, Variables, and Functions:**\\
+	* Variables: $3339$, $2961$, and $1491$ (the three numbers for which we need to find the GCD)\\
+	* Function: GCD (greatest common divisor)\\
+    
+3. **Rephrased Problem into a Step-by-Step Sequence:**
+\begin{itemize}[left=0pt]
+    \item Find the prime factorization of each number: $3339$, $2961$, and $1491$.
+    \item Identify the common prime factors among the three numbers.
+    \item Multiply the common prime factors together to find the greatest common divisor (GCD).\\
+\end{itemize}
+
+4. **Known Theorems or Techniques:**\\
+	* The Euclidean algorithm can be used to find the GCD of two numbers. We can extend this algorithm to find the GCD of three numbers by finding the GCD of the first two numbers and then finding the GCD of the result and the third number.\\
+    
+	* The prime factorization of a number can be found using the fundamental theorem of arithmetic.\\
+
+**Step-by-Step Instructions for the Upstream System:**\\
+
+1. Find the prime factorization of $3339$.\\
+2. Find the prime factorization of $2961$.\\
+3. Find the prime factorization of $1491$.\\
+4. Identify the common prime factors among the three numbers.\\
+5. Multiply the common prime factors together to find the greatest common divisor (GCD).\\
+6. If necessary, use the Euclidean algorithm to find the GCD of the first two numbers and then the GCD of the result and the third number.\\
+
+Please proceed with the first step: finding the prime factorization of $3339$.
+\end{tcolorbox}
+
+% \\
+\begin{tcolorbox}[colback=green!5, colframe=black, arc=2pt, boxrule=0.5pt, breakable]
+To continue solving the problem, I will call the `use\_code`.\\
+
+\begin{lstlisting}[style=pythonstyle]
+```python
+use_code(params...)
+```
+\end{lstlisting}
+\end{tcolorbox}
+
+% \\
+\begin{tcolorbox}[colback=lightblue, colframe=black, arc=2pt, breakable, title=Use Code Tool]
+% [Tool: Understand Question]\\
+Observation:
+Generated code block: 
+\begin{lstlisting}[style=pythonstyle]
+import math
+
+def gcd_three_numbers(a, b, c):
+    # Find the GCD of two numbers using the math.gcd() function
+    gcd_ab = math.gcd(a, b)
+    
+    # Find the GCD of the result with the third number
+    gcd_abc = math.gcd(gcd_ab, c)
+    
+    return gcd_abc
+
+# Define the numbers
+a = 3339
+b = 2961
+c = 1491
+
+# Compute and print the GCD
+result = gcd_three_numbers(a, b, c)
+print("The GCD of", a, b, "and", c, "is:", result)
+\end{lstlisting}
+
+Execution Output:
+The GCD of 3339 2961 and 1491 is: 21
+\end{tcolorbox}
+
+% \\
+
+\begin{tcolorbox}[colback=green!5, colframe=black, arc=2pt, boxrule=0.5pt, breakable]
+To continue solving the problem, I will call the `examine\_answer` tool to verify the correctness of the generated code and answer.\\
+
+\begin{lstlisting}[style=pythonstyle]
+```python
+examine_answer({'question': 'Find the greatest common divisor of $3339$, $2961$, and $1491$', 'current_proposed_answer': 'The GCD of 3339 2961 and 1491 is: 21', 'model': 'math_problem'})
+```
+\end{lstlisting}
+\end{tcolorbox}
+% \hline
+% \\
+
+\begin{tcolorbox}[colback=lightblue, colframe=black, arc=2pt, breakable, title=Examine Answer Tool]
+Observation:\\
+\#\#\# **1. Understanding the Problem**\\
+
+The problem is to find the greatest common divisor (GCD) of three numbers: $3339$, $2961$, and $1491$. The proposed solution uses the Euclidean algorithm to find the GCD of the first two numbers and then the GCD of the result with the third number.\\
+
+\#\#\# **2. Verifying the Given Solution**\\
+
+The proposed solution is a Python function `gcd\_three\_numbers` that takes three numbers as input and returns their GCD. The function uses the `math.gcd()` function to find the GCD of two numbers and then applies the Euclidean algorithm to find the GCD of the result with the third number.\\
+
+**Step-by-Step Breakdown:**\\
+
+1. The function `gcd\_three\_numbers` takes three numbers `a`, `b`, and `c` as input.\\
+2. It finds the GCD of `a` and `b` using the `math.gcd()` function and stores it in `gcd\_ab`.\\
+3. It finds the GCD of `gcd\_ab` and `c` using the `math.gcd()` function and stores it in `gcd\_abc`.\\
+4. It returns `gcd\_abc` as the GCD of the three numbers.\\
+
+**Logical Consistency and Mathematical Correctness:**\\
+
+The proposed solution is mathematically correct and logically consistent. It uses the Euclidean algorithm to find the GCD of the three numbers, which is a well-established method.\\
+
+**Edge Cases:**\\
+
+The proposed solution does not explicitly handle edge cases such as zero or negative input values. However, the `math.gcd()` function is designed to handle these cases correctly.\\
+
+\#\#\# **2.a) Testing and Validation**\\
+
+**Test Cases:**\\
+
+To verify the correctness of the proposed solution, we can test it with various input values.\\
+\begin{lstlisting}[style=pythonstyle]
+
+```python
+# Test case 1: GCD of 3339, 2961, and 1491
+a = 3339
+b = 2961
+c = 1491
+result = gcd_three_numbers(a, b, c)
+print("Test case 1:", result == 21)  # Expected output: True
+
+# Test case 2: GCD of 0, 0, and 0
+a = 0
+b = 0
+c = 0
+result = gcd_three_numbers(a, b, c)
+print("Test case 2:", result == 0)  # Expected output: True
+
+# Test case 3: GCD of 0, 0, and 10
+a = 0
+b = 0
+c = 10
+result = gcd_three_numbers(a, b, c)
+print("Test case 3:", result == 10)  # Expected output: True
+
+# Test case 4: GCD of -5, 5, and 10
+a = -5
+b = 5
+c = 10
+result = gcd_three_numbers(a, b, c)
+print("Test case 4:", result == 5)  # Expected output: True
+```
+\end{lstlisting}
+
+**Validation:**
+
+All test cases pass, indicating that the proposed solution is correct.\\
+
+\#\#\# **3. Suggesting Improvements**\\
+
+The proposed solution is already mathematically correct and logically consistent. However, we can suggest a few improvements:\\
+
+* Add explicit error handling for edge cases such as zero or negative input values.\\
+* Consider using a more robust method for finding the GCD, such as the Extended Euclidean algorithm.\\
+* Add comments to the code to improve readability and understanding.\\
+
+\#\#\# **4. Providing a Judgment**\\
+
+Based on the verification and testing, the proposed solution is **correct**.
+\end{tcolorbox}
+
+
+\begin{tcolorbox}[colback=green!5, colframe=black, arc=2pt, boxrule=0.5pt]
+Based on the previous steps, the proposed solution is correct. The greatest common divisor (GCD) of $3339$, $2961$, and $1491$ is indeed $21$. Therefore, I can provide the final answer.\\
+
+\textbf{ANSWER: 21}
+\end{tcolorbox}
+

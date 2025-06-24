@@ -1,5 +1,5 @@
 import operator
-from typing import TypedDict, List
+from typing import TypedDict, List, Dict, Any
 from typing_extensions import Annotated
 from pydantic import BaseModel, Field
 
@@ -45,26 +45,63 @@ class ProposalCritique(BaseModel):
     suggested_changes: str = Field(description="Specific suggestions for revision.")
 '''
 
-# --- The Global State ---
+# --- Data-only Schemas for LLM outputs ---
+# These are used for type hinting and structured output parsing
 
-class ProposalAgentState(TypedDict, total=False):
+class QueryList(TypedDict):
+    """A list of search queries."""
+    queries: List[str]
 
-    # Collection
-    collection_name: str
-    # Core Research
+class KnowledgeGap(TypedDict):
+    """The output of the literature synthesis step."""
+    synthesized_summary: str
+    knowledge_gap: str
+
+class Critique(TypedDict):
+    """The structured feedback from a single proposal reviewer."""
+    score: float 
+    justification: str
+
+class FinalReview(TypedDict):
+    """The final, synthesized review from the proposal review aggregator."""
+    is_approved: bool
+    final_critique: str
+    actionable_feedback: str
+
+# --- Main Agent State ---
+
+class ProposalAgentState(TypedDict):
+    """
+    The overall state of the proposal generation agent.
+    It's passed between nodes in the graph.
+    """
+    # --- Inputs ---
     topic: str
-    search_queries: Annotated[list[str], operator.add]
+    collection_name: str
+    local_papers_only: bool
 
-    literature_summaries: Annotated[list[str], operator.add]
-    reflection: SummaryReflection
-
-    # Planning & Design
-    research_plan:  Annotated[list[str], operator.add]
-    novelty_assessment: Annotated[list[NoveltyAssessment], operator.add] 
-
-
-    # writing proposals and experiments
-    #experiment_protocol:  ExperimentProtocol
-    #markdown_proposal: str
+    # --- Agent Trajectory ---
     
+    # 1. Query Generation
+    search_queries: Annotated[List[str], operator.add]
+
+    # 2. Literature Review
+    # Raw summaries from each literature review agent run
+    literature_summaries: Annotated[List[str], operator.add]
+    # The single, synthesized summary and knowledge gap from the aggregator
+    knowledge_gap: KnowledgeGap
+    
+    # 3. Proposal Formulation
+    proposal_draft: str
+    
+    # 4. Proposal Review
+    # Raw feedback from each review team member, keyed by member name (e.g., "review_feasibility")
+    review_team_feedback: Dict[str, Any]
+    # The final, synthesized review from the aggregator
+    final_review: FinalReview
+    
+    # --- Loop Control ---
+    # We can add counters here if we need to enforce max loops for revisions
+    proposal_revision_cycles: int
+
     
