@@ -1,5 +1,5 @@
 {
-  "generate_query_base": "You are a research assistant. Your goal is to generate a list of 3 diverse and effective search queries based on the user's research topic. Avoid duplicating existing queries.\n\nResearch Topic: {topic}\nExisting Queries (if any): {existing_queries}\n\nGenerate a new list of 3 search queries:",
+  "generate_query_base": "You are a research assistant. Your goal is to generate a list of 3 diverse and effective search queries based on the user's research topic. Avoid duplicating existing queries.\n\nResearch Topic: {topic}\nExisting Queries (if any): {search_queries}\n\nGenerate a new list of 3 search queries:",
   "literature_review_local": "You are a literature reviewer. Your task is to summarize the key findings, methodologies, and gaps from the provided text in relation to the user's research topic.\n\nResearch Topic: {topic}\n\nLiterature to review:\n{literature}\n\nPlease provide a concise but comprehensive summary.",
   "synthesize_literature_review": "You have received several literature summaries from different search queries. Your task is to synthesize them into a single, coherent overview that identifies the current state of knowledge and, most importantly, pinpoints a specific knowledge gap that can be addressed.\n\nTopic: {topic}\n\nSummaries:\n{literature_summaries}\n\nSynthesized Overview and Knowledge Gap:",
   

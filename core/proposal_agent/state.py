@@ -1,5 +1,5 @@
 import operator
-from typing import TypedDict, List, Dict, Any
+from typing import TypedDict, List, Dict, Any, Optional
 from typing_extensions import Annotated
 from pydantic import BaseModel, Field
 
@@ -56,6 +56,9 @@ class KnowledgeGap(TypedDict):
     """The output of the literature synthesis step."""
     synthesized_summary: str
     knowledge_gap: str
+    justification: str
+    is_novel: bool
+    similar_papers: Optional[List[Dict]]
 
 class Critique(TypedDict):
     """The structured feedback from a single proposal reviewer."""
@@ -65,8 +68,18 @@ class Critique(TypedDict):
 class FinalReview(TypedDict):
     """The final, synthesized review from the proposal review aggregator."""
     is_approved: bool
-    final_critique: str
-    actionable_feedback: str
+    critique: str
+
+def merge_feedback(
+    left: Dict[str, Any] | None = None, right: Dict[str, Any] | None = None
+) -> Dict[str, Any]:
+    """Merges feedback dictionaries from parallel review nodes."""
+    if left is None:
+        left = {}
+    if right is None:
+        right = {}
+    left.update(right)
+    return left
 
 # --- Main Agent State ---
 
@@ -96,12 +109,14 @@ class ProposalAgentState(TypedDict):
     
     # 4. Proposal Review
     # Raw feedback from each review team member, keyed by member name (e.g., "review_feasibility")
-    review_team_feedback: Dict[str, Any]
+    review_team_feedback: Annotated[Dict[str, Any], merge_feedback]
     # The final, synthesized review from the aggregator
     final_review: FinalReview
     
     # --- Loop Control ---
     # We can add counters here if we need to enforce max loops for revisions
     proposal_revision_cycles: int
+
+    current_literature: str
 
     

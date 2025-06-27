@@ -43,7 +43,7 @@ def create_llm_node(node_name: str, node_config: Dict[str, Any]):
     prompt = ChatPromptTemplate.from_template(prompt_template)
     output_schema = OUTPUT_SCHEMAS.get(node_config["output_schema"])
 
-    def _node(state: ProposalAgentState) -> Dict[str, Any]:
+    async def _node(state: ProposalAgentState) -> Dict[str, Any]:
         print(f"--- Running node: {node_name} ---")
         
         # Use a structured output model if a schema is specified
@@ -54,33 +54,52 @@ def create_llm_node(node_name: str, node_config: Dict[str, Any]):
             
         chain = prompt | llm
         
-        # The result from an LLM node is a single object (or string).
-        # We need to return a dictionary to update the state.
-        # The key under which it's stored depends on the node's function in the graph.
-        result = chain.invoke(state)
+        # HACK: Special handling for the reviewer. This node needs to use a tool FIRST, then an LLM.
+        if node_name == "literature_reviewer_local":
+            query = state['search_queries'][-1]
+            collection_name = state['collection_name']
+            
+            print(f"--- Node '{node_name}' is calling a tool: paperqa_service.query_documents ---")
+            print(f"Running query: '{query}' on collection '{collection_name}'")
+            response = await paperqa_service.query_documents(collection_name, query)
+            literature_context = response.get("context", f"Could not find relevant literature for query: {query}")
 
-        # This is a simplification. The actual state update is handled
-        # by the graph structure itself when the node returns.
-        # For team members, the output is collected. For aggregators, it updates a specific field.
-        # This function just produces the core output.
-        return result
+            input_data = {"topic": state["topic"], "literature": literature_context}
+            result = chain.invoke(input_data)
+        elif node_name == "review_novelty":
+            # This node needs a specific part of the state (the aggregated summary)
+            input_data = {
+                "proposal_draft": state["proposal_draft"],
+                "aggregated_summary": state["knowledge_gap"]["synthesized_summary"]
+            }
+            result = chain.invoke(input_data)
+        elif node_name == "synthesize_review":
+            # This node needs the dictionary of feedback.
+            input_data = {"review_feedbacks": state["review_team_feedback"]}
+            result = chain.invoke(input_data)
+        else:
+            result = chain.invoke(state)
 
-    return _node
+        # This logic needs to be much smarter.
+        # It should know which state key to update based on the node's purpose.
+        if node_name == "query_generator_base":
+             return {"search_queries": result['queries']}
+        elif node_name == "literature_reviewer_local":
+             # The reviewer's output is a summary string. We add it to the list.
+             # The aggregator will later combine all summaries.
+             return {"literature_summaries": state.get("literature_summaries", []) + [result.content]}
+        elif node_name == "synthesize_literature_review":
+             return {"knowledge_gap": result}
+        elif node_name == "formulate_plan":
+             return {"proposal_draft": result.content}
+        elif node_name in ["review_feasibility", "review_novelty"]:
+             # The output of a review is a Critique dict. We collect them in a dict.
+             # The reducer we defined in the state will merge the results from the parallel nodes.
+             return {"review_team_feedback": {node_name: result}}
+        elif node_name == "synthesize_review":
+             return {"final_review": result}
 
-def create_tool_node(node_name: str, node_config: Dict[str, Any]):
-    """Factory function for a tool-using node (currently specific to paperqa)."""
-    
-    async def _node(state: ProposalAgentState) -> Dict[str, Any]:
-        print(f"--- Running node: {node_name} ---")
-        # This is built specifically for the literature review tool for now
-        query = state['search_queries'][-1] # Assumes one query at a time
-        collection_name = state['collection_name']
-        
-        print(f"Running query: '{query}'")
-        response = await paperqa_service.query_documents(collection_name, query)
-        
-        summary = response.get("answer_text", f"Error processing query: {query}")
-        return {"literature_summaries": [summary]}
+        return {} # Should not be reached for most nodes
 
     return _node
 
@@ -122,12 +141,8 @@ def build_graph() -> StateGraph:
     
     # 1. Add all nodes defined in the config to the graph
     for node_name, node_config in agent_config["nodes"].items():
-        # This part needs to be more robust. For now, we assume llm or tool node.
-        # In a real scenario, you'd have a mapping of types to factory functions.
-        if "prompt_key" in node_config:
-            node_func = create_llm_node(node_name, node_config)
-        else: # Assumes tool node
-            node_func = create_tool_node(node_name, node_config)
+        # All nodes are currently LLM-based, some with special logic.
+        node_func = create_llm_node(node_name, node_config)
         builder.add_node(node_name, node_func)
 
     # Add special utility nodes
