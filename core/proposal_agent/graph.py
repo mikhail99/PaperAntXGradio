@@ -95,6 +95,13 @@ def create_llm_node(node_name: str, node_config: Dict[str, Any]):
         # This is a single, unified block to handle special logic for different nodes.
         if node_name == "literature_reviewer_local":
             # This node now directly uses the output from PaperQA to preserve citations.
+            
+            # EXAMPLE: How user approval/rejection works with SINGLE query processing
+            # INPUT: state = {"search_queries": ["AI safety"], "human_feedback": "continue"}
+            # OR:    state = {"search_queries": ["AI safety"], "human_feedback": "machine learning ethics"}
+            # LOGIC: Use human feedback if provided, otherwise use the MOST RECENT query (avoids repetition)
+            # NOTE: We only process ONE query at a time - the last/most relevant one
+            
             human_input = state.get("human_feedback")
             query_to_run_list = state.get('search_queries', [])
             query_to_run = query_to_run_list[-1] if query_to_run_list else state.get("topic")
@@ -132,6 +139,14 @@ def create_llm_node(node_name: str, node_config: Dict[str, Any]):
             result = chain.invoke(input_data)
         elif node_name == "query_generator_base":
             # This node needs the topic and any prior queries or feedback.
+            
+            # EXAMPLE: How query generation avoids repetition using previous queries
+            # INPUT: state = {"topic": "AI safety", "search_queries": ["neural networks"], "human_feedback": "continue"}
+            # RESULT: Generates new query avoiding "neural networks", maybe "AI safety verification"
+            # INPUT: state = {"topic": "AI safety", "human_feedback": "robotics safety"}  
+            # RESULT: Uses "robotics safety" instead, ignoring previous queries and topic
+            # LOGIC: LLM considers previous queries to generate diverse, non-repetitive searches
+            
             topic = state.get("topic", "")
             feedback = state.get("human_feedback") or ""
 
@@ -249,6 +264,13 @@ def create_llm_node(node_name: str, node_config: Dict[str, Any]):
 
 def deduplicate_queries_node(state: ProposalAgentState) -> Dict[str, List[str]]:
     """A simple utility node to deduplicate queries from parallel runs."""
+    
+    # EXAMPLE: How query deduplication works (even though we use only one query)
+    # INPUT: state = {"search_queries": ["AI safety", "machine learning", "AI safety", "neural networks"]}
+    # OUTPUT: {"search_queries": ["AI safety", "machine learning", "neural networks"]}
+    # LOGIC: Remove duplicates while preserving order
+    # NOTE: We keep all unique queries for context, but literature_reviewer_local uses only the LAST one
+    
     print("--- Running node: deduplicate_queries_node ---")
     all_queries = state.get('search_queries', [])
     unique_queries = list(dict.fromkeys(all_queries))
@@ -258,42 +280,108 @@ def deduplicate_queries_node(state: ProposalAgentState) -> Dict[str, List[str]]:
 
 def human_query_review_node(state: ProposalAgentState):
     """A placeholder node that serves as a breakpoint for human query review."""
+    
+    # EXAMPLE: Human-in-the-loop checkpoint behavior
+    # WHEN CALLED: Agent has generated queries like ["AI safety research", "machine learning ethics"]
+    # WHAT HAPPENS: Graph pauses here, waits for human input
+    # HUMAN OPTIONS: 
+    #   - Type "continue" → proceed with generated queries
+    #   - Type "robotics safety" → replace queries with custom input
+    # RESULT: Sets paused_on field, service layer detects pause and prompts user
+    
     print("--- Paused for Human Query Review ---")
+    print(f"--- HIL DEBUG: human_query_review_node called with state keys: {list(state.keys())} ---")
+    print(f"--- HIL DEBUG: search_queries: {state.get('search_queries', [])} ---")
+    print(f"--- HIL DEBUG: human_feedback: '{state.get('human_feedback', '')}' ---")
     # Explicitly set the paused_on field so the service layer can detect the pause
-    return {"paused_on": "human_query_review_node"}
+    result = {"paused_on": "human_query_review_node"}
+    print(f"--- HIL DEBUG: human_query_review_node returning: {result} ---")
+    return result
 
 def human_insight_review_node(state: ProposalAgentState):
     """A placeholder node that serves as a breakpoint for human insight review."""
+    
+    # EXAMPLE: Second human checkpoint  
+    # WHEN CALLED: Agent has synthesized literature and identified knowledge gap
+    # WHAT HAPPENS: Graph pauses, shows gap like "Limited research on AI safety in robotics"
+    # HUMAN OPTIONS:
+    #   - Type "continue" → proceed with identified gap
+    #   - Type "Focus on autonomous vehicle safety instead" → override the gap
+    # RESULT: Human feedback stored, used in next literature review or proposal generation
+    
     print("--- Paused for Human Insight Review ---")
+    print(f"--- HIL DEBUG: human_insight_review_node called with state keys: {list(state.keys())} ---")
+    print(f"--- HIL DEBUG: knowledge_gap: {state.get('knowledge_gap', {})} ---")
+    print(f"--- HIL DEBUG: human_feedback: '{state.get('human_feedback', '')}' ---")
     # Explicitly set the paused_on field so the service layer can detect the pause
-    return {"paused_on": "human_insight_review_node"}
+    result = {"paused_on": "human_insight_review_node"}
+    print(f"--- HIL DEBUG: human_insight_review_node returning: {result} ---")
+    return result
 
 def human_review_node(state: ProposalAgentState):
     """
     A placeholder node that serves as a breakpoint for human review.
     The graph will pause here.
     """
+    
+    # EXAMPLE: Final human review checkpoint
+    # WHEN CALLED: Only when AI review says "needs revision" (not when approved)
+    # WHAT HAPPENS: Graph pauses, shows proposal and AI feedback  
+    # HUMAN OPTIONS:
+    #   - Type "continue" → proceed with AI's revision suggestions
+    #   - Type "Focus more on practical applications" → add human guidance
+    # RESULT: Human feedback guides next revision cycle, or process ends if approved
+    
     print("--- Paused for Human Review ---")
+    print(f"--- HIL DEBUG: human_review_node called with state keys: {list(state.keys())} ---")
+    print(f"--- HIL DEBUG: proposal_revision_cycles: {state.get('proposal_revision_cycles', 0)} ---")
+    print(f"--- HIL DEBUG: final_review: {state.get('final_review', {})} ---")
+    print(f"--- HIL DEBUG: human_feedback: '{state.get('human_feedback', '')}' ---")
     # Explicitly set the paused_on field so the service layer can detect the pause
-    return {"paused_on": "human_review_node"}
+    result = {"paused_on": "human_review_node"}
+    print(f"--- HIL DEBUG: human_review_node returning: {result} ---")
+    return result
+
+def clear_pause_state_node(state: ProposalAgentState):
+    """Clears the paused_on field to signal that the process has completed."""
+    print("--- Clearing pause state for completion ---")
+    return {"paused_on": None}
 
 # --- Conditional Logic ---
 
 def is_proposal_approved(state: ProposalAgentState) -> Literal["approved", "revise", "max_revisions_reached"]:
     """Checks the final review to decide if the proposal is done or needs revision."""
+    
+    # EXAMPLE: How approval/revision logic works
+    # SCENARIO 1: state = {"final_review": {"is_approved": True}, "proposal_revision_cycles": 1}
+    #   RESULT: "approved" → go to clear_pause_state_node → END (no human review)
+    #
+    # SCENARIO 2: state = {"final_review": {"is_approved": False}, "proposal_revision_cycles": 1}  
+    #   RESULT: "revise" → go to human_review_node (pause for human input) → formulate_plan
+    #
+    # SCENARIO 3: state = {"final_review": {"is_approved": False}, "proposal_revision_cycles": 3}
+    #   RESULT: "max_revisions_reached" → go to clear_pause_state_node → END (stop trying)
+    
     print("--- Running node: is_proposal_approved ---")
+    print(f"--- APPROVAL DEBUG: Current revision cycles: {state.get('proposal_revision_cycles', 0)} ---")
+    print(f"--- APPROVAL DEBUG: Max revisions allowed: {MAX_PROPOSAL_REVISIONS} ---")
+    print(f"--- APPROVAL DEBUG: Final review state: {state.get('final_review', {})} ---")
+    print(f"--- APPROVAL DEBUG: Human feedback: '{state.get('human_feedback', '')}' ---")
     
     # Stop condition 1: max revisions reached
     if state.get("proposal_revision_cycles", 0) >= MAX_PROPOSAL_REVISIONS:
+        print(f"--- APPROVAL DEBUG: DECISION = 'max_revisions_reached' ---")
         print(f"--- Max proposal revisions ({MAX_PROPOSAL_REVISIONS}) reached. ENDING. ---")
         return "max_revisions_reached"
 
     # Stop condition 2: proposal is approved
     if state.get('final_review') and state['final_review'].get('is_approved'):
+        print(f"--- APPROVAL DEBUG: DECISION = 'approved' ---")
         print("--- Proposal approved. ENDING. ---")
         return "approved"
         
     # Otherwise, continue to revise
+    print(f"--- APPROVAL DEBUG: DECISION = 'revise' ---")
     print("--- Proposal needs revision. Looping back. ---")
     return "revise"
 
@@ -301,6 +389,26 @@ def is_proposal_approved(state: ProposalAgentState) -> Literal["approved", "revi
 
 def build_graph() -> StateGraph:
     """Builds the LangGraph workflow from the JSON configuration."""
+    
+    # EXAMPLE: Overall workflow pattern (SINGLE QUERY PROCESSING)
+    # START → query_generator_base (generates 1 query, considers previous queries for diversity)
+    #   ↓ 
+    # deduplicate_queries_node (removes duplicates, keeps query history for context)
+    #   ↓
+    # human_query_review_node (PAUSE - user can approve or provide custom query)
+    #   ↓ (user types "continue" or custom query)
+    # literature_reviewer_local (processes ONLY the most recent/relevant query)
+    #   ↓ 
+    # synthesize_literature_review (combines all literature summaries from previous searches)
+    #   ↓
+    # human_insight_review_node (PAUSE - user can approve knowledge gap or refine it)
+    #   ↓ (user types "continue" or refined knowledge gap)
+    # formulate_plan → [review_novelty + review_feasibility] → synthesize_review
+    #   ↓ (AI decides: approved, revise, or max_revisions_reached)
+    # IF approved/max_revisions: clear_pause_state_node → END
+    # IF revise: human_review_node (PAUSE) → formulate_plan (loop back)
+    #
+    # KEY DESIGN: Each literature search uses ONE query but considers query history to avoid repetition
     
     # By passing the state definition here, we tell the graph to use the Annotated
     # reducers within the TypedDict instead of its default "replace" behavior.
@@ -318,6 +426,7 @@ def build_graph() -> StateGraph:
     builder.add_node("human_query_review_node", human_query_review_node)
     builder.add_node("human_insight_review_node", human_insight_review_node)
     builder.add_node("human_review_node", human_review_node)
+    builder.add_node("clear_pause_state_node", clear_pause_state_node)
 
     # 2. Define the static workflow using teams
     
@@ -357,19 +466,22 @@ def build_graph() -> StateGraph:
     for member in review_team_config["members"]:
         builder.add_edge(member, review_team_config["aggregator"])
     
-    # Final Review Aggregator -> Human Review Breakpoint
-    builder.add_edge(review_team_config["aggregator"], "human_review_node")
-    
-    # 3. Add conditional logic for the revision loop
+    # Final Review Aggregator -> Approval Decision (not human review directly)
     builder.add_conditional_edges(
-        "human_review_node", # The decision point is now AFTER human review
+        review_team_config["aggregator"], # Decision point is now AFTER AI review but BEFORE human review
         is_proposal_approved,
         {
-            "approved": END,
-            "max_revisions_reached": END,
-            "revise": "formulate_plan" # If rejected, go back to the planning stage
+            "approved": "clear_pause_state_node",
+            "max_revisions_reached": "clear_pause_state_node",
+            "revise": "human_review_node" # Only go to human review if revision is needed
         }
     )
+    
+    # Clear pause state -> END (for approved/max revisions cases)
+    builder.add_edge("clear_pause_state_node", END)
+    
+    # Human Review -> Back to Planning (only if we got here, revision is needed)
+    builder.add_edge("human_review_node", "formulate_plan")
 
     # Create a memory checkpointer for persistence
     memory = MemorySaver()

@@ -49,8 +49,8 @@ class ProposalCritique(BaseModel):
 # These are used for type hinting and structured output parsing
 
 class QueryList(TypedDict):
-    """A list of search queries."""
-    queries: List[str]
+    """Output from query generation - contains a single focused query."""
+    queries: List[str]  # Will contain one query, but keep as list for compatibility
 
 class KnowledgeGap(TypedDict):
     """The output of the literature synthesis step."""
