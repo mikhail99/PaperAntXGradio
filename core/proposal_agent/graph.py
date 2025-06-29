@@ -30,6 +30,7 @@ OUTPUT_SCHEMAS = {
 }
 
 MAX_PROPOSAL_REVISIONS = 3
+USE_PARROT_SERVICES = True # <-- SET THIS TO True TO USE MOCKS
 
 # --- Lazy Service and Model Initializer ---
 # We store the instances here so they are only created once.
@@ -40,6 +41,14 @@ _paperqa_service = None
 def get_services():
     """Lazily initializes and returns service instances."""
     global _json_llm, _text_llm, _paperqa_service
+
+    if USE_PARROT_SERVICES:
+        from .parrot_services import get_parrot_services as get_mock
+        if _json_llm is None: # Check so we only initialize once
+            _json_llm, _text_llm, _paperqa_service = get_mock()
+        return _json_llm, _text_llm, _paperqa_service
+
+    # --- Original Service Initialization ---
     if _json_llm is None:
         print("--- Initializing json_llm ---")
         _json_llm = ChatOllama(
@@ -199,13 +208,19 @@ def create_llm_node(node_name: str, node_config: Dict[str, Any]):
         # This logic routes the output of the LLM call to the correct key in the state
         return_value = {}
         if node_name == "query_generator_base":
-             return_value = {"search_queries": result['queries']}
+             # Langchain can return either a Pydantic object or a dict.
+             # Accessing it like a dict is safer.
+             queries = result.queries if hasattr(result, 'queries') else result['queries']
+             return_value = {"search_queries": queries}
         elif node_name == "literature_reviewer_local":
             # This logic is now handled inside the node's main body to avoid complexity.
             # The node now returns directly.
             return_value = {} # Should not be reached
         elif node_name == "synthesize_literature_review":
-             return_value = {"knowledge_gap": result}
+             # Make this node robust to dict vs. object
+             gap = result.knowledge_gap if hasattr(result, 'knowledge_gap') else result['knowledge_gap']
+             summary = result.synthesized_summary if hasattr(result, 'synthesized_summary') else result['synthesized_summary']
+             return_value = {"knowledge_gap": {"knowledge_gap": gap, "synthesized_summary": summary}}
         elif node_name == "formulate_plan":
             content = result.content if hasattr(result, 'content') else result['content']
             current_cycles = state.get("proposal_revision_cycles", 0)
@@ -218,7 +233,10 @@ def create_llm_node(node_name: str, node_config: Dict[str, Any]):
             # These are review nodes, their results are critiques.
             return_value = {"review_team_feedback": {node_name: result}}
         elif node_name == "synthesize_review":
-             return_value = {"final_review": result}
+             # Make this node robust to dict vs. object
+             approved = result.is_approved if hasattr(result, 'is_approved') else result['is_approved']
+             summary = result.final_summary if hasattr(result, 'final_summary') else result['final_summary']
+             return_value = {"final_review": {"is_approved": approved, "final_summary": summary}}
         else:
              return_value = {}
 
@@ -238,25 +256,26 @@ def deduplicate_queries_node(state: ProposalAgentState) -> Dict[str, List[str]]:
     # But since the state has reducers, we only need to return the changed key.
     return {"search_queries": unique_queries}
 
-def human_query_review_node(state: ProposalAgentState) -> dict:
+def human_query_review_node(state: ProposalAgentState):
     """A placeholder node that serves as a breakpoint for human query review."""
     print("--- Paused for Human Query Review ---")
+    # Explicitly set the paused_on field so the service layer can detect the pause
     return {"paused_on": "human_query_review_node"}
 
-def human_insight_review_node(state: ProposalAgentState) -> dict:
+def human_insight_review_node(state: ProposalAgentState):
     """A placeholder node that serves as a breakpoint for human insight review."""
     print("--- Paused for Human Insight Review ---")
+    # Explicitly set the paused_on field so the service layer can detect the pause
     return {"paused_on": "human_insight_review_node"}
 
-def human_review_node(state: ProposalAgentState) -> dict:
+def human_review_node(state: ProposalAgentState):
     """
     A placeholder node that serves as a breakpoint for human review.
     The graph will pause here.
     """
     print("--- Paused for Human Review ---")
-    # This node can optionally clear the human feedback after it's been "consumed"
-    # by the planner, to prevent it from being used in subsequent loops.
-    return {"paused_on": "human_review_node", "human_feedback": None}
+    # Explicitly set the paused_on field so the service layer can detect the pause
+    return {"paused_on": "human_review_node"}
 
 # --- Conditional Logic ---
 

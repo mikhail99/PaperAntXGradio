@@ -21,57 +21,50 @@ class ProposalAgentService:
         """Helper method to stream the graph and yield results."""
         config = {"configurable": {"thread_id": thread_id}}
         final_state_for_saving = {}
-        last_step_name = ""
-
-        try:
-            print(f"--- Service: Starting graph astream loop (Thread: {thread_id}) ---")
-            async for step in self.graph.astream(graph_input, config=config):
-                step_name = list(step.keys())[0]
-                last_step_name = step_name
-                step_output = step.get(step_name, {})
-                
-                print(f"--- Service: Yielding step '{step_name}' ---")
-                
-                # Don't yield the interrupt step itself to the client
-                if step_name == "__interrupt__":
-                    continue
-
-                yield {
-                    "step": step_name,
-                    "state": step_output
-                }
-
-                if isinstance(step_output, dict):
-                    final_state_for_saving.update(step_output)
-            print("--- Service: Graph astream loop finished. ---")
-
-        except Exception as e:
-            import traceback
-            print(f"--- Service: EXCEPTION in astream loop: {e} ---")
-            print(traceback.format_exc())
-            raise e
         
-        finally:
-            print(f"--- Service: In finally block. Last step was '{last_step_name}'. ---")
-            paused_node = final_state_for_saving.get("paused_on")
+        print(f"--- Service: Starting graph astream loop (Thread: {thread_id}) ---")
+        async for step in self.graph.astream(graph_input, config=config):
+            step_name = list(step.keys())[0]
+            step_output = step.get(step_name, {})
+            
+            print(f"--- Service: Yielding step '{step_name}' ---")
+            
+            if step_name == "__interrupt__":
+                continue
 
-            if paused_node and paused_node in self.HIL_NODES:
-                print(f"--- Service: Detected pause on '{paused_node}'. Yielding 'human_input_required'. ---")
-                yield {
-                    "step": "human_input_required",
-                    "state": final_state_for_saving,
-                    "paused_on": paused_node,
-                    "thread_id": thread_id
-                }
-            else:
-                if final_state_for_saving:
-                    print("--- Service: Detected natural finish. Yielding 'done'. ---")
-                yield {
-                    "step": "done",
-                    "state": final_state_for_saving,
-                    "thread_id": thread_id
-                }
-            print("--- Service: Final message yielded. Exiting service method. ---")
+            yield {
+                "step": step_name,
+                "state": step_output
+            }
+
+            if isinstance(step_output, dict):
+                final_state_for_saving.update(step_output)
+        print("--- Service: Graph astream loop finished. ---")
+
+        # After the loop, get the definitive final state
+        final_graph_state = self.graph.get_state(config)
+        if final_graph_state and final_graph_state.values:
+            final_state_for_saving.update(final_graph_state.values)
+
+        paused_node = final_state_for_saving.get("paused_on")
+
+        if paused_node and paused_node in self.HIL_NODES:
+            print(f"--- Service: Detected pause on '{paused_node}'. Yielding 'human_input_required'. ---")
+            yield {
+                "step": "human_input_required",
+                "state": final_state_for_saving,
+                "paused_on": paused_node,
+                "thread_id": thread_id
+            }
+        else:
+            if final_state_for_saving:
+                print("--- Service: Detected natural finish. Yielding 'done'. ---")
+            yield {
+                "step": "done",
+                "state": final_state_for_saving,
+                "thread_id": thread_id
+            }
+        print("--- Service: Final message yielded. Exiting service method. ---")
 
     async def start_agent(self, config: Dict[str, Any]) -> AsyncGenerator[Dict[str, Any], None]:
         """Starts a new agent run with a fresh state."""

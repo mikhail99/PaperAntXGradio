@@ -79,12 +79,16 @@ def create_research_plan_tab(state):
         async def handle_chat_interaction(collection_name, user_input, chat_history, thread_id, agent_state):
             """Main handler to run the proposal agent and stream results to the UI."""
             
-            # Load the state from the last turn
+            # --- Initialize Local State for UI ---
             live_agent_state = agent_state.copy()
+            summary_md = literature_summary_md.value
+            plan_md = research_plan_md.value
+            novelty_md = novelty_assessment_md.value
+            final_proposal_md_val = final_proposal_md.value
 
             if (thread_id is None) and (not collection_name or not user_input.strip()):
                 gr.Warning("Please select a collection and enter a research direction.")
-                yield chat_history, gr.update(), gr.update(), thread_id, live_agent_state, gr.update(), gr.update(), gr.update(), gr.update()
+                yield chat_history, gr.update(), gr.update(), thread_id, live_agent_state, summary_md, plan_md, novelty_md, final_proposal_md_val
                 return
 
             is_resuming = thread_id is not None
@@ -126,21 +130,17 @@ def create_research_plan_tab(state):
                         thread_id = step_data["thread_id"]
                     
                     # --- UI UPDATES based on live state ---
-                    summary_md = literature_summary_md.value
                     if "literature_summaries" in live_agent_state:
                         summaries = live_agent_state["literature_summaries"]
                         summary_md = "### Literature Summaries\n\n" + "\n\n---\n\n".join(summaries)
                     
-                    plan_md = research_plan_md.value
                     if "proposal_draft" in live_agent_state:
                         plan_md = f"### Proposal Draft\n\n{live_agent_state['proposal_draft']}"
 
-                    novelty_md = novelty_assessment_md.value
                     if "review_team_feedback" in live_agent_state:
                         # This could be more detailed, for now just show it exists
                         novelty_md = f"### Agent Reviews\n\n```json\n{json.dumps(live_agent_state['review_team_feedback'], indent=2)}\n```"
 
-                    final_proposal_md_val = final_proposal_md.value
                     if "final_review" in live_agent_state and live_agent_state["final_review"].get("is_approved"):
                          final_proposal_md_val = f"### Final Proposal\n\n{live_agent_state.get('proposal_draft', 'Error: Draft not found.')}"
 
@@ -184,7 +184,7 @@ def create_research_plan_tab(state):
             
             finally:
                 # This block ALWAYS runs, ensuring the UI is re-enabled.
-                yield chat_history, gr.update(interactive=True), gr.update(interactive=True), thread_id, live_agent_state, gr.update(), gr.update(), gr.update(), gr.update()
+                yield chat_history, gr.update(interactive=True), gr.update(interactive=True), thread_id, live_agent_state, summary_md, plan_md, novelty_md, final_proposal_md_val
 
 
         # --- Connect UI Components to Functions ---
