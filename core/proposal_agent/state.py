@@ -86,46 +86,32 @@ def merge_feedback(
 
 class ProposalAgentState(TypedDict):
     """
-    The overall state of the proposal generation agent.
-    It's passed between nodes in the graph.
-    
-    Based on LangGraph documentation, reducers are only needed when you want
-    to customize how updates are applied. For most fields, the default behavior
-    (overwrite) is sufficient. Only lists need special handling.
+    The state definition for our multi-agent research proposal generation system.
+    This state is passed between all nodes in the graph.
     """
-    # --- Inputs ---
+    # Input configuration
     topic: str
     collection_name: str
     local_papers_only: bool
-
-    # --- Agent Trajectory ---
     
-    # 1. Query Generation
-    search_queries: Annotated[List[str], operator.add]
-
-    # 2. Literature Review
-    # Raw summaries from each literature review agent run
+    # Query generation state
+    search_queries: List[str]  # Single query replacement, not accumulation
+    
+    # Literature review state  
     literature_summaries: Annotated[List[str], operator.add]
-    # The single, synthesized summary and knowledge gap from the aggregator
-    knowledge_gap: KnowledgeGap
+    current_literature: str
     
-    # 3. Proposal Formulation
+    # Knowledge synthesis state
+    knowledge_gap: Dict[str, Any]
+    
+    # Proposal creation state
     proposal_draft: str
     
-    # 4. Proposal Review
-    # Raw feedback from each review team member, keyed by member name (e.g., "review_feasibility")
+    # Review state
     review_team_feedback: Annotated[Dict[str, Any], merge_feedback]
-    # The final, synthesized review from the aggregator
-    final_review: FinalReview
+    final_review: Dict[str, Any]
     
-    # --- Human in the Loop ---
-    human_feedback: Optional[str]
-    paused_on: Optional[str] # The name of the node we paused on
-
-    # --- Loop Control ---
-    # We can add counters here if we need to enforce max loops for revisions
+    # Revision tracking
     proposal_revision_cycles: int
-
-    current_literature: str
 
     

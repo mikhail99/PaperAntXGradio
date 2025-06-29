@@ -5,7 +5,7 @@ import os
 import pickle
 import uuid
 
-from core.proposal_agent.graph import graph
+from core.proposal_agent.modern_service import create_modern_service
 from core.collections_manager import CollectionsManager
 from paperqa import Docs
 from core.data_models import Article
@@ -77,46 +77,65 @@ def setup_test_collection():
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-async def test_agent_integration_happy_path():
+async def test_modern_agent_integration():
     """
-    Tests a simple, successful workflow using the real LLM and PaperQA services
-    against the existing 'LLM_Reasoning_Agents' collection.
+    Tests the modern interrupt() pattern service using the new HIL workflow.
     This test is slow and requires a running Ollama instance.
     """
-    print(f"--- Running test_agent_integration_happy_path ---")
-    # Use a unique thread_id for each test run to ensure isolation.
-    thread_id = f"integration-test-{uuid.uuid4()}"
-    config = {"configurable": {"thread_id": thread_id}}
-
+    print(f"--- Running test_modern_agent_integration ---")
+    
+    # Create modern service
+    service = create_modern_service()
+    
     # 1. Start the agent
-    initial_state = {
+    config = {
         "topic": "LLM reasoning abilities",
-        "collection_name": TEST_COLLECTION_NAME
+        "collection_name": TEST_COLLECTION_NAME,
+        "local_papers_only": True
     }
     
-    print(f"\n--- Running Test on collection '{TEST_COLLECTION_NAME}': Initial agent invocation ---")
-    final_state = await graph.ainvoke(initial_state, config)
+    print(f"\n--- Running Test: Starting modern agent ---")
     
-    assert final_state.get('paused_on') == 'human_query_review_node', "Agent should pause for query review"
-    assert 'search_queries' in final_state and final_state['search_queries'], "Agent should have generated search queries"
-    print(f"✅ Queries generated: {final_state['search_queries']}")
+    # Collect initial steps until first interrupt
+    steps = []
+    async for result in service.start_agent(config):
+        steps.append(result)
+        if result.get("step") == "human_input_required":
+            break
+    
+    # Verify we got the query review interrupt
+    last_step = steps[-1]
+    assert last_step.get("step") == "human_input_required", "Agent should pause for input"
+    assert last_step.get("interrupt_type") == "query_review", "Should pause for query review"
+    thread_id = last_step.get("thread_id")
+    print(f"✅ Query review interrupt detected: {last_step.get('message')}")
 
     # 2. Continue past query review
     print("\n--- Running Test: Continuing past query review ---")
-    graph.update_state(config, {"human_feedback": "continue"})
-    final_state = await graph.ainvoke(None, config)
-        
-    assert final_state.get('paused_on') == 'human_insight_review_node', "Agent should pause for insight review"
-    assert 'knowledge_gap' in final_state and final_state['knowledge_gap'], "Agent should have synthesized a knowledge gap"
-    print(f"✅ Knowledge gap synthesized.")
-
-    # 3. Continue past insight review to the final review stage
-    print("\n--- Running Test: Continuing past insight review ---")
-    graph.update_state(config, {"human_feedback": "continue"})
-    final_state = await graph.ainvoke(None, config)
+    steps = []
+    async for result in service.continue_agent(thread_id, "continue"):
+        steps.append(result)
+        if result.get("step") == "human_input_required":
+            break
     
-    assert final_state.get('paused_on') == 'human_review_node', "Agent should pause for the final proposal review"
-    assert 'proposal_draft' in final_state and final_state['proposal_draft'], "Agent should have drafted a proposal"
-    print(f"✅ Proposal draft created.")
+    # Verify we got the insight review interrupt
+    last_step = steps[-1]
+    assert last_step.get("step") == "human_input_required", "Agent should pause for insight review"
+    assert last_step.get("interrupt_type") == "insight_review", "Should pause for insight review"
+    print(f"✅ Insight review interrupt detected: {last_step.get('message')}")
 
-    print("\n✅ Integration Test Passed: Agent completed happy path workflow successfully.") 
+    # 3. Continue past insight review to final review
+    print("\n--- Running Test: Continuing past insight review ---")
+    steps = []
+    async for result in service.continue_agent(thread_id, "continue"):
+        steps.append(result)
+        if result.get("step") == "human_input_required":
+            break
+    
+    # Verify we got the final review interrupt  
+    last_step = steps[-1]
+    assert last_step.get("step") == "human_input_required", "Agent should pause for final review"
+    assert last_step.get("interrupt_type") == "final_review", "Should pause for final review"
+    print(f"✅ Final review interrupt detected: {last_step.get('message')}")
+
+    print("\n✅ Modern Integration Test Passed: Agent completed modern HIL workflow successfully.") 

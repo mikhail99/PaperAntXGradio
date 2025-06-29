@@ -1,0 +1,56 @@
+{
+  "interrupt_types": {
+    "query_review": {
+      "ui_component": "QueryReviewUI",
+      "validation": "validate_query_input",
+      "timeout_seconds": 300,
+      "allow_skip": true,
+      "description": "Review and approve/modify generated search queries",
+      "user_actions": ["continue", "provide_custom_query"],
+      "default_message": "Review the generated search query and approve or provide a custom alternative."
+    },
+    "insight_review": {
+      "ui_component": "InsightReviewUI", 
+      "validation": "validate_insight_input",
+      "timeout_seconds": 600,
+      "allow_skip": false,
+      "description": "Review and refine the identified knowledge gap",
+      "user_actions": ["continue", "refine_knowledge_gap"],
+      "default_message": "Review the identified knowledge gap and approve or provide refinements."
+    },
+    "final_review": {
+      "ui_component": "FinalReviewUI",
+      "validation": "validate_final_input", 
+      "timeout_seconds": 900,
+      "allow_skip": false,
+      "description": "Final review of the research proposal with AI feedback",
+      "user_actions": ["continue", "provide_feedback"],
+      "default_message": "Review the AI feedback and provide additional guidance or approve the suggestions."
+    }
+  },
+  "validation_rules": {
+    "validate_query_input": {
+      "min_length": 3,
+      "max_length": 200,
+      "forbidden_chars": ["<", ">", "&", "script"],
+      "required_if_not_continue": true
+    },
+    "validate_insight_input": {
+      "min_length": 10,
+      "max_length": 500,
+      "required_if_not_continue": true
+    },
+    "validate_final_input": {
+      "min_length": 5,
+      "max_length": 1000,
+      "required_if_not_continue": false
+    }
+  },
+  "ui_settings": {
+    "theme": "modern",
+    "show_context": true,
+    "show_progress": true,
+    "enable_markdown": true,
+    "auto_focus": true
+  }
+} 

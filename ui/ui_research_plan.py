@@ -1,12 +1,12 @@
 import gradio as gr
 from core.collections_manager import CollectionsManager
-from core.proposal_agent_service import ProposalAgentService
+from core.proposal_agent.modern_service import create_modern_service
 from core.analysis_storage_service import AnalysisStorageService
 import json
 
 # --- Initialize Services ---
 collections_manager = CollectionsManager()
-proposal_agent_service = ProposalAgentService()
+proposal_agent_service = create_modern_service()
 analysis_storage_service = AnalysisStorageService()
 
 # --- UI Helper Functions ---
@@ -144,28 +144,34 @@ def create_research_plan_tab(state):
                     if "final_review" in live_agent_state and live_agent_state["final_review"].get("is_approved"):
                          final_proposal_md_val = f"### Final Proposal\n\n{live_agent_state.get('proposal_draft', 'Error: Draft not found.')}"
 
-                    # --- Determine Bot's Response ---
+                    # --- Modern Interrupt Handling ---
                     bot_display_content = f"**Status:** Running: `{step_name}`..."
 
                     if step_name == "human_input_required":
-                        paused_on_node = step_data.get("paused_on")
-                        state_at_pause = step_data.get("state", {})
-
-                        if paused_on_node == "human_query_review_node":
-                            queries = state_at_pause.get('search_queries', [])
-                            query_str = "\n".join(f"- `{q}`" for q in queries)
-                            bot_display_content = f"✅ **Queries Generated.** The agent plans to search for the following:\n{query_str}\n\nPlease provide a new query to use instead, or type 'continue' to approve."
-                        elif paused_on_node == "human_insight_review_node":
-                            gap = state_at_pause.get('knowledge_gap', {}).get('knowledge_gap', 'N/A')
-                            bot_display_content = f"✅ **Literature Synthesized.** The agent identified this knowledge gap:\n\n*'{gap}'*\n\nPlease provide a refined knowledge gap, or type 'continue' to approve."
-                        elif paused_on_node == "human_review_node":
-                            bot_display_content = "✅ **AI Review Complete.** Please provide your feedback, or type 'continue' to approve."
+                        # Modern interrupt pattern - use structured interrupt data
+                        interrupt_type = step_data.get("interrupt_type", "unknown")
+                        message = step_data.get("message", "Please provide input")
+                        context = step_data.get("context", {})
+                        
+                        # Enhanced messages based on interrupt type
+                        if interrupt_type == "query_review":
+                            queries = context.get("query_count", 0)
+                            bot_display_content = f"🔍 **Query Generated**\n\n{message}\n\n*Context: {queries} queries for topic '{context.get('topic', 'N/A')}'*"
+                        elif interrupt_type == "insight_review":
+                            summaries_count = context.get("summaries_count", 0)
+                            bot_display_content = f"📚 **Literature Synthesized**\n\n{message}\n\n*Context: Synthesized {summaries_count} literature summaries*"
+                        elif interrupt_type == "final_review":
+                            revision_cycle = context.get("revision_cycle", 0)
+                            bot_display_content = f"✅ **AI Review Complete** (Revision #{revision_cycle})\n\n{message}"
+                        else:
+                            # Fallback for unknown interrupt types
+                            bot_display_content = f"⏸️ **Input Required**\n\n{message}"
                         
                         chat_history[-1] = (user_input, bot_display_content)
                         break # Exit loop, re-enable inputs
 
-                    elif step_name == "done":
-                        bot_display_content = "✅ **Process Finished.** The final proposal is below."
+                    elif step_name == "workflow_complete_node":
+                        bot_display_content = "🎉 **Process Complete!** The research proposal has been generated successfully."
                         chat_history[-1] = (user_input, bot_display_content)
                         thread_id = None # Clear for next run
                         break # Exit loop, re-enable inputs
@@ -179,11 +185,25 @@ def create_research_plan_tab(state):
             except Exception as e:
                 import traceback
                 error_str = traceback.format_exc()
-                chat_history[-1] = (user_input, f"**An error occurred.**\n\n```\n{error_str}\n```")
+                chat_history[-1] = (user_input, f"❌ **An error occurred.**\n\n```\n{error_str}\n```")
                 thread_id = None
             
             finally:
                 # This block ALWAYS runs, ensuring the UI is re-enabled.
+                # Update accordions with final state before yielding
+                if "literature_summaries" in live_agent_state:
+                    summaries = live_agent_state["literature_summaries"]
+                    summary_md = "### Literature Summaries\n\n" + "\n\n---\n\n".join(summaries)
+                
+                if "proposal_draft" in live_agent_state:
+                    plan_md = f"### Proposal Draft\n\n{live_agent_state['proposal_draft']}"
+
+                if "review_team_feedback" in live_agent_state:
+                    novelty_md = f"### Agent Reviews\n\n```json\n{json.dumps(live_agent_state['review_team_feedback'], indent=2)}\n```"
+
+                if "final_review" in live_agent_state and live_agent_state["final_review"].get("is_approved"):
+                     final_proposal_md_val = f"### Final Proposal\n\n{live_agent_state.get('proposal_draft', 'Error: Draft not found.')}"
+                     
                 yield chat_history, gr.update(interactive=True), gr.update(interactive=True), thread_id, live_agent_state, summary_md, plan_md, novelty_md, final_proposal_md_val
 
 

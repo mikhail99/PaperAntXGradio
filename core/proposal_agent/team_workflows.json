@@ -1,0 +1,32 @@
+{
+  "research_proposal_workflow": {
+    "description": "Modern workflow using interrupt() pattern",
+    "stages": [
+      {
+        "id": "query_generation",
+        "team": "query_generation_team",
+        "hil_node": "human_query_review_node",
+        "hil_type": "query_review"
+      },
+      {
+        "id": "literature_review", 
+        "team": "literature_review_team",
+        "hil_node": "human_insight_review_node", 
+        "hil_type": "insight_review"
+      },
+      {
+        "id": "proposal_creation",
+        "team": "proposal_creation_team",
+        "hil_node": null
+      },
+      {
+        "id": "proposal_review",
+        "team": "proposal_review_team",
+        "hil_node": "human_review_node",
+        "hil_type": "final_review",
+        "approval_logic": "is_proposal_approved",
+        "max_revisions": 3
+      }
+    ]
+  }
+} 

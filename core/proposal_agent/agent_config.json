@@ -75,6 +75,10 @@
         "members": ["literature_reviewer_local"],
         "aggregator": "synthesize_literature_review" 
       },
+      "proposal_creation_team": {
+        "members": ["formulate_plan"],
+        "aggregator": "formulate_plan"
+      },
       "proposal_review_team": {
         "members": ["review_feasibility", "review_novelty"],
         "aggregator": "synthesize_review"
