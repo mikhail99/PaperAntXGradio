@@ -78,8 +78,9 @@ def merge_feedback(
         left = {}
     if right is None:
         right = {}
-    left.update(right)
-    return left
+    result = left.copy()
+    result.update(right)
+    return result
 
 # --- Main Agent State ---
 
@@ -87,6 +88,10 @@ class ProposalAgentState(TypedDict):
     """
     The overall state of the proposal generation agent.
     It's passed between nodes in the graph.
+    
+    Based on LangGraph documentation, reducers are only needed when you want
+    to customize how updates are applied. For most fields, the default behavior
+    (overwrite) is sufficient. Only lists need special handling.
     """
     # --- Inputs ---
     topic: str
@@ -113,6 +118,10 @@ class ProposalAgentState(TypedDict):
     # The final, synthesized review from the aggregator
     final_review: FinalReview
     
+    # --- Human in the Loop ---
+    human_feedback: Optional[str]
+    paused_on: Optional[str] # The name of the node we paused on
+
     # --- Loop Control ---
     # We can add counters here if we need to enforce max loops for revisions
     proposal_revision_cycles: int

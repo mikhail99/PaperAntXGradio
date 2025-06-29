@@ -1,3 +1,4 @@
+print("--- Importing: core.paperqa_service ---")
 # core/paperqa_service.py
 import asyncio
 import pickle
@@ -15,8 +16,19 @@ from core.collections_manager import CollectionsManager
 llm_model = "ollama/gemma3:4b"
 embedding_model = "ollama/nomic-embed-text:latest"
 
-my_settings = get_local_llm_settings(llm_model, embedding_model)
-collections_manager = CollectionsManager()
+# --- Lazy Service Initializer ---
+my_settings = None
+collections_manager = None
+
+def _initialize_paperqa_services():
+    """Lazily initializes and returns service instances for PaperQA."""
+    global my_settings, collections_manager
+    if my_settings is None:
+        print("--- Initializing PaperQA LLM settings ---")
+        my_settings = get_local_llm_settings(llm_model, embedding_model)
+    if collections_manager is None:
+        print("--- Initializing CollectionsManager ---")
+        collections_manager = CollectionsManager()
 
 
 class PaperQAService:
@@ -28,6 +40,8 @@ class PaperQAService:
         It loads a Docs object from a pickle file and uses it to answer a question.
         Returns a dictionary with 'answer_text', 'formatted_evidence', and 'error'.
         """
+        _initialize_paperqa_services()
+
         if not collection_name:
             error_msg = "No collection name provided."
             return {"answer_text": "", "formatted_evidence": "", "error": error_msg}
@@ -120,7 +134,7 @@ class PaperQAService:
             for text, link in citations_to_replace.items():
                 answer_text = answer_text.replace(text, f"[{text}]({link})")
 
-            return {"answer_text": answer_text, "formatted_evidence": "", "error": None}
+            return {"answer_text": answer_text, "context": response.context, "error": None}
 
         except Exception as e:
             error_message = f"Error during PaperQA processing: {str(e)}"
