@@ -12,15 +12,9 @@ from dataclasses import dataclass
 
 from .state import WorkflowState, Critique
 from .dspy_modules import QueryGenerator, KnowledgeSynthesizer, ProposalWriter, ProposalReviewer
-# from .paperqa_service import PaperQAService # Your real service
+# --- Import the REAL PaperQAService ---
+from core.paperqa_service import PaperQAService
 from .parrot import MockLM, MockPaperQAService
-
-# --- FAKE PaperQAService for demonstration when not using parrot ---
-class PaperQAService:
-    async def query_documents(self, collection_name: str, query: str) -> dict:
-        await asyncio.sleep(1) # Simulate network latency
-        return {"answer_text": f"Real summary for query: '{query}' in '{collection_name}'."}
-# ---
 
 # ===============================================
 # Hybrid Flow Framework Core
@@ -221,8 +215,18 @@ class LiteratureReviewNode(Node):
         self.doc_service = doc_service
     
     async def execute(self, state: WorkflowState) -> FlowAction:
-        summaries = [await self.doc_service.query_documents(state.collection_name, q) for q in state.search_queries]
-        state.update("literature_summaries", [s.get("answer_text") for s in summaries])
+        # Revert to sequential processing to avoid overwhelming the local Ollama server.
+        # Concurrency with asyncio.gather can be re-enabled for more robust, cloud-based LLMs.
+        summaries = []
+        for query in state.search_queries:
+            result = await self.doc_service.query_documents(state.collection_name, query)
+            if result and not result.get("error"):
+                summary_text = result.get("answer_text", "No summary provided.")
+                summaries.append(summary_text)
+            else:
+                summaries.append(f"Error processing query '{query}': {result.get('error', 'Unknown error')}")
+
+        state.update("literature_summaries", summaries)
         return FlowAction(type="continue")
 
 class SynthesizeKnowledgeNode(Node):

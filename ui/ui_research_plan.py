@@ -156,7 +156,13 @@ def create_research_plan_tab(proposal_agent_service, collections_manager: Collec
             # Update result panes based on the latest state
             if "literature_summaries" in state:
                 summaries = state["literature_summaries"]
-                ui_updates[literature_summary_md] = "### Literature Summaries<br><br>" + "<br><br>---<br><br>".join(summaries)
+                # Format the summaries as a numbered list with proper spacing
+                formatted_summaries = []
+                for i, summary in enumerate(summaries):
+                    # Use markdown for a clear, numbered list
+                    formatted_summaries.append(f"**{i+1}.** {summary.replace('<br>', ' ')}")
+                
+                ui_updates[literature_summary_md] = "### Literature Summaries<br><br>" + "<br><br>---<br><br>".join(formatted_summaries)
             if "proposal_draft" in state:
                  # Use HTML <br> tags for newlines
                 draft_html = state['proposal_draft'].replace('\n', '<br>')
