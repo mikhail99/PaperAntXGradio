@@ -232,14 +232,33 @@ def create_research_plan_tab(state):
             outputs=all_outputs
         )
 
+        # To fix the Gradio value error, we need to ensure the generator function
+        # is the top-level callable for the event. We create specialized handlers
+        # that call the main continue_workflow logic.
+
+        async def handle_query_regenerate(tid, hist):
+            """Specialized handler for the query regenerate button."""
+            async for update in continue_workflow(tid, "!regenerate", hist):
+                yield update
+
+        async def handle_final_approve(tid, hist):
+            """Specialized handler for the final approve button."""
+            async for update in continue_workflow(tid, "approve", hist):
+                yield update
+        
+        async def handle_revision_submit(tid, feedback, hist):
+            """Specialized handler for submitting revision feedback."""
+            async for update in continue_workflow(tid, feedback, hist):
+                yield update
+
         query_regenerate_btn.click(
-            lambda tid, hist: continue_workflow(tid, "!regenerate", hist),
+            handle_query_regenerate,
             inputs=[thread_id_state, chat_history_state],
             outputs=all_outputs
         )
 
         final_approve_btn.click(
-            lambda tid, hist: continue_workflow(tid, "approve", hist),
+            handle_final_approve,
             inputs=[thread_id_state, chat_history_state],
             outputs=all_outputs
         )
@@ -251,7 +270,7 @@ def create_research_plan_tab(state):
         )
         
         revision_submit_btn.click(
-            continue_workflow,
+            handle_revision_submit,
             inputs=[thread_id_state, revision_feedback_box, chat_history_state],
             outputs=all_outputs
         )
