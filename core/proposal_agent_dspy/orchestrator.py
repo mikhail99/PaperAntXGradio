@@ -296,7 +296,7 @@ def create_proposal_flow() -> Flow:
 # ===============================================
 
 class DSPyOrchestrator:
-    """A drop-in replacement for the original orchestrator, now using the FlowEngine."""
+    """ """
     
     def __init__(self, use_parrot: bool = False):
         if use_parrot:

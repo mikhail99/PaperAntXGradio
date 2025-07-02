@@ -4,23 +4,23 @@ from core.proposal_agent_dspy.orchestrator import create_dspy_service as create_
 from core.analysis_storage_service import AnalysisStorageService
 import json
 
-# --- Initialize Services ---
-collections_manager = CollectionsManager()
-proposal_agent_service = create_modern_service(use_parrot=True)
+# --- Remove local service instantiation ---
+# collections_manager = CollectionsManager()
+# proposal_agent_service = create_modern_service(use_parrot=False) # This is now passed in
 analysis_storage_service = AnalysisStorageService()
 
 # --- UI Helper Functions ---
-def get_collection_options():
-    """Returns a list of collection names for the dropdown."""
+def get_collection_options(collections_manager: CollectionsManager):
+    """Returns a list of (name, id) for active collections."""
     return [c.name for c in collections_manager.get_all_collections() if not c.archived]
 
-def get_collection_description(collection_name):
-    """Gets the description of a collection."""
+def get_collection_description(collections_manager: CollectionsManager, collection_name: str):
+    """Gets the description of a collection by its ID."""
     c = collections_manager.get_collection(collection_name)
     return c.description if c else ""
 
 # --- Gradio UI Definition ---
-def create_research_plan_tab(state):
+def create_research_plan_tab(proposal_agent_service, collections_manager: CollectionsManager):
     with gr.TabItem("🧠 Research Proposal Agent"):
         gr.Markdown("## Research Proposal Agent")
         gr.Markdown("Select a collection, provide a research direction, and let the agent generate a comprehensive proposal with your guidance.")
@@ -36,7 +36,7 @@ def create_research_plan_tab(state):
                 gr.Markdown("### 1. Start Here")
                 with gr.Group():
                     collection_dropdown = gr.Dropdown(
-                        choices=get_collection_options(),
+                        choices=get_collection_options(collections_manager),
                         label="Select Collection for Literature Review",
                         value=None,
                     )
@@ -89,7 +89,7 @@ def create_research_plan_tab(state):
 
         # --- Event Handler Functions ---
         def update_collection_desc(collection_name):
-            desc = get_collection_description(collection_name)
+            desc = get_collection_description(collections_manager, collection_name)
             return gr.update(value=desc or "<i>No description available.</i>")
 
         async def start_workflow(collection, topic, history):

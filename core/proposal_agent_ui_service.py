@@ -26,8 +26,8 @@ def _load_configs() -> (Dict[str, Any], Dict[str, Any]):
 agent_config, prompts = _load_configs()
 
 # Initialize models
-json_llm = ChatOllama(model="gemma2:9b", format="json", temperature=0)
-text_llm = ChatOllama(model="gemma2:9b", temperature=0.7)
+json_llm = ChatOllama(model="gemma2:4b", format="json", temperature=0)
+text_llm = ChatOllama(model="gemma2:4b", temperature=0.7)
 
 
 class ProposalAgentUIService:

@@ -3,11 +3,11 @@ from core.proposal_agent_dspy.orchestrator import create_dspy_service
 from core.collections_manager import CollectionsManager
 import asyncio
 
-def create_proposal_debugger_tab(collections_manager: CollectionsManager):
+def create_proposal_debugger_tab(service, collections_manager: CollectionsManager):
     """Creates the Gradio TabItem for the new DSPy Proposal Agent."""
     
-    # Use a factory to create the orchestrator. Set use_parrot=True for testing.
-    service = create_dspy_service(use_parrot=True)
+    # The 'service' is now passed in, so we remove local creation.
+    # service = create_dspy_service(use_parrot=True)
 
     with gr.TabItem("🕵️‍♂️ Proposal Agent (DSPy)") as debugger_tab:
         with gr.Blocks(theme=gr.themes.Soft()):
@@ -18,7 +18,7 @@ def create_proposal_debugger_tab(collections_manager: CollectionsManager):
                 # --- Left Column: Configuration ---
                 with gr.Column(scale=1, min_width=350):
                     gr.Markdown("### 1. Configure Workflow")
-                    collection_names = collections_manager.get_collection_names()
+                    collection_names = [c.name for c in collections_manager.get_all_collections()]
                     collection_dropdown = gr.Dropdown(
                         choices=collection_names, 
                         label="Select a Collection", 

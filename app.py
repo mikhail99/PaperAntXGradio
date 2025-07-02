@@ -13,7 +13,7 @@ from core.collections_manager import CollectionsManager
 from core.copilot_service import CopilotService
 from core.llm_service import LLMService
 from core.mcp_server_manager import MCPServerManager
-from core.proposal_agent_ui_service import ProposalAgentUIService
+from core.proposal_agent_dspy.orchestrator import create_dspy_service
 
 
 def main():
@@ -26,13 +26,13 @@ def main():
         article_manager = ArticleManager(collections_manager)
         mcp_server_manager = MCPServerManager()
         copilot_service = CopilotService(collections_manager, article_manager, llm_service, mcp_server_manager)
-        proposal_agent_ui_service = ProposalAgentUIService(collections_manager)
+        proposal_agent_service = create_dspy_service(use_parrot=False)
 
         with gr.Tabs():
             create_articles_tab(state)
             create_paperqa_tab(state)
-            create_research_plan_tab(state)
-            create_proposal_debugger_tab(proposal_agent_ui_service)
+            create_research_plan_tab(proposal_agent_service, collections_manager)
+            create_proposal_debugger_tab(proposal_agent_service, collections_manager)
             create_copilot_tab(state, copilot_service)
             create_collections_tab(state)
             create_library_tab(state)
