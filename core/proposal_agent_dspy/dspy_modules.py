@@ -12,7 +12,7 @@ class QueryGenerator(dspy.Module):
 class KnowledgeSynthesizer(dspy.Module):
     def __init__(self):
         super().__init__()
-        self.synthesize = dspy.TypedPredictor(SynthesizeKnowledge)
+        self.synthesize = dspy.Predict(SynthesizeKnowledge)
 
     def forward(self, topic, literature_summaries):
         return self.synthesize(topic=topic, literature_summaries=str(literature_summaries))
@@ -28,7 +28,7 @@ class ProposalWriter(dspy.Module):
 class ProposalReviewer(dspy.Module):
     def __init__(self):
         super().__init__()
-        self.review = dspy.TypedPredictor(ReviewProposal)
+        self.review = dspy.Predict(ReviewProposal)
 
     def forward(self, proposal_draft, review_aspect):
         return self.review(proposal_draft=proposal_draft, review_aspect=review_aspect) 

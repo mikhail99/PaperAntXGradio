@@ -28,8 +28,13 @@ class DSPyOrchestrator:
             dspy.configure(lm=MockLM())
             self.doc_service = MockPaperQAService()
         else:
-            ollama_lm = dspy.Ollama(model='llama3', base_url='http://localhost:11434/')
-            dspy.configure(lm=ollama_lm)
+            # Using the exact configuration provided by the user to match their dspy environment.
+            lm = dspy.LM(
+                'ollama_chat/gemma3:4b', 
+                api_base='http://localhost:11434', 
+                api_key=''
+            )
+            dspy.configure(lm=lm)
             self.doc_service = PaperQAService() # Replace with your real service
         
         self.query_generator = QueryGenerator()
@@ -45,7 +50,6 @@ class DSPyOrchestrator:
             self._step_synthesize_knowledge,
             self._step_write_proposal,
             self._step_review_proposal,
-            self._step_complete_workflow,
         ]
 
     async def start_agent(self, config: Dict[str, Any]) -> AsyncGenerator[Dict[str, Any], None]:
@@ -86,7 +90,6 @@ class DSPyOrchestrator:
                 # Any other input is treated as revision feedback
                 should_advance_workflow = False
                 state.revision_cycles += 1
-                # A real implementation would collect feedback from multiple reviewers
                 critique = Critique(score=0.5, justification=user_input) # Simplified for plan
                 state.update("review_team_feedback", {"user_review": critique}) 
                 # Loop back to the proposal writing step
@@ -95,98 +98,100 @@ class DSPyOrchestrator:
         if should_advance_workflow:
             state.next_step_index += 1
 
-        # Now that the state is updated, run the new current step.
+        # Now that the state is updated, resume the main workflow engine.
         async for result in self._run_workflow(state):
             yield result
 
     async def _run_workflow(self, state: WorkflowState) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Runs the single, current step defined by state.next_step_index.
-        This method is a simple executor; all logic is in `continue_agent`.
+        Runs the workflow from the current step index until the next HIL pause or completion.
+        This is the main engine that centralizes UI communication logic.
         """
-        if state.next_step_index < len(self.workflow_steps):
+        while state.next_step_index < len(self.workflow_steps):
             current_step_func = self.workflow_steps[state.next_step_index]
-            # Yield all messages from the current step's async generator.
-            async for result in current_step_func(state):
-                yield result
-        else:
-            # This should not be reached if the last step is _step_complete_workflow
-            yield {"step": "error", "error": "Workflow attempted to run past its final step."}
+            step_name = current_step_func.__name__.replace("_step_", "")
+
+            # Announce the step is starting
+            yield {"step": step_name, "state": state.to_dict(), "thread_id": state.thread_id}
+            
+            # Execute the step. It will either return None or a dictionary with HIL instructions.
+            pause_data = await current_step_func(state)
+
+            # Announce the step is finished and update the UI with any new state
+            yield {"step": step_name, "state": state.to_dict(), "thread_id": state.thread_id}
+
+            # If the step returned HIL data, yield the interrupt and pause the workflow engine.
+            if pause_data:
+                yield {
+                    "step": "human_input_required",
+                    "interrupt_type": pause_data["interrupt_type"],
+                    "message": pause_data["message"],
+                    "context": pause_data["context"],
+                    "thread_id": state.thread_id,
+                }
+                return # Stop the engine until continue_agent is called
+
+            state.next_step_index += 1
+        
+        # If the loop completes, the workflow is finished.
+        yield {"step": "workflow_complete_node", "state": state.to_dict(), "thread_id": state.thread_id}
+        if state.thread_id in self._thread_states:
+            del self._thread_states[state.thread_id]
     
     # --- Individual Workflow Steps ---
 
-    async def _step_generate_queries(self, state: WorkflowState) -> AsyncGenerator[Dict[str, Any], None]:
-        """Generates search queries and then pauses for human review."""
-        yield {"step": "query_generation", "state": {}, "thread_id": state.thread_id}
+    async def _step_generate_queries(self, state: WorkflowState) -> Dict[str, Any]:
+        """Generates search queries and then requests a pause for human review."""
         prediction = self.query_generator(topic=state.topic, existing_queries=state.search_queries)
         state.update("search_queries", prediction.queries)
-        state.last_interrupt_type = "query_review" # Set context for continue_agent
+        state.last_interrupt_type = "query_review"
         
-        # PAUSE for HIL. The workflow will not advance until continue_agent is called.
-        yield {
-            "step": "human_input_required",
+        return {
             "interrupt_type": "query_review",
             "message": "The AI generated queries. To regenerate, type `!regenerate`. Otherwise, edit/approve the queries below and send.",
-            "context": {"queries": state.search_queries},
-            "thread_id": state.thread_id,
+            "context": {
+                "queries": state.search_queries,
+                "query_count": len(state.search_queries),
+                "topic": state.topic
+            },
         }
 
-    async def _step_literature_review(self, state: WorkflowState) -> AsyncGenerator[Dict[str, Any], None]:
+    async def _step_literature_review(self, state: WorkflowState) -> None:
         """Runs the literature review using the approved queries."""
-        yield {"step": "literature_review", "state": {"search_queries": state.search_queries}, "thread_id": state.thread_id}
+        summaries = []
         for query in state.search_queries:
             response = await self.doc_service.query_documents(state.collection_name, query)
-            state.append_to("literature_summaries", response.get("answer_text"))
-            yield {"step": "literature_review", "state": {"literature_summaries": state.literature_summaries}, "thread_id": state.thread_id}
+            summaries.append(response.get("answer_text"))
+        state.update("literature_summaries", summaries)
 
-    async def _step_synthesize_knowledge(self, state: WorkflowState) -> AsyncGenerator[Dict[str, Any], None]:
+    async def _step_synthesize_knowledge(self, state: WorkflowState) -> None:
         """Synthesizes the literature into a knowledge gap."""
-        yield {"step": "synthesize_knowledge", "state": {}, "thread_id": state.thread_id}
         summaries_str = "\n---\n".join(state.literature_summaries)
         prediction = self.synthesizer(topic=state.topic, literature_summaries=summaries_str)
         state.update("knowledge_gap", prediction.knowledge_gap)
-        yield {"step": "synthesize_knowledge", "state": {"knowledge_gap": state.knowledge_gap.dict()}, "thread_id": state.thread_id}
 
-    async def _step_write_proposal(self, state: WorkflowState) -> AsyncGenerator[Dict[str, Any], None]:
+    async def _step_write_proposal(self, state: WorkflowState) -> None:
         """Writes the research proposal draft, incorporating feedback if it exists."""
-        yield {"step": "write_proposal", "state": {}, "thread_id": state.thread_id}
-        
-        # Format any prior feedback for the LLM
-        prior_feedback_str = json.dumps([fb.dict() for fb in state.review_team_feedback.values()])
+        prior_feedback_str = json.dumps([fb.model_dump() for fb in state.review_team_feedback.values()])
         
         prediction = self.writer(
             knowledge_gap_summary=state.knowledge_gap.model_dump_json(),
             prior_feedback=prior_feedback_str
         )
         state.update("proposal_draft", prediction.proposal)
-        yield {"step": "write_proposal", "state": {"proposal_draft": state.proposal_draft}, "thread_id": state.thread_id}
 
-    async def _step_review_proposal(self, state: WorkflowState) -> AsyncGenerator[Dict[str, Any], None]:
+    async def _step_review_proposal(self, state: WorkflowState) -> Dict[str, Any]:
         """Reviews the proposal and pauses for the user's final approval or revision request."""
-        yield {"step": "review_proposal", "state": {}, "thread_id": state.thread_id}
-        
-        # In a real system, you might have multiple reviewers with different aspects.
         review_aspect = "novelty and contribution"
         prediction = self.reviewer(proposal_draft=state.proposal_draft, review_aspect=review_aspect)
         state.update("review_team_feedback", {"ai_reviewer": prediction.critique})
         
-        yield {"step": "review_proposal", "state": {"review_team_feedback": {k: v.dict() for k,v in state.review_team_feedback.items()}}, "thread_id": state.thread_id}
-
         state.last_interrupt_type = "final_review"
-        # PAUSE for HIL
-        yield {
-            "step": "human_input_required",
+        return {
             "interrupt_type": "final_review",
             "message": "The AI has reviewed the proposal. Type 'approve' to finish, or provide feedback for revision.",
-            "context": {"review": prediction.critique.dict(), "revision_cycles": state.revision_cycles},
-            "thread_id": state.thread_id,
+            "context": {"review": prediction.critique.model_dump(), "revision_cycle": state.revision_cycles},
         }
-
-    async def _step_complete_workflow(self, state: WorkflowState) -> AsyncGenerator[Dict[str, Any], None]:
-        """Final step to clean up and signal completion."""
-        yield {"step": "workflow_complete_node", "state": state.to_dict(), "thread_id": state.thread_id}
-        if state.thread_id in self._thread_states:
-            del self._thread_states[state.thread_id]
 
 def create_dspy_service(use_parrot: bool = False) -> DSPyOrchestrator:
     """Factory function to create the new DSPy-based service."""

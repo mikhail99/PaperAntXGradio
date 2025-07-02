@@ -1,4 +1,5 @@
 import dspy
+import json
 from .signatures import GenerateQueries, SynthesizeKnowledge, WriteProposal, ReviewProposal
 from .state import KnowledgeGap, Critique
 
@@ -7,26 +8,35 @@ class MockLM(dspy.LM):
     def __init__(self):
         super().__init__("mock-model")
 
-    def __call__(self, prompt, **kwargs):
-        # The 'dspy.Predict' object gives us the signature via kwargs
-        signature = kwargs.get("signature")
+    def __call__(self, messages, **kwargs):
+        # In some versions of dspy, the signature is not passed to the LM.
+        # We will inspect the prompt content to guess which response to provide.
+        prompt_content = str(messages).lower()
+
+        # Heuristics based on unique text from each signature's docstring.
+        if "generates a list of search queries" in prompt_content:
+            response_data = {'queries': ['parrot query 1', 'parrot query 2']}
+            return [{"text": json.dumps(response_data)}]
         
-        if signature == GenerateQueries:
-            return [{'queries': ['parrot query 1', 'parrot query 2']}]
-        if signature == SynthesizeKnowledge:
-            # dspy.TypedPredictor expects a pydantic object
+        if "identifies a knowledge gap" in prompt_content:
             gap = KnowledgeGap(synthesized_summary="A parrot summary.", knowledge_gap="A parrot gap.", is_novel=True)
-            return [gap]
-        if signature == WriteProposal:
-            return [{'proposal': 'A research proposal written by a parrot.'}]
-        if signature == ReviewProposal:
+            response_data = {"knowledge_gap": gap.model_dump()}
+            return [{"text": json.dumps(response_data)}]
+
+        if "writes a research proposal" in prompt_content:
+            response_data = {'proposal': 'A research proposal written by a parrot.'}
+            return [{"text": json.dumps(response_data)}]
+
+        if "reviews a proposal" in prompt_content:
             crit = Critique(score=0.9, justification="This is a fine parrot proposal.")
-            return [crit]
+            response_data = {"critique": crit.model_dump()}
+            return [{"text": json.dumps(response_data)}]
             
-        return ["Default parrot response."]
+        # A default structured response to avoid parsing errors.
+        return [{"text": json.dumps({"error": "MockLM did not recognize the signature from the prompt content."})}]
         
     def basic_request(self, prompt, **kwargs):
-        # Not used by dspy.Predict, but required by the abstract class
+        # Not used by dspy.Predict with a ChatAdapter, but required by the abstract class
         pass
 
 class MockPaperQAService:

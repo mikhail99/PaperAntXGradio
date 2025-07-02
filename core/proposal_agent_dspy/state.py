@@ -52,8 +52,20 @@ class WorkflowState:
             raise TypeError(f"'{key}' is not a list and cannot be appended to.")
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serializes the state to a dictionary for persistence."""
-        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        """Serializes the state to a dictionary for persistence, handling nested Pydantic models."""
+        data = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        
+        # Manually serialize nested Pydantic models to dictionaries
+        if data.get('knowledge_gap') and isinstance(data['knowledge_gap'], BaseModel):
+            data['knowledge_gap'] = data['knowledge_gap'].model_dump()
+            
+        if data.get('review_team_feedback'):
+            data['review_team_feedback'] = {
+                k: v.model_dump() if isinstance(v, BaseModel) else v 
+                for k, v in data['review_team_feedback'].items()
+            }
+            
+        return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'WorkflowState':
