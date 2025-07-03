@@ -7,6 +7,7 @@ from ui.ui_copilot import create_copilot_tab
 from ui.ui_paperqa import create_paperqa_tab
 from ui.ui_research_plan import create_research_plan_tab
 from ui.ui_library import create_library_tab
+from ui.ui_manager_review import create_manager_review_tab
 from ui.custom_css import CUSTOM_CSS
 from core.article_manager import ArticleManager
 from core.collections_manager import CollectionsManager
@@ -29,6 +30,7 @@ def main():
         proposal_agent_service = create_dspy_service(use_parrot=False)
 
         with gr.Tabs():
+            create_manager_review_tab()
             create_articles_tab(state)
             create_paperqa_tab(state)
             create_research_plan_tab(proposal_agent_service, collections_manager)

@@ -6,7 +6,10 @@ simple, lightweight nodes.
 import dspy
 import asyncio
 import json
-from typing import Dict, Any, AsyncGenerator, Optional
+import os
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Any, AsyncGenerator, Optional, List
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -15,6 +18,134 @@ from .dspy_modules import QueryGenerator, KnowledgeSynthesizer, ProposalWriter, 
 # --- Import the REAL PaperQAService ---
 from core.paperqa_service import PaperQAService
 from .parrot import MockLM, MockPaperQAService
+
+# ===============================================
+# JSON Storage Utility
+# ===============================================
+
+class ProposalStorage:
+    """Handles JSON storage of proposal results."""
+    
+    def __init__(self, base_dir: str = "data/collections"):
+        self.base_dir = Path(base_dir)
+    
+    def save_proposal_result(self, state: WorkflowState) -> str:
+        """Save the complete proposal result to JSON and return the file path."""
+        # Create directory structure: data/collections/{collection_name}/research_proposals/
+        proposals_dir = self.base_dir / state.collection_name / "research_proposals"
+        proposals_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate filename with timestamp and sanitized topic
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_topic = self._sanitize_filename(state.topic)
+        filename = f"{timestamp}_{safe_topic}.json"
+        file_path = proposals_dir / filename
+        
+        # Prepare data for storage
+        proposal_data = {
+            "topic": state.topic,
+            "collection_name": state.collection_name,
+            "search_queries": state.search_queries,
+            "literature_summaries": state.literature_summaries,
+            "knowledge_gap": state.knowledge_gap.model_dump() if state.knowledge_gap else None,
+            "proposal_draft": state.proposal_draft,
+            "review_team_feedback": {
+                k: v.model_dump() if hasattr(v, 'model_dump') else v 
+                for k, v in state.review_team_feedback.items()
+            },
+            "is_approved": state.is_approved,
+            "revision_cycles": state.revision_cycles,
+            "thread_id": state.thread_id,
+            "saved_at": datetime.now().isoformat(),
+            "workflow_completed": True
+        }
+        
+        # Write to JSON file
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(proposal_data, f, indent=2, ensure_ascii=False)
+        
+        print(f"--- [ProposalStorage] Saved proposal result to: {file_path} ---")
+        return str(file_path)
+    
+    def save_intermediate_state(self, state: WorkflowState, step_name: str) -> str:
+        """Save intermediate state during workflow execution."""
+        # Create directory for intermediate states
+        intermediates_dir = self.base_dir / state.collection_name / "intermediate_states"
+        intermediates_dir.mkdir(parents=True, exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # Include milliseconds
+        safe_topic = self._sanitize_filename(state.topic)
+        filename = f"{timestamp}_{safe_topic}_{step_name}.json"
+        file_path = intermediates_dir / filename
+        
+        # Save current state
+        state_data = state.to_dict()
+        state_data.update({
+            "current_step": step_name,
+            "saved_at": datetime.now().isoformat(),
+            "workflow_completed": False
+        })
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(state_data, f, indent=2, ensure_ascii=False)
+        
+        return str(file_path)
+    
+    def _sanitize_filename(self, text: str, max_length: int = 50) -> str:
+        """Convert text to a safe filename."""
+        import re
+        # Replace problematic characters with hyphens
+        safe = re.sub(r'[^\w\s-]', '', text.lower())
+        safe = re.sub(r'[-\s]+', '-', safe)
+        return safe[:max_length].strip('-')
+    
+    def list_saved_proposals(self, collection_name: str = None) -> List[Dict[str, Any]]:
+        """List all saved proposals, optionally filtered by collection."""
+        proposals = []
+        
+        if collection_name:
+            # Search in specific collection
+            proposals_dir = self.base_dir / collection_name / "research_proposals"
+            if proposals_dir.exists():
+                for json_file in proposals_dir.glob("*.json"):
+                    proposals.append(self._get_proposal_info(json_file))
+        else:
+            # Search in all collections
+            for collection_dir in self.base_dir.iterdir():
+                if collection_dir.is_dir():
+                    proposals_dir = collection_dir / "research_proposals"
+                    if proposals_dir.exists():
+                        for json_file in proposals_dir.glob("*.json"):
+                            proposals.append(self._get_proposal_info(json_file))
+        
+        # Sort by saved_at timestamp (newest first)
+        proposals.sort(key=lambda x: x.get('saved_at', ''), reverse=True)
+        return proposals
+    
+    def load_proposal(self, file_path: str) -> Dict[str, Any]:
+        """Load a saved proposal from JSON file."""
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    
+    def _get_proposal_info(self, file_path: Path) -> Dict[str, Any]:
+        """Extract basic info about a proposal file."""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return {
+                    "file_path": str(file_path),
+                    "topic": data.get("topic", "Unknown"),
+                    "collection_name": data.get("collection_name", "Unknown"),
+                    "saved_at": data.get("saved_at", "Unknown"),
+                    "is_approved": data.get("is_approved", False),
+                    "revision_cycles": data.get("revision_cycles", 0),
+                    "workflow_completed": data.get("workflow_completed", False)
+                }
+        except Exception as e:
+            return {
+                "file_path": str(file_path),
+                "error": f"Failed to read file: {e}"
+            }
 
 # ===============================================
 # Hybrid Flow Framework Core
@@ -63,6 +194,9 @@ class FlowEngine:
     """Executes a declarative Flow, managing state and transitions."""
     _active_flows: Dict[str, WorkflowState] = {}
     _paused_at_node: Dict[str, str] = {}
+
+    def __init__(self):
+        self.storage = ProposalStorage()
 
     async def start(self, flow: Flow, state: WorkflowState) -> AsyncGenerator[Dict[str, Any], None]:
         """Starts a new flow execution."""
@@ -143,7 +277,18 @@ class FlowEngine:
                 # *** THE FIX: Check for the 'complete' signal BEFORE the next loop iteration ***
                 if next_node_name == "complete":
                     print(f"--- [FlowEngine] Reached 'complete' signal. Finishing flow. ---")
-                    yield {"step": "workflow_complete_node", "state": state.to_dict(), "thread_id": state.thread_id}
+                    
+                    # Save the completed proposal to JSON
+                    if state.is_approved:
+                        try:
+                            file_path = self.storage.save_proposal_result(state)
+                            yield {"step": "workflow_complete_node", "state": state.to_dict(), "thread_id": state.thread_id, "saved_to": file_path}
+                        except Exception as e:
+                            print(f"--- [FlowEngine] Error saving proposal: {e} ---")
+                            yield {"step": "workflow_complete_node", "state": state.to_dict(), "thread_id": state.thread_id, "save_error": str(e)}
+                    else:
+                        yield {"step": "workflow_complete_node", "state": state.to_dict(), "thread_id": state.thread_id}
+                    
                     current_node_name = None  # This will terminate the while loop
                 elif next_node_name is None:
                     # An undefined transition means the flow has implicitly ended.
@@ -313,7 +458,7 @@ class DSPyOrchestrator:
         if use_parrot:
             self.flow.add_node(LiteratureReviewNode(MockPaperQAService()))
         
-        self.engine = FlowEngine()
+        self.engine = FlowEngine()  # This now includes storage
 
     async def start_agent(self, config: Dict[str, Any]) -> AsyncGenerator[Dict[str, Any], None]:
         state = WorkflowState(config["topic"], config["collection_name"])
@@ -328,6 +473,14 @@ class DSPyOrchestrator:
         
         async for result in self.engine.continue_flow(thread_id, self.flow):
             yield result
+
+    def list_saved_proposals(self, collection_name: str = None) -> List[Dict[str, Any]]:
+        """List all saved proposals, optionally filtered by collection."""
+        return self.engine.storage.list_saved_proposals(collection_name)
+    
+    def load_proposal(self, file_path: str) -> Dict[str, Any]:
+        """Load a saved proposal from JSON file."""
+        return self.engine.storage.load_proposal(file_path)
 
 def create_dspy_service(use_parrot: bool = False) -> DSPyOrchestrator:
     """Factory function to create the new Flow-based service."""
