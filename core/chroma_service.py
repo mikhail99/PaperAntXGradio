@@ -158,34 +158,69 @@ class ChromaService:
             print(f"Error deleting article from ChromaDB: {e}")
             return False
     
-    def get_articles(self, collection_name: str, where: Optional[Dict[str, Any]] = None, limit: int = 100) -> List[Dict[str, Any]]:
-        """Get articles from a ChromaDB collection with optional filtering"""
+    def get_articles(self, collection_name: str, ids: Optional[List[str]] = None, where: Optional[Dict[str, Any]] = None, limit: Optional[int] = None, include_embeddings: bool = False) -> List[Dict[str, Any]]:
+        """Get articles from a ChromaDB collection with optional filtering and embedding inclusion."""
         collection = self.get_collection(collection_name)
         if not collection:
             return []
         
+        include_fields = ["metadatas", "documents"]
+        if include_embeddings:
+            include_fields.append("embeddings")
+
         try:
-            results = collection.get(
-                where=where,
-                limit=limit
-            )
-            # Format results
-            articles = []
-            if results and "ids" in results:
-                for i, article_id in enumerate(results["ids"]):
-                    metadata = results["metadatas"][i] if "metadatas" in results else {}
-                    # Deserialize any JSON strings in metadata
-                    metadata = self._deserialize_metadata(metadata)
-                    document = results["documents"][i] if "documents" in results else ""
-                    articles.append({
-                        "id": article_id,
-                        "document": document,
-                        "metadata": metadata
-                    })
-            return articles
+            # Build the parameters for the get call
+            get_params = {
+                "include": include_fields
+            }
+            
+            # Only add parameters if they are not None
+            if ids is not None:
+                get_params["ids"] = ids
+            if where is not None:
+                get_params["where"] = where
+            if limit is not None:
+                get_params["limit"] = limit
+                
+            results = collection.get(**get_params)
+            
         except Exception as e:
-            print(f"Error retrieving articles from ChromaDB: {e}")
-            return []
+            if include_embeddings:
+                # Try without embeddings as a fallback
+                print(f"Failed to get embeddings, trying without embeddings: {e}")
+                try:
+                    include_fields = ["metadatas", "documents"]
+                    get_params["include"] = include_fields
+                    results = collection.get(**get_params)
+                    include_embeddings = False  # Mark that we don't have embeddings
+                except Exception as e2:
+                    print(f"Error retrieving articles from ChromaDB: {e2}")
+                    return []
+            else:
+                print(f"Error retrieving articles from ChromaDB: {e}")
+                return []
+        
+        # Format results
+        articles = []
+        if results and results.get("ids"):
+            num_results = len(results["ids"])
+            for i in range(num_results):
+                article_id = results["ids"][i]
+                metadata = results["metadatas"][i] if results.get("metadatas") else {}
+                metadata = self._deserialize_metadata(metadata)
+                document = results["documents"][i] if results.get("documents") else ""
+                
+                article_data = {
+                    "id": article_id,
+                    "document": document,
+                    "metadata": metadata
+                }
+
+                if include_embeddings and results.get("embeddings") is not None and i < len(results["embeddings"]) and results["embeddings"][i] is not None:
+                    article_data["embedding"] = results["embeddings"][i]
+                
+                articles.append(article_data)
+        return articles
     
     def search_articles(self, collection_name: str, query: str, where: Optional[Dict[str, Any]] = None, limit: int = 10) -> List[Dict[str, Any]]:
         """Search for articles in a ChromaDB collection by semantic similarity"""

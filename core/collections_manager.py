@@ -305,6 +305,27 @@ class CollectionsManager:
         self.save_collection(collection)
         return tags
         
+    def get_embeddings_for_articles(self, collection_name: str, article_ids: List[str]) -> Dict[str, List[float]]:
+        """
+        Retrieves embeddings for a given list of article IDs from a collection.
+        Returns a dictionary mapping article IDs to their embedding vectors.
+        """
+        if not article_ids:
+            return {}
+
+        articles_data = self.chroma_service.get_articles(
+            collection_name=collection_name,
+            ids=article_ids,
+            include_embeddings=True
+        )
+
+        embeddings_map = {}
+        for data in articles_data:
+            if "embedding" in data and data.get("embedding") is not None:
+                embeddings_map[data["id"]] = data["embedding"]
+        
+        return embeddings_map
+
     def add_article(self, collection_name: str, article: Article) -> bool:
         """Add a single article to a collection. Consider using add_articles_batch for multiple articles."""
         return self.add_articles_batch(collection_name, [article])
