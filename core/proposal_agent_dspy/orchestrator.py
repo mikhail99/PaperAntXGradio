@@ -462,33 +462,55 @@ class GenerateQueriesNode(Node):
         state.update("search_queries", prediction.queries)
         return FlowAction(type="continue")
 
-class UserInputRouterNode(Node):
-    def __init__(self):
-        super().__init__("user_input_router")
+class RouterNode(Node):
+    """Generic base class for routing decisions based on state."""
+    def __init__(self, name: str):
+        super().__init__(name)
     
     async def execute(self, state: WorkflowState) -> FlowAction:
+        condition = self.get_route_condition(state)
+        return FlowAction(type=f"branch:{condition}")
+    
+    def get_route_condition(self, state: WorkflowState) -> str:
+        """Override this method to implement routing logic."""
+        raise NotImplementedError("Subclasses must implement get_route_condition")
+
+class QueryProcessingRouter(RouterNode):
+    def __init__(self):
+        super().__init__("query_processing_router")
+    
+    def get_route_condition(self, state: WorkflowState) -> str:
+        """Process query review input and return routing condition."""
         user_input = getattr(state, '_last_user_input', '').strip().lower()
-        interrupt = state.last_interrupt_type
         
-        if interrupt == "query_review":
-            if user_input == "!regenerate":
-                return FlowAction(type="branch:regenerate_queries")
-            if hasattr(state, '_last_user_input_raw'):
-                edited_queries = [q.strip() for q in state._last_user_input_raw.split(',') if q.strip()]
-                if edited_queries:
-                    state.update("search_queries", edited_queries)
-            return FlowAction(type="branch:queries_approved")
+        if user_input == "!regenerate":
+            return "regenerate_queries"
         
-        elif interrupt == "final_review":
-            if user_input == "approve":
-                state.update("is_approved", True)
-                return FlowAction(type="branch:approved")
-            state.revision_cycles += 1
-            critique = Critique(score=0.5, justification=getattr(state, '_last_user_input', 'User requested revision'))
-            state.update("review_team_feedback", {"user_review": critique})
-            return FlowAction(type="branch:revision_requested")
-            
-        return FlowAction(type="continue") # Default case
+        # Handle edited queries
+        if hasattr(state, '_last_user_input_raw'):
+            edited_queries = [q.strip() for q in state._last_user_input_raw.split(',') if q.strip()]
+            if edited_queries:
+                state.update("search_queries", edited_queries)
+        
+        return "queries_approved"
+
+class ProposalProcessingRouter(RouterNode):
+    def __init__(self):
+        super().__init__("proposal_processing_router")
+    
+    def get_route_condition(self, state: WorkflowState) -> str:
+        """Process proposal review input and return routing condition."""
+        user_input = getattr(state, '_last_user_input', '').strip().lower()
+        
+        if user_input == "approve":
+            state.update("is_approved", True)
+            return "approved"
+        
+        # Handle revision request
+        state.revision_cycles += 1
+        critique = Critique(score=0.5, justification=getattr(state, '_last_user_input', 'User requested revision'))
+        state.update("review_team_feedback", {"user_review": critique})
+        return "revision_requested"
 
 class LiteratureReviewNode(Node):
     def __init__(self, doc_service):
@@ -540,16 +562,21 @@ class ReviewProposalNode(Node):
     async def execute(self, state: WorkflowState) -> FlowAction:
         prediction = self.module(proposal_draft=state.proposal_draft, review_aspect="novelty and contribution")
         state.update("review_team_feedback", {"ai_reviewer": prediction.critique})
-        state.last_interrupt_type = "final_review"
-        return FlowAction(type="pause", data={"interrupt_type": "final_review", "message": "AI review complete. Approve or request revision.", "context": {"review": prediction.critique.model_dump(), "revision_cycle": state.revision_cycles}})
+        return FlowAction(type="continue")
 
 class PauseForQueryReviewNode(Node):
     def __init__(self):
         super().__init__("pause_for_query_review")
 
     async def execute(self, state: WorkflowState) -> FlowAction:
-        state.last_interrupt_type = "query_review"
         return FlowAction(type="pause", data={"interrupt_type": "query_review", "message": "Please review the generated queries.", "context": {"queries": state.search_queries}})
+
+class PauseForProposalReviewNode(Node):
+    def __init__(self):
+        super().__init__("pause_for_proposal_review")
+
+    async def execute(self, state: WorkflowState) -> FlowAction:
+        return FlowAction(type="pause", data={"interrupt_type": "final_review", "message": "AI review complete. Approve or request revision.", "context": {"review": state.review_team_feedback.get("ai_reviewer", {}).model_dump() if state.review_team_feedback.get("ai_reviewer") else {}, "revision_cycle": state.revision_cycles}})
 
 # ===============================================
 # Declarative Flow Definition
@@ -561,26 +588,28 @@ def create_proposal_flow(use_parrot: bool = False) -> Flow:
     doc_service = MockPaperQAService() if use_parrot else PaperQAService()
     
     generate_queries = GenerateQueriesNode(QueryGenerator())
-    pause_for_query_review = PauseForQueryReviewNode()
-    user_input_router = UserInputRouterNode()
+    pause_for_user_query_review = PauseForQueryReviewNode()
+    query_processing_router = QueryProcessingRouter()
     literature_review = LiteratureReviewNode(doc_service)
     synthesize_knowledge = SynthesizeKnowledgeNode(KnowledgeSynthesizer())
     write_proposal = WriteProposalNode(ProposalWriter())
     review_proposal = ReviewProposalNode(ProposalReviewer())
+    pause_for_user_proposal_review = PauseForProposalReviewNode()
+    proposal_processing_router = ProposalProcessingRouter()
 
-    # 2. Connect nodes to define the workflow graph
-    generate_queries >> pause_for_query_review >> user_input_router
+    # 2. Query review flow - 2 steps only
+    generate_queries >> pause_for_user_query_review >> query_processing_router
 
-    # 3. Define branches from the router
-    user_input_router - "queries_approved" >> literature_review
-    user_input_router - "regenerate_queries" >> generate_queries
+    # 3. Query router branches
+    query_processing_router - "queries_approved" >> literature_review
+    query_processing_router - "regenerate_queries" >> generate_queries
 
-    # 4. Define the main success path
-    literature_review >> synthesize_knowledge >> write_proposal >> review_proposal >> user_input_router
+    # 4. Main research and writing pipeline - flows to proposal review
+    literature_review >> synthesize_knowledge >> write_proposal >> review_proposal >> pause_for_user_proposal_review >> proposal_processing_router
 
-    # 5. Define the final outcomes from the router
-    user_input_router - "revision_requested" >> write_proposal
-    user_input_router - "approved" >> FlowEnd()
+    # 5. Proposal router branches
+    proposal_processing_router - "revision_requested" >> write_proposal
+    proposal_processing_router - "approved" >> FlowEnd()
 
     # 6. Build and return the flow from the start node
     return Flow.from_start_node(generate_queries, name="proposal_generation")
