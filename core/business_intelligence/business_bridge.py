@@ -7,6 +7,59 @@ from mem0 import Memory
 import time
 from collections import Counter, defaultdict
 
+# Global flag to control LLM usage
+USE_MOCK_LLM = False  # Set to False for real LLM
+
+def get_llm():
+    """Get LLM instance based on USE_MOCK_LLM flag."""
+    if USE_MOCK_LLM:
+        from core.proposal_agent_pf_dspy.parrot import MockLM
+        return MockLM()
+    else:
+        provider = os.getenv("DEFAULT_LLM_PROVIDER", "ollama").lower()
+        if provider == "ollama":
+            model_name = os.getenv("OLLAMA_MODEL", "gemma3:4b")
+            return dspy.LM(f'ollama_chat/{model_name}', api_base='http://localhost:11434', api_key='')
+        elif provider == "openai":
+            model_name = os.getenv("OPENAI_MODEL", "gpt-4o")
+            return dspy.OpenAI(model=model_name, max_tokens=4000)
+        else:
+            raise ValueError(f"Unsupported provider: {provider}")
+
+def is_using_mock():
+    """Return True if we're using mock services."""
+    return USE_MOCK_LLM
+
+def get_paperqa_service():
+    """Get PaperQA service instance based on USE_MOCK_LLM flag."""
+    if USE_MOCK_LLM:
+        from core.proposal_agent_pf_dspy.parrot import MockPaperQAService
+        service = MockPaperQAService()
+    else:
+        from core.paperqa_service import PaperQAService
+        service = PaperQAService()
+    
+    # Wrap with sync interface for nodes
+    class SyncPaperQAWrapper:
+        def __init__(self, async_service):
+            self.async_service = async_service
+        
+        def query_documents(self, collection: str, query: str) -> dict:
+            """Sync wrapper for async query_documents."""
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            return loop.run_until_complete(
+                self.async_service.query_documents(collection, query)
+            )
+    
+    return SyncPaperQAWrapper(service)
+
+
 class PatentQueryGenerator(dspy.Signature):
     """
     You are a patent research expert. Extract key technical concepts from a project proposal 
@@ -134,18 +187,10 @@ class BusinessTechnicalBridgeAgent(dspy.Module):
 def create_business_bridge_service():
     """Factory function to create the BusinessTechnicalBridgeAgent."""
     # --- DSPy Model Configuration ---
-    provider = os.getenv("DEFAULT_LLM_PROVIDER", "ollama").lower()
-    if provider == "ollama":
-        model_name = os.getenv("OLLAMA_MODEL", "gemma3:4b")
-        llm = dspy.LM(f'ollama_chat/{model_name}', api_base='http://localhost:11434', api_key='')
-    elif provider == "openai":
-        model_name = os.getenv("OPENAI_MODEL", "gpt-4o")
-        llm = dspy.OpenAI(model=model_name, max_tokens=4000)
-    else:
-        raise ValueError(f"Unsupported provider for Business Bridge: {provider}")
 
+    llm = get_llm()
     dspy.configure(lm=llm)
-    print(f"--- Business Bridge DSPy configured with: {llm.__class__.__name__} ({model_name}) ---")
+    print(f"--- Business Bridge DSPy configured with: {llm.__class__.__name__} ---")
     
     # Here we would initialize memory and other dependencies.
     # For now, we create a simple agent.

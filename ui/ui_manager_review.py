@@ -1,5 +1,5 @@
 import gradio as gr
-from core.proposal_agent_dspy.orchestrator import ProposalStorage
+from core.proposal_agent_pf_dspy.storage import ProposalStorage
 import json
 import traceback
 import plotly.graph_objects as go

@@ -1,12 +1,12 @@
 import gradio as gr
 from core.collections_manager import CollectionsManager
-from core.proposal_agent_dspy.orchestrator import create_dspy_service as create_modern_service
+from core.proposal_agent_pf_dspy.main import create_research_service as create_dspy_service
 from core.analysis_storage_service import AnalysisStorageService
 import json
 
 # --- Remove local service instantiation ---
 # collections_manager = CollectionsManager()
-# proposal_agent_service = create_modern_service(use_parrot=False) # This is now passed in
+# proposal_agent_service = create_dspy_service(use_parrot=False) # This is now passed in
 analysis_storage_service = AnalysisStorageService()
 
 # --- UI Helper Functions ---
@@ -92,7 +92,7 @@ def create_research_plan_tab(proposal_agent_service, collections_manager: Collec
             desc = get_collection_description(collections_manager, collection_name)
             return gr.update(value=desc or "<i>No description available.</i>")
 
-        async def start_workflow(collection, topic, history):
+        def start_workflow(collection, topic, history):
             """Kicks off a new agent workflow."""
             if not collection or not topic:
                 gr.Warning("Please select a collection and enter a research topic.")
@@ -118,11 +118,11 @@ def create_research_plan_tab(proposal_agent_service, collections_manager: Collec
                 final_proposal_md: "*(Waiting for agent...)*",
             }
             
-            async for update in proposal_agent_service.start_agent(config):
+            for update in proposal_agent_service.start_agent(config):
                 # We pass all UI components to the handler so it can update them
                 yield _handle_agent_update(update, history)
 
-        async def continue_workflow(current_tid, user_input, history):
+        def continue_workflow(current_tid, user_input, history):
             """Continues the workflow after a user interaction."""
             if not current_tid:
                 return
@@ -138,7 +138,7 @@ def create_research_plan_tab(proposal_agent_service, collections_manager: Collec
                 revision_feedback_group: gr.update(visible=False),
             }
             
-            async for update in proposal_agent_service.continue_agent(current_tid, user_input):
+            for update in proposal_agent_service.continue_agent(current_tid, user_input):
                 yield _handle_agent_update(update, history)
 
         def _handle_agent_update(update, history):
@@ -242,19 +242,19 @@ def create_research_plan_tab(proposal_agent_service, collections_manager: Collec
         # is the top-level callable for the event. We create specialized handlers
         # that call the main continue_workflow logic.
 
-        async def handle_query_regenerate(tid, hist):
+        def handle_query_regenerate(tid, hist):
             """Specialized handler for the query regenerate button."""
-            async for update in continue_workflow(tid, "!regenerate", hist):
+            for update in continue_workflow(tid, "!regenerate", hist):
                 yield update
 
-        async def handle_final_approve(tid, hist):
+        def handle_final_approve(tid, hist):
             """Specialized handler for the final approve button."""
-            async for update in continue_workflow(tid, "approve", hist):
+            for update in continue_workflow(tid, "approve", hist):
                 yield update
         
-        async def handle_revision_submit(tid, feedback, hist):
+        def handle_revision_submit(tid, feedback, hist):
             """Specialized handler for submitting revision feedback."""
-            async for update in continue_workflow(tid, feedback, hist):
+            for update in continue_workflow(tid, feedback, hist):
                 yield update
 
         query_regenerate_btn.click(

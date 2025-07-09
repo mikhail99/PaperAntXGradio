@@ -1,5 +1,5 @@
 import gradio as gr
-from core.proposal_agent_dspy.orchestrator import create_dspy_service
+from core.proposal_agent_pf_dspy.main import create_research_service
 from core.collections_manager import CollectionsManager
 import asyncio
 
