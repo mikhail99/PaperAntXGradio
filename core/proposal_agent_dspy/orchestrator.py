@@ -157,14 +157,97 @@ class FlowAction:
     type: str
     data: Optional[Dict[str, Any]] = None
 
+class FlowEnd:
+    """Special terminal node to mark flow completion"""
+    def __init__(self):
+        self.name = "complete"
+
+class ConditionalTransition:
+    """Helper class for conditional transitions using the '-' operator."""
+    def __init__(self, source_node: 'Node', condition: str):
+        self.source_node = source_node
+        self.condition = condition
+
+    def __rshift__(self, target_node) -> 'Node':
+        """Completes the conditional transition: node - 'condition' >> target_node."""
+        branch_key = f"branch:{self.condition}"
+        self.source_node.successors[branch_key] = target_node
+        return target_node
+
 class Node(ABC):
     """Abstract base class for a node in our workflow."""
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self, name: Optional[str] = None):
+        if name:
+            self.name = name
+        else:
+            # Remove "Node" suffix for cleaner names
+            self.name = self.__class__.__name__.replace("Node", "")
+        self.successors: Dict[str, 'Node'] = {}
+
+    def __repr__(self) -> str:
+        """Provides a developer-friendly representation for debugging."""
+        successors = list(self.successors.keys())
+        return f"Node({self.name}, successors={successors})"
+
+    def __rshift__(self, other: 'Node') -> 'Node':
+        """Implements the '>>' operator for default 'continue' transitions."""
+        self.successors["continue"] = other
+        return other
+
+    def __sub__(self, condition: str) -> ConditionalTransition:
+        """Implements the '-' operator for conditional transitions."""
+        return ConditionalTransition(self, condition)
     
     @abstractmethod
     async def execute(self, state: WorkflowState) -> FlowAction:
         pass
+
+class FlowValidator:
+    """Validates flow integrity before execution"""
+    
+    @staticmethod
+    def validate_flow(flow: 'Flow') -> List[str]:
+        """Validate flow integrity and return list of issues"""
+        issues = []
+        
+        # Check for unreachable nodes
+        reachable = FlowValidator._get_reachable_nodes(flow)
+        for node_name in flow.nodes:
+            if node_name not in reachable:
+                issues.append(f"Unreachable node: {node_name}")
+        
+        # Check for missing transitions in flow.transitions
+        for node_name, node in flow.nodes.items():
+            for condition in node.successors:
+                if condition not in flow.transitions.get(node_name, {}):
+                    issues.append(f"Missing transition: {node_name} -> {condition}")
+        
+        # Check for dangling references
+        for node_name, transitions in flow.transitions.items():
+            for condition, target in transitions.items():
+                if target != "complete" and target not in flow.nodes:
+                    issues.append(f"Dangling reference: {node_name} -> {target}")
+        
+        return issues
+    
+    @staticmethod
+    def _get_reachable_nodes(flow: 'Flow') -> set:
+        """Get all nodes reachable from the start node"""
+        reachable = set()
+        queue = [flow.start_node]
+        
+        while queue:
+            current = queue.pop(0)
+            if current in reachable or current == "complete":
+                continue
+                
+            reachable.add(current)
+            transitions = flow.transitions.get(current, {})
+            for target in transitions.values():
+                if target not in reachable and target != "complete":
+                    queue.append(target)
+        
+        return reachable
 
 class Flow:
     """A declarative workflow definition, mapping node names to transitions."""
@@ -173,22 +256,75 @@ class Flow:
         self.start_node = start_node
         self.nodes: Dict[str, Node] = {}
         self.transitions: Dict[str, Dict[str, str]] = {}
-    
-    def add_node(self, node: Node) -> 'Flow':
-        self.nodes[node.name] = node
-        return self
-    
-    def add_transition(self, from_node: str, condition: str, to_node: str) -> 'Flow':
-        if from_node not in self.transitions:
-            self.transitions[from_node] = {}
-        self.transitions[from_node][condition] = to_node
-        return self
-    
-    def on_branch(self, from_node: str, branch_name: str, to_node: str) -> 'Flow':
-        return self.add_transition(from_node, f"branch:{branch_name}", to_node)
 
-    def on_continue(self, from_node: str, to_node: str) -> 'Flow':
-        return self.add_transition(from_node, "continue", to_node)
+    @classmethod
+    def from_start_node(cls, start_node: 'Node', name: str = "auto_flow") -> 'Flow':
+        """Builds a Flow object by traversing the graph from a starting node."""
+        flow = cls(name, start_node.name)
+        
+        visited_nodes = set()
+        nodes_to_process = [start_node]
+
+        while nodes_to_process:
+            current_node = nodes_to_process.pop(0)
+
+            if current_node.name in visited_nodes:
+                continue
+            
+            visited_nodes.add(current_node.name)
+            flow.nodes[current_node.name] = current_node
+
+            if not hasattr(current_node, 'successors'):
+                continue
+
+            for condition, next_node in current_node.successors.items():
+                if current_node.name not in flow.transitions:
+                    flow.transitions[current_node.name] = {}
+                
+                if isinstance(next_node, FlowEnd):
+                    flow.transitions[current_node.name][condition] = "complete"
+                else:
+                    flow.transitions[current_node.name][condition] = next_node.name
+                    if next_node.name not in visited_nodes:
+                        nodes_to_process.append(next_node)
+        return flow
+
+    def validate(self) -> List[str]:
+        """Validate this flow and return list of issues"""
+        return FlowValidator.validate_flow(self)
+
+    def print_flow(self) -> None:
+        """Print human-readable flow structure"""
+        print(f"Flow: {self.name}")
+        print(f"Start: {self.start_node}")
+        print("Transitions:")
+        for node_name, transitions in self.transitions.items():
+            for condition, target in transitions.items():
+                if condition == "continue":
+                    arrow = "→"
+                else:
+                    clean_condition = condition.replace("branch:", "")
+                    arrow = f"→[{clean_condition}]"
+                print(f"  {node_name} {arrow} {target}")
+
+    def to_mermaid(self) -> str:
+        """Generate Mermaid diagram syntax"""
+        lines = [f"graph TD"]
+        lines.append(f"  Start([{self.start_node}])")
+        
+        for node_name, transitions in self.transitions.items():
+            for condition, target in transitions.items():
+                if condition == "continue":
+                    edge_label = ""
+                else:
+                    edge_label = f"|{condition.replace('branch:', '')}|"
+                
+                if target == "complete":
+                    lines.append(f"  {node_name} -->{edge_label} End([Complete])")
+                else:
+                    lines.append(f"  {node_name} -->{edge_label} {target}")
+        
+        return "\n".join(lines)
 
 class FlowEngine:
     """Executes a declarative Flow, managing state and transitions."""
@@ -419,26 +555,35 @@ class PauseForQueryReviewNode(Node):
 # Declarative Flow Definition
 # ===============================================
 
-def create_proposal_flow() -> Flow:
-    """Defines the entire proposal generation workflow in a readable, declarative way."""
-    return Flow("proposal_generation", "generate_queries") \
-        .add_node(GenerateQueriesNode(QueryGenerator())) \
-        .add_node(PauseForQueryReviewNode()) \
-        .add_node(UserInputRouterNode()) \
-        .add_node(LiteratureReviewNode(PaperQAService())) \
-        .add_node(SynthesizeKnowledgeNode(KnowledgeSynthesizer())) \
-        .add_node(WriteProposalNode(ProposalWriter())) \
-        .add_node(ReviewProposalNode(ProposalReviewer())) \
-        .on_continue("generate_queries", "pause_for_query_review") \
-        .on_continue("pause_for_query_review", "user_input_router") \
-        .on_branch("user_input_router", "queries_approved", "literature_review") \
-        .on_branch("user_input_router", "regenerate_queries", "generate_queries") \
-        .on_continue("literature_review", "synthesize_knowledge") \
-        .on_continue("synthesize_knowledge", "write_proposal") \
-        .on_continue("write_proposal", "review_proposal") \
-        .on_continue("review_proposal", "user_input_router") \
-        .on_branch("user_input_router", "revision_requested", "write_proposal") \
-        .on_branch("user_input_router", "approved", "complete")
+def create_proposal_flow(use_parrot: bool = False) -> Flow:
+    """Defines the entire proposal generation workflow using PocketFlow-style syntax."""
+    # 1. Define all nodes in the workflow with dependency injection
+    doc_service = MockPaperQAService() if use_parrot else PaperQAService()
+    
+    generate_queries = GenerateQueriesNode(QueryGenerator())
+    pause_for_query_review = PauseForQueryReviewNode()
+    user_input_router = UserInputRouterNode()
+    literature_review = LiteratureReviewNode(doc_service)
+    synthesize_knowledge = SynthesizeKnowledgeNode(KnowledgeSynthesizer())
+    write_proposal = WriteProposalNode(ProposalWriter())
+    review_proposal = ReviewProposalNode(ProposalReviewer())
+
+    # 2. Connect nodes to define the workflow graph
+    generate_queries >> pause_for_query_review >> user_input_router
+
+    # 3. Define branches from the router
+    user_input_router - "queries_approved" >> literature_review
+    user_input_router - "regenerate_queries" >> generate_queries
+
+    # 4. Define the main success path
+    literature_review >> synthesize_knowledge >> write_proposal >> review_proposal >> user_input_router
+
+    # 5. Define the final outcomes from the router
+    user_input_router - "revision_requested" >> write_proposal
+    user_input_router - "approved" >> FlowEnd()
+
+    # 6. Build and return the flow from the start node
+    return Flow.from_start_node(generate_queries, name="proposal_generation")
 
 # ===============================================
 # Orchestrator (Drop-in Replacement)
@@ -453,11 +598,7 @@ class DSPyOrchestrator:
         else:
             dspy.configure(lm=dspy.LM('ollama_chat/gemma3:4b', api_base='http://localhost:11434', api_key=''))
         
-        self.flow = create_proposal_flow()
-        # If using parrot, swap out the real doc service node with a mock one.
-        if use_parrot:
-            self.flow.add_node(LiteratureReviewNode(MockPaperQAService()))
-        
+        self.flow = create_proposal_flow(use_parrot)
         self.engine = FlowEngine()  # This now includes storage
 
     async def start_agent(self, config: Dict[str, Any]) -> AsyncGenerator[Dict[str, Any], None]:

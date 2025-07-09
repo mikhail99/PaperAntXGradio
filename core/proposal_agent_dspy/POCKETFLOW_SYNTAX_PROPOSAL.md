@@ -97,6 +97,10 @@ class Node(ABC):
     @abstractmethod
     async def execute(self, state: WorkflowState) -> FlowAction:
         pass
+
+    def __repr__(self) -> str:
+        """Provides a developer-friendly representation for debugging."""
+        return f"Node({self.name})"
     
     def __rshift__(self, other: 'Node') -> 'Node':
         """Implement >> operator for default transitions"""
@@ -282,45 +286,73 @@ class FlowVisualizer:
         return "\n".join(lines)
 ```
 
-## Migration Strategy
+## Migration Plan
 
-### Backward Compatibility
-1. **Keep Existing API**: Maintain current `Flow` constructor and method chaining
-2. **Gradual Migration**: Introduce operator overloading alongside existing methods
-3. **Deprecation Warnings**: Add warnings for old-style flow definitions
-4. **Documentation**: Provide migration guide with examples
+This refactoring will be a hard cutover. The old method-chaining syntax will be completely replaced to ensure a clean, maintainable codebase without the overhead of supporting legacy code.
+
+1.  **Code Implementation**: Implement the new operator-based syntax as outlined in the plan.
+2.  **Full Refactoring**: All existing flow definitions will be refactored to use the new syntax at once.
+3.  **Testing Overhaul**: All tests, including `parrot.py` mock tests, will be updated to validate the new syntax.
+4.  **Removal of Old Code**: The legacy `.add_node()`, `.on_continue()`, and `.on_branch()` methods will be removed from the `Flow` class.
 
 ### Testing Strategy
-0. parrot.py style of testing should available.
-1. **Parallel Testing**: Run both syntaxes against same test cases
-2. **Flow Equivalence**: Ensure operator-based flows generate identical execution graphs
-3. **Performance Testing**: Benchmark operator overhead vs method chaining
-4. **Integration Testing**: Test with existing DSPy modules and state management
+1.  **Parrot Test Compatibility**: Ensure full compatibility with `parrot.py` style testing for fast, deterministic, offline workflow validation.
+2.  **Parallel Testing**: Run the old workflow tests against the new, refactored workflow to ensure identical behavior.
+3.  **Flow Equivalence**: Manually and automatically verify that operator-based flows generate the correct execution graphs.
+4.  **Integration Testing**: Test with existing DSPy modules and state management to ensure the end-to-end process works flawlessly.
 
+## Expected Benefits
+
+### Developer Experience
+- **Visual Clarity**: The pipeline-style syntax makes it easier to understand the flow of data and control logic.
+- **Reduced Boilerplate**: Less repetitive code for defining nodes and their connections.
+- **Better IDE Support**: IntelliSense and refactoring tools work directly on node references.
+- **Maintainability**: Nodes and their dependencies are defined in close proximity, making it easier to modify and extend.
+- **Better Testing**: Isolated node testing with clear dependencies
+- **Documentation**: Self-documenting pipeline structure
+
+## Risk Assessment
+
+### Key Risks
+1.  **Big Bang Migration**: Refactoring all flows at once carries a higher risk than a gradual approach. Thorough and comprehensive testing is the primary mitigation for this.
+2.  **Learning Curve**: The team will need to adapt to the new syntax. Paired-programming sessions and clear documentation will be essential.
+3.  **Debugging Initial Implementations**: The new syntax might initially be harder to debug. Enhanced node `__repr__` and clear logging will help mitigate this.
+
+## Success Metrics
+
+### Quantitative Metrics
+- [ ] **Lines of Code**: 40-60% reduction in flow definition LOC
+- [ ] **Performance**: No significant overhead compared to existing method chaining.
+- [ ] **Code Quality**: Fewer bugs, more maintainable, and easier to extend.
+
+### Qualitative Metrics
+- [ ] **Developer Satisfaction**: The new syntax is easier to read and write.
+- [ ] **Team Productivity**: Reduced development time and fewer bugs.
+- [ ] **Codebase Health**: Cleaner, more maintainable, and easier to onboard new developers.
 
 ## Implementation Timeline
 
 ### Week 1: Foundation
-- [ ] Implement basic operator overloading (`>>` and `-`)
-- [ ] Create `ConditionalTransition` and `FlowEnd` classes
-- [ ] Add `Flow.from_start_node()` auto-discovery method
-- [ ] Write comprehensive unit tests
+- [x] Implement basic operator overloading (`>>` and `-`)
+- [x] Create `ConditionalTransition` and `FlowEnd` classes
+- [x] Add `Flow.from_start_node()` auto-discovery method
+- [x] Write comprehensive tests
+- [x] **Improvements**: Enhanced node naming, better debugging with `__repr__`, dependency injection
 
 ### Week 2: Integration
-- [ ] Integrate with existing `FlowEngine`
-- [ ] Add backward compatibility layer
-- [ ] Implement flow validation
-- [ ] Update documentation with examples
+- [x] Integrate with existing `FlowEngine`
+- [x] Implement flow validation (`FlowValidator` class)
+- [x] Add flow utilities (`print_flow()`, `to_mermaid()`)
+- [x] Update documentation with examples
+- [x] **Clean parrot integration**: Fixed dependency injection for testing
 
 ### Week 3: Advanced Features
 - [ ] Add parallel execution support
 - [ ] Implement sub-flow composition
 - [ ] Create flow visualization tools
-- [ ] Performance optimization
 
 ### Week 4: Migration & Polish
-- [ ] Migrate existing proposal flow to new syntax
-- [ ] Add deprecation warnings for old syntax
+- [ ] Refactor `parrot.py` tests to use the new syntax
 - [ ] Complete integration testing
 - [ ] Update all documentation and examples
 
@@ -328,6 +360,7 @@ class FlowVisualizer:
 
 Adopting PocketFlow-style syntax for the DSPy orchestrator represents a significant improvement in developer experience, code readability, and maintainability. The pipeline-style syntax aligns naturally with how developers think about workflows while providing the technical benefits of reduced boilerplate and better IDE support.
 
-The proposed implementation maintains full backward compatibility while providing a clear migration path. The visual nature of the new syntax will make complex workflows easier to understand, debug, and maintain, ultimately leading to more robust and efficient AI agent implementations.
+By opting for a clean cutover, we avoid the long-term maintenance burden of backward compatibility and ensure the codebase remains simple and focused. The visual nature of the new syntax will make complex workflows easier to understand, debug, and maintain, ultimately leading to more robust and efficient AI agent implementations.
 
-The investment in this syntax improvement will pay dividends in reduced development time, fewer bugs, and improved team productivity as the workflow complexity grows. 
+The investment in this syntax improvement will pay dividends in reduced development time, fewer bugs, and improved team productivity as the workflow complexity grows.
+
