@@ -13,7 +13,7 @@ from ui.ui_paperqa import create_paperqa_tab
 from ui.ui_research_plan import create_research_plan_tab
 from ui.ui_library import create_library_tab
 from ui.ui_manager_review import create_manager_review_tab
-from ui.ui_pocketflow_demo import create_pocketflow_demo_tab
+#from ui.ui_pocketflow_demo import create_pocketflow_demo_tab
 from ui.ui_research_demo import create_research_demo_tab
 from ui.custom_css import CUSTOM_CSS
 from core.article_manager import ArticleManager
@@ -42,7 +42,7 @@ def main():
             create_paperqa_tab(state)
             create_research_plan_tab(proposal_agent_service, collections_manager)
             #create_proposal_debugger_tab(proposal_agent_service, collections_manager)
-            create_pocketflow_demo_tab()
+            #create_pocketflow_demo_tab()
             create_research_demo_tab()
             create_copilot_tab(state, copilot_service)
             create_collections_tab(state)

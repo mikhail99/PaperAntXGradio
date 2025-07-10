@@ -8,10 +8,6 @@ class Action(str, Enum):
     do_write_proposal = "do-write-proposal"
     do_follow_up = "do-follow-up"
     do_result_notification = "do-result-notification"
-
-class ResearchState(TypedDict):
-    action: Action
-    literature_review: str
-    gap: str
-    follow_up_question: str
-    follow_up_answer: str
+    # Review actions for human-in-the-loop steps
+    review_queries = "review-queries"
+    review_report = "review-report"

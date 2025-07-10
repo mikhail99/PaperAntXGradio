@@ -80,30 +80,56 @@ def research_chat_fn(message, history, uuid):
         chat_queue.task_done()
 
 
+def handle_like_dislike(data: gr.LikeData):
+    """
+    Handle like/dislike events from the chatbot for demo purposes.
+    Logs the feedback - in a full implementation this could trigger flow updates.
+    
+    Args:
+        data: LikeData from Gradio containing like/dislike info
+    """
+    if data.liked:
+        print("✅ User LIKED step - would proceed to next step")
+        print(f"   Liked message: {data.value}")
+    else:
+        print("❌ User DISLIKED step - would retry current step") 
+        print(f"   Disliked message: {data.value}")
+
+
 def clear_research_fn():
     print("Clearing research conversation")
     return uuid.uuid4()
 
 
 def create_research_demo_tab():
-    """Create the Research Demo tab using the research flow"""
+    """Create the Research Demo tab using the research flow with human-in-the-loop"""
     
     with gr.Tab("Research Demo"):
-        gr.Markdown("## Research Proposal Agent Demo")
-        gr.Markdown("This is a demonstration of the research proposal workflow using PocketFlow. Try asking about:")
+        gr.Markdown("## Research Proposal Agent Demo with Human-in-the-Loop")
+        gr.Markdown("This demonstration shows a research proposal workflow with critical review points:")
         gr.Markdown("- 🔬 **Research Topics**: 'I want to research LLMs in education'")
         gr.Markdown("- 🧠 **AI Research**: 'Help me research machine learning for healthcare'")
-        gr.Markdown("- 📚 **Any Academic Topic**: 'Research the impact of climate change on agriculture'")
-        gr.Markdown("- ❓ **Other questions**: The agent will guide you through the research pipeline!")
+        gr.Markdown("- 📚 **Any Academic Topic**: 'Research climate change impact on agriculture'")
         
-        gr.Markdown("### Research Pipeline:")
-        gr.Markdown("1. **Topic Input** → **Query Generation** → **Literature Review** → **Gap Analysis**")
-        gr.Markdown("2. The agent will pause at each step for your approval")
-        gr.Markdown("3. Mock implementation - shows the workflow without real computations")
+        gr.Markdown("### Human-in-the-Loop Research Pipeline:")
+        gr.Markdown("1. **Topic Input** → **Query Generation** → **👍👎 Human Review** → **Literature Review**")
+        gr.Markdown("2. **Gap Analysis** → **Report Generation** → **👍👎 Human Review** → **Final Result**")
+        gr.Markdown("3. **For Review Steps**: Type 'approved' or 'proceed' to continue")
+        gr.Markdown("4. **Or**: Type 'rejected' or 'retry' to redo the step")
+        gr.Markdown("5. **👍👎 Like buttons** log feedback (demo feature)")
         
         uuid_state = gr.State(uuid.uuid4())
         
-        chatbot = gr.Chatbot(type="messages", scale=1)
+        # Create custom chatbot with like/dislike functionality
+        chatbot = gr.Chatbot(
+            type="messages", 
+            scale=1,
+            show_copy_button=True,
+            placeholder="<strong>Research Assistant</strong><br>Ask me to help with your research proposal!"
+        )
+        
+        # Attach like/dislike handler to chatbot (logs feedback for demo)
+        chatbot.like(handle_like_dislike, None, None)
         chatbot.clear(clear_research_fn, outputs=[uuid_state])
 
         gr.ChatInterface(
@@ -111,5 +137,11 @@ def create_research_demo_tab():
             type="messages",
             additional_inputs=[uuid_state],
             chatbot=chatbot,
-            title="Research Proposal Agent",
+            title="Research Proposal Agent with Human Review",
+            examples=[
+                ["I want to research LLMs in education"],
+                ["Help me research machine learning for healthcare"], 
+                ["Research climate change impact on agriculture"],
+                ["Develop AI for personalized learning"]
+            ]
         ) 
