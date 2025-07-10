@@ -141,21 +141,20 @@ class GenerateQueries(Node):
     def exec(self, prep_res):
         topic, queue = prep_res
         
-        # Call LLM to generate queries (new business logic)
-        queries = call_llm_for_queries(topic)  # Implementation detail
+        # Call LLM to generate query (simplified to 1 query)
+        query = call_llm_for_query(topic)  # Implementation detail
         
         # Use same UI communication pattern as FollowUp
-        query_list = "\n".join([f"  {i+1}. {q}" for i, q in enumerate(queries)])
-        message = f"📚 Generated research queries for '{topic}':\n\n{query_list}\n\nApprove these queries?"
+        message = f"📚 Generated research query for '{topic}':\n\n  1. {query}\n\nApprove this query?"
         
         queue.put(message)
         queue.put(None)
-        return queries
+        return query
     
     def post(self, shared, prep_res, exec_res):
-        # Save queries to session (new state management)
+        # Save query to session (new state management)
         session = load_conversation(shared["conversation_id"])
-        session["queries"] = exec_res
+        session["query"] = exec_res
         session["last_action"] = "generate_queries"
         save_conversation(shared["conversation_id"], session)
         return "done"  # Same completion pattern
@@ -167,6 +166,36 @@ class LiteratureReview(Node):
     # Follow the same prep/exec/post pattern
     # In exec(): Use PaperQAService to query documents
     # Preserve the queue communication pattern for showing progress
+    
+    def prep(self, shared):
+        flow_log: Queue = shared["flow_queue"]
+        flow_log.put(None)  # Pause flow
+        
+        session = load_conversation(shared["conversation_id"])
+        query = session["query"]
+        topic = session["generate_queries_params"]["topic"]
+        return query, topic, shared["queue"]
+    
+    def exec(self, prep_res):
+        query, topic, queue = prep_res
+        
+        # Use PaperQAService to query the single research query
+        result = paperqa_service.query(query)
+        literature_finding = {
+            "query": query,
+            "result": result,
+            "sources": getattr(result, 'sources', [])
+        }
+        
+        # Show results
+        message = f"📚 Literature review complete for '{topic}'!\n\n"
+        message += f"Query: {query}\n"
+        message += f"Found {len(literature_finding['sources'])} sources\n\n"
+        message += "Proceed to gap analysis?"
+        
+        queue.put(message)
+        queue.put(None)
+        return literature_finding
 ```
 
 ### Step 2.3: Create `SynthesizeGap` Node
@@ -175,6 +204,38 @@ class SynthesizeGap(Node):
     # Follow the same prep/exec/post pattern  
     # In exec(): Use LLM to synthesize knowledge gap
     # Use same HITL pattern to show gap analysis to user
+    
+    def prep(self, shared):
+        flow_log: Queue = shared["flow_queue"]
+        flow_log.put(None)  # Pause flow
+        
+        session = load_conversation(shared["conversation_id"])
+        literature_finding = session["literature_finding"]
+        topic = session["generate_queries_params"]["topic"]
+        return literature_finding, topic, shared["queue"]
+    
+    def exec(self, prep_res):
+        literature_finding, topic, queue = prep_res
+        
+        # Prepare literature summary for LLM
+        literature_summary = f"Query: {literature_finding['query']}\n"
+        literature_summary += f"Findings: {str(literature_finding['result'])[:300]}...\n"
+        literature_summary += f"Sources: {len(literature_finding.get('sources', []))} papers\n"
+        
+        # Call LLM to synthesize knowledge gap
+        gap_analysis = call_llm_for_gap_analysis(topic, literature_summary)
+        
+        # Present gap analysis to user
+        message = f"🎯 Knowledge Gap Analysis for '{topic}':\n\n{gap_analysis}\n\n"
+        message += "Does this gap analysis look good?"
+        
+        queue.put(message)
+        queue.put(None)
+        return {
+            "topic": topic,
+            "gap_analysis": gap_analysis,
+            "literature_summary": literature_summary
+        }
 ```
 
 ### Step 2.4: Transition to Linear Flow
