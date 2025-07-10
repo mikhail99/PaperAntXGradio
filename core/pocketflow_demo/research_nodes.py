@@ -5,64 +5,102 @@ import yaml
 from pocketflow import Node
 
 from core.pocketflow_demo.utils.call_llm import call_llm
-#from core.pocketflow_demo.utils.call_mock_api import call_book_hotel_api, call_check_weather_api
 from core.pocketflow_demo.utils.conversation import load_conversation, save_conversation
 from core.pocketflow_demo.utils.format_chat_history import format_chat_history
 from core.pocketflow_demo.research_state import Action
 
 def compute_next_action(history: list[dict], query: str, last_action: str, last_action_result: str) -> str:
-
+    if last_action is None:
+        next_action = Action.do_generate_queries
+    elif last_action == Action.do_generate_queries:
+        next_action = Action.do_literature_review
+    elif last_action == Action.do_literature_review:
+        next_action = Action.do_literature_review_gap
+    elif last_action == Action.do_literature_review_gap:
+        next_action = Action.do_write_proposal
+    elif last_action == Action.do_write_proposal:
+        next_action = Action.do_result_notification
+    else:
+        next_action = Action.do_follow_up
     decision = {
         "thinking": "I think so",
-        "action": Action.do_literature_review,
+        "action": next_action,
         "reason": "I think so",
         "question": "...",
         "topic": "llm for math",
-        "hotel": "...", 
+        "search_query": "llm for math research",
+        "summary": "literature summary here",
+        "gaps": "research gaps identified",
+        "result": "final result here",
     }
-
     return decision
 
-
-def prepare_for_next_action(session, decision: dict , flow_log):
+def prepare_for_next_action(session, decision: dict, flow_log):
+    """Generic parameter preparation using node self-declaration"""
     next_action = decision["action"]
-    if next_action == Action.do_generate_queries:
-            try:
-                topic = decision["topic"]
-                session["params"][Action.do_generate_queries] = {
-                    "topic": topic,
-                }
-                flow_log.put(f"➡️ Agent decided to {next_action} for: {topic}")
-            except KeyError:
-                print(f"⚠️ Missing parameter for  {next_action}. Overriding to {Action.do_follow_up}.")
-                question = "I can check the weather for you! Which city would you like to know about? 🌤️"
-                session["params"][Action.do_follow_up] = {"question": question}
-                flow_log.put(f"➡️ Agent needs more info: {question}")
-                next_action = Action.do_follow_up
+    
+    # Initialize session params if it doesn't exist
+    if "params" not in session:
+        session["params"] = {}
+    
+    # Find the node class for this action
+    if next_action not in ACTION_TO_NODE:
+        # Fallback to follow-up for unknown actions
+        return handle_missing_action(session, flow_log, next_action)
+    
+    node_class = ACTION_TO_NODE[next_action]
+    required_params = node_class.required_params()
+    
+    # Extract and validate parameters
+    params = {}
+    missing_params = []
+    
+    for param in required_params:
+        if param in decision:
+            params[param] = decision[param]
+        else:
+            missing_params.append(param)
+    
+    if missing_params:
+        # Fallback to follow-up with helpful message
+        return handle_missing_params(session, flow_log, next_action, missing_params)
+    
+    # Store parameters and log success
+    session["params"][next_action] = params
+    flow_log.put(f"➡️ Agent decided to {next_action} with params: {params}")
+    return next_action
 
-    elif next_action == Action.do_literature_review:
-        try:
-            search_query = decision["search_query"]
-            session["params"][Action.do_literature_review] = {
-                "search_query": search_query,
-            }
-            flow_log.put(f"➡️ Agent decided to {next_action} for: {search_query}")
-        except KeyError as e:
-            print(f"⚠️ Missing parameter for 'book-hotel': {e}. Overriding to 'follow-up'.")
-            question = "I can help with booking a hotel! Could you please provide the hotel name, check-in date, and check-out date? 🏨"
-            session["follow_up_params"] = {"question": question}
-            flow_log.put(f"➡️ Agent needs more info: {question}")
-            next_action = Action.do_follow_up
+def handle_missing_action(session, flow_log, action):
+    """Handle unknown action by falling back to follow-up"""
+    # Initialize session params if it doesn't exist
+    if "params" not in session:
+        session["params"] = {}
+    
+    question = f"I'm not sure how to handle the action '{action}'. Could you please rephrase your request?"
+    session["params"][Action.do_follow_up] = {"question": question}
+    flow_log.put(f"⚠️ Unknown action: {action}. Falling back to follow-up.")
+    return Action.do_follow_up
 
-    elif decision["action"] == "follow-up":
-        session["follow_up_params"] = {"question": exec_res["question"]}
-        flow_log.put(f"➡️ Agent decided to follow up: {exec_res['question']}")
-    elif decision["action"] == "result-notification":
-        session["result_notification_params"] = {"result": exec_res["result"]}
-        flow_log.put(f"➡️ Agent decided to notify the result: {exec_res['result']}")
+def handle_missing_params(session, flow_log, action, missing_params):
+    """Handle missing parameters by falling back to follow-up"""
+    # Initialize session params if it doesn't exist
+    if "params" not in session:
+        session["params"] = {}
+    
+    question = f"I need more information to {action}. Missing: {', '.join(missing_params)}. Could you provide these details?"
+    session["params"][Action.do_follow_up] = {"question": question}
+    flow_log.put(f"⚠️ Missing parameters for {action}: {missing_params}. Falling back to follow-up.")
+    return Action.do_follow_up
 
+class ResearchAgentRouter(Node):
+    @staticmethod
+    def required_params():
+        return []  # Router doesn't need input parameters
+    
+    @staticmethod
+    def action_type():
+        return None  # Router is not an action, it decides actions
 
-class DecideAction(Node):
     def prep(self, shared):
         conversation_id = shared["conversation_id"]
         session = load_conversation(conversation_id)
@@ -78,24 +116,27 @@ class DecideAction(Node):
     def post(self, shared, prep_res, exec_res):
         conversation_id = shared["conversation_id"]
         session: dict = load_conversation(conversation_id)
-        """Save the decision and determine the next step in the flow."""
         session["last_action"] = exec_res["action"]
         flow_log: Queue = shared["flow_queue"]
-        next_action = exec_res["action"]  # Default next action
 
         for line in exec_res["thinking"].split("\n"):
             line = line.replace("-", "").strip()
             if line:
                 flow_log.put(f"🤔 {line}")
 
-        prepare_for_next_action(session, exec_res, flow_log)
-        
+        next_action = prepare_for_next_action(session, exec_res, flow_log)
         save_conversation(conversation_id, session)
-        # Return the action to determine the next node in the flow
         return next_action
 
+class GenerateQueries(Node):
+    @staticmethod
+    def required_params():
+        return ["topic"]
+    
+    @staticmethod
+    def action_type():
+        return Action.do_generate_queries
 
-class GenerateLiteratureSearchQuery(Node):
     def prep(self, shared):
         conversation_id = shared["conversation_id"]
         session: dict = load_conversation(conversation_id)
@@ -104,11 +145,11 @@ class GenerateLiteratureSearchQuery(Node):
 
     def exec(self, prep_res):
         topic = prep_res
-        return f"search for {topic}"
+        return f"search queries for {topic}"
 
     def post(self, shared, prep_res, exec_res):
         flow_log: Queue = shared["flow_queue"]
-        flow_log.put(f"⬅️ Search query: {exec_res}")
+        flow_log.put(f"⬅️ Generated queries: {exec_res}")
 
         conversation_id = shared["conversation_id"]
         session: dict = load_conversation(conversation_id)
@@ -116,21 +157,28 @@ class GenerateLiteratureSearchQuery(Node):
         save_conversation(conversation_id, session)
         return "default"
 
+class LiteratureReview(Node):
+    @staticmethod
+    def required_params():
+        return ["search_query"]
+    
+    @staticmethod
+    def action_type():
+        return Action.do_literature_review
 
-class LiteratureSearch(Node):
     def prep(self, shared):
         conversation_id = shared["conversation_id"]
         session: dict = load_conversation(conversation_id)
-        search = session["params"][Action.do_literature_review]["search"]
-        return search
+        search_query = session["params"][Action.do_literature_review]["search_query"]
+        return search_query
 
     def exec(self, prep_res):
-        search = prep_res
-        return f"Literature search result for {search}"
+        search_query = prep_res
+        return f"Literature review result for {search_query}"
 
     def post(self, shared, prep_res, exec_res):
         flow_log: Queue = shared["flow_queue"]
-        flow_log.put(f"⬅️ Literature search result: {exec_res}")
+        flow_log.put(f"⬅️ Literature review: {exec_res}")
 
         conversation_id = shared["conversation_id"]
         session: dict = load_conversation(conversation_id)
@@ -138,7 +186,15 @@ class LiteratureSearch(Node):
         save_conversation(conversation_id, session)
         return "default"
 
-class LiteratureGapAnalysis(Node):
+class SynthesizeGap(Node):
+    @staticmethod
+    def required_params():
+        return ["summary"]
+    
+    @staticmethod
+    def action_type():
+        return Action.do_literature_review_gap
+
     def prep(self, shared):
         conversation_id = shared["conversation_id"]
         session: dict = load_conversation(conversation_id)
@@ -147,11 +203,11 @@ class LiteratureGapAnalysis(Node):
 
     def exec(self, prep_res):
         summary = prep_res
-        return f"Literature gap result for {summary}"
+        return f"Research gaps identified for {summary}"
 
     def post(self, shared, prep_res, exec_res):
         flow_log: Queue = shared["flow_queue"]
-        flow_log.put(f"⬅️ Literature gap result: {exec_res}")
+        flow_log.put(f"⬅️ Gap analysis: {exec_res}")
 
         conversation_id = shared["conversation_id"]
         session: dict = load_conversation(conversation_id)
@@ -160,6 +216,14 @@ class LiteratureGapAnalysis(Node):
         return "default"
 
 class ReportGeneration(Node):
+    @staticmethod
+    def required_params():
+        return ["gaps"]
+    
+    @staticmethod
+    def action_type():
+        return Action.do_write_proposal
+
     def prep(self, shared):
         conversation_id = shared["conversation_id"]
         session: dict = load_conversation(conversation_id)
@@ -168,11 +232,11 @@ class ReportGeneration(Node):
 
     def exec(self, prep_res):
         gaps = prep_res
-        return f"Project report for {gaps}"
+        return f"Project proposal for {gaps}"
 
     def post(self, shared, prep_res, exec_res):
         flow_log: Queue = shared["flow_queue"]
-        flow_log.put(f"⬅️ Project report: {exec_res}")
+        flow_log.put(f"⬅️ Proposal generated: {exec_res}")
 
         conversation_id = shared["conversation_id"]
         session: dict = load_conversation(conversation_id)
@@ -181,6 +245,14 @@ class ReportGeneration(Node):
         return "default"
     
 class FollowUp(Node):
+    @staticmethod
+    def required_params():
+        return ["question"]
+    
+    @staticmethod
+    def action_type():
+        return Action.do_follow_up
+
     def prep(self, shared):
         flow_log: Queue = shared["flow_queue"]
         flow_log.put(None)
@@ -202,8 +274,15 @@ class FollowUp(Node):
         session["action_result"] = exec_res
         return "done"
 
-
 class ResultNotification(Node):
+    @staticmethod
+    def required_params():
+        return ["result"]
+    
+    @staticmethod
+    def action_type():
+        return Action.do_result_notification
+
     def prep(self, shared):
         flow_log: Queue = shared["flow_queue"]
         flow_log.put(None)
@@ -226,3 +305,13 @@ class ResultNotification(Node):
         session["last_action"] = None
         save_conversation(conversation_id, session)
         return "done"
+
+# Action to Node Registry
+ACTION_TO_NODE = {
+    Action.do_generate_queries: GenerateQueries,
+    Action.do_literature_review: LiteratureReview,
+    Action.do_literature_review_gap: SynthesizeGap,
+    Action.do_write_proposal: ReportGeneration,
+    Action.do_follow_up: FollowUp,
+    Action.do_result_notification: ResultNotification,
+}

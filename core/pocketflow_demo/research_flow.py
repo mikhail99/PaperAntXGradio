@@ -1,10 +1,10 @@
 from pocketflow import Flow
 
 from core.pocketflow_demo.research_nodes import (
-    DecideAction,
-    GenerateLiteratureSearchQuery,
-    LiteratureSearch,
-    LiteratureGapAnalysis,
+    ResearchAgentRouter,
+    GenerateQueries,
+    LiteratureReview,
+    SynthesizeGap,
     FollowUp,
     ReportGeneration,
     ResultNotification,
@@ -19,10 +19,10 @@ def create_research_flow():
     The router is stateful and decides the next step based on session history.
     """
     # Core research nodes
-    research_router = DecideAction()
-    generate_queries = GenerateLiteratureSearchQuery()
-    literature_review = LiteratureSearch()
-    synthesize_gap = LiteratureGapAnalysis()
+    research_router = ResearchAgentRouter()
+    generate_queries = GenerateQueries()
+    literature_review = LiteratureReview()
+    synthesize_gap = SynthesizeGap()
     follow_up = FollowUp()
     report_generation = ReportGeneration()
     result_notification = ResultNotification()
