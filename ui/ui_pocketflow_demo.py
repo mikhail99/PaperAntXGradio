@@ -2,11 +2,13 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
+from typing import List, Dict, Any, Optional, Generator, Union
 
 import gradio as gr
 from gradio import ChatMessage
 
 from core.pocketflow_demo.flow import create_flow
+from core.pocketflow_demo.types import SharedState
 
 # create global thread pool
 chatflow_thread_pool = ThreadPoolExecutor(
@@ -15,28 +17,28 @@ chatflow_thread_pool = ThreadPoolExecutor(
 )
 
 
-def chat_fn(message, history, uuid):
+def chat_fn(message: str, history: List[Dict[str, Any]], uuid_val: str) -> Generator[Union[ChatMessage, List[ChatMessage]], None, None]:
     """
     Main chat function that handles the conversation flow and message processing.
     
     Args:
-        message (str): The current user message
-        history (list): Previous conversation history
-        uuid (UUID): Unique identifier for the conversation
+        message: The current user message
+        history: Previous conversation history
+        uuid_val: Unique identifier for the conversation
     
     Yields:
-        ChatMessage: Streams of thought process and chat responses
+        ChatMessage or List[ChatMessage]: Streams of thought process and chat responses
     """
     # Log conversation details
-    print(f"Conversation ID: {str(uuid)}\nHistory: {history}\nQuery: {message}\n---")
+    print(f"Conversation ID: {uuid_val}\nHistory: {history}\nQuery: {message}\n---")
     
-    # Initialize queues for chat messages and flow thoughts
-    chat_queue = Queue()
-    flow_queue = Queue()
+    # Initialize queues for chat messages and flow thoughts with proper typing
+    chat_queue: Queue[str] = Queue()
+    flow_queue: Queue[Optional[str]] = Queue()
     
-    # Create shared context for the flow
-    shared = {
-        "conversation_id": str(uuid),
+    # Create properly typed shared context for the flow
+    shared: SharedState = {
+        "conversation_id": uuid_val,
         "query": message,
         "history": history,
         "queue": chat_queue,
@@ -86,14 +88,15 @@ def clear_fn():
 
 
 def create_pocketflow_demo_tab():
-    """Create the PocketFlow Demo tab - almost exact copy of working example"""
+    """Create the PocketFlow Demo tab for research workflow"""
     
-    with gr.Tab("PocketFlow Demo"):
-        gr.Markdown("## PocketFlow HITL Demo")
-        gr.Markdown("This is a working demonstration of Human-in-the-Loop workflow using PocketFlow. Try asking about:")
-        gr.Markdown("- 🌤️ **Weather**: 'What's the weather in Tokyo?'")
-        gr.Markdown("- 🏨 **Hotel booking**: 'Book a hotel in Paris for next week'")
-        gr.Markdown("- ❓ **Other questions**: The agent will guide you!")
+    with gr.Tab("Research Demo"):
+        gr.Markdown("## 🔬 Research Proposal Assistant")
+        gr.Markdown("This is a working demonstration of Human-in-the-Loop research workflow using PocketFlow. Try asking about:")
+        gr.Markdown("- 📚 **Research Topics**: 'I want to research LLMs in education'")
+        gr.Markdown("- 🤖 **AI Applications**: 'Help me write a proposal about AI safety'")
+        gr.Markdown("- 🧪 **Any Scientific Domain**: 'Research proposal for quantum computing applications'")
+        gr.Markdown("- ✅ **Approval Process**: The system will ask for your feedback at key steps!")
         
         uuid_state = gr.State(uuid.uuid4())
         
@@ -105,5 +108,5 @@ def create_pocketflow_demo_tab():
             type="messages",
             additional_inputs=[uuid_state],
             chatbot=chatbot,
-            title="PocketFlow Gradio Demo",
+            title="Research Proposal Assistant",
         ) 

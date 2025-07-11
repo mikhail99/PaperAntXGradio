@@ -1,4 +1,6 @@
-conversation_cache = {}
+from typing import Dict, Any
+
+conversation_cache: Dict[str, Dict[str, Any]] = {}
 
 
 def load_conversation(conversation_id: str):
