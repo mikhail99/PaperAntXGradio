@@ -19,7 +19,7 @@ ACTION_TO_NODE = {
 }
 
 
-def compute_next_action(history: list[dict], query: str, last_action: str, last_action_result: str) -> str:
+def compute_next_action(history: list[dict], query: str, last_action: str | None, last_action_result: str | None) -> str:
     print(f"🤖 Computing next action. Last action: '{last_action}'")
     print(f"📨 Current query: '{query}'")
     
@@ -27,10 +27,19 @@ def compute_next_action(history: list[dict], query: str, last_action: str, last_
     if last_action is None:
         print("🏁 Starting new flow")
         next_action = Action.do_generate_queries
+        decision = {
+            "action": next_action,
+            "thinking": "Starting new research flow",
+            "topic": query,
+        }
         
     elif last_action == Action.do_generate_queries:
         print("📝 After query generation → review")
         next_action = Action.review_queries
+        decision = {
+            "action": next_action,
+            "thinking": "Reviewing queries",
+        }
         
     elif last_action == Action.review_queries:
         print("🔍 At query review step, checking for feedback...")
@@ -40,9 +49,19 @@ def compute_next_action(history: list[dict], query: str, last_action: str, last_
         if feedback == "approved":
             print("✅ User approved queries → literature review")
             next_action = Action.do_literature_review
+            decision = {
+                "action": next_action,
+                "thinking": "Literature review is next step.",
+                "search_query": last_action_result,
+            }
         elif feedback == "rejected":
             print("❌ User rejected queries → retry generation")
             next_action = Action.do_generate_queries
+            decision = {
+                "action": next_action,
+                "thinking": "Generating new queries.",
+                "topic": query,
+            }
         else:
             print(f"⚠️ No clear feedback detected, defaulting to follow_up")
             next_action = Action.do_follow_up
@@ -50,14 +69,29 @@ def compute_next_action(history: list[dict], query: str, last_action: str, last_
     elif last_action == Action.do_literature_review:
         print("📚 After literature review → gap analysis")
         next_action = Action.do_literature_review_gap
+        decision = {
+            "action": next_action,
+            "thinking": "Literature review is next step.",
+            "search_query": last_action_result,
+        }
         
     elif last_action == Action.do_literature_review_gap:
         print("🔍 After gap analysis → proposal generation")
         next_action = Action.do_write_proposal
+        decision = {
+            "action": next_action,
+            "thinking": "Gap analysis is next step.",
+            "summary": last_action_result,
+        }
         
     elif last_action == Action.do_write_proposal:
         print("📋 After proposal generation → review")
         next_action = Action.review_report
+        decision = {
+            "action": next_action,
+            "thinking": "Report generation is next step.",
+            "gaps": last_action_result,
+        }
         
     elif last_action == Action.review_report:
         print("🔍 At report review step, checking for feedback...")
@@ -80,17 +114,7 @@ def compute_next_action(history: list[dict], query: str, last_action: str, last_
     
     print(f"🎯 Next action determined: {next_action}")
     
-    decision = {
-        "thinking": f"Moving from {last_action} to {next_action}",
-        "action": next_action,
-        "reason": "Following research pipeline",
-        "question": "...",
-        "topic": query,
-        "search_query": "llm for math research",
-        "summary": "literature summary here",
-        "gaps": "research gaps identified",
-        "result": "final research proposal generated",
-    }
+
     return decision
 
 def check_feedback_in_message(message: str) -> str:
