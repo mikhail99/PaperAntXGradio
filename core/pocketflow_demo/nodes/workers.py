@@ -4,71 +4,11 @@ from core.pocketflow_demo.types import SharedState, ResearchContext
 from core.pocketflow_demo.utils.conversation import load_conversation, save_conversation
 from typing import Union, Tuple, Dict, Optional
 from queue import Queue
-from pocketflow import Node
-
-class FlowEntry(NodeBase):
-    """Smart entry point that detects where to resume the flow"""
-    
-    @staticmethod
-    def required_params():
-        return []
-    
-    @staticmethod
-    def action_type():
-        return None  # Special entry node
-    
-    def prep(self, shared: SharedState) -> str:
-        conversation_id = shared["conversation_id"]
-        session = load_conversation(conversation_id)
-        
-        # Check if we're resuming after feedback
-        waiting_for = session.get("waiting_for_feedback")
-        
-        print(f"🎯 FlowEntry: waiting_for_feedback = {waiting_for}")
-        
-        if waiting_for == "queries":
-            print("📍 Resuming at query review")
-            return "resume_query_review"
-        elif waiting_for == "report":
-            print("📍 Resuming at report review") 
-            return "resume_report_review"
-        else:
-            print("📍 Starting new research flow")
-            return "start_new_flow"
-    
-    def exec(self, prep_res: str) -> str:
-        return prep_res
-    
-    def post(self, shared: SharedState, prep_res: str, exec_res: str) -> str:
-        return exec_res  # Route based on the detected state
-
-class PauseForFeedback(NodeBase):
-    """Special node that properly terminates the flow when waiting for human feedback"""
-    
-    @staticmethod
-    def required_params():
-        return []
-    
-    @staticmethod
-    def action_type():
-        return None  # Special pause node
-    
-    def prep(self, shared: SharedState) -> str:
-        # This node just terminates the flow cleanly
-        return "Pausing flow for human feedback"
-    
-    def exec(self, prep_res: str) -> str:
-        return prep_res
-    
-    def post(self, shared: SharedState, prep_res: str, exec_res: str) -> str:
-        # Return something that terminates the flow without warnings
-        # The waiting_for_feedback state is already set by the review node
-        return "terminated"
 
 class GenerateQueries(NodeBase):
     @staticmethod
     def required_params():
-        return []  # No longer using params - getting from context
+        return []
     
     @staticmethod
     def action_type():
@@ -97,7 +37,7 @@ class GenerateQueries(NodeBase):
 class LiteratureReview(NodeBase):
     @staticmethod
     def required_params():
-        return []  # Getting from context
+        return []
     
     @staticmethod
     def action_type():
@@ -109,7 +49,6 @@ class LiteratureReview(NodeBase):
         queries = context.get("queries")
         
         if not queries:
-            # Fallback if no queries in journey
             queries = "No queries found in research journey"
             
         return queries
@@ -128,7 +67,7 @@ class LiteratureReview(NodeBase):
 class SynthesizeGap(NodeBase):
     @staticmethod
     def required_params():
-        return []  # Getting from context
+        return []
     
     @staticmethod
     def action_type():
@@ -158,7 +97,7 @@ class SynthesizeGap(NodeBase):
 class ReportGeneration(NodeBase):
     @staticmethod
     def required_params():
-        return []  # Getting from context
+        return []
     
     @staticmethod
     def action_type():
@@ -210,39 +149,37 @@ Literature findings: {literature[:100]}...
 class FollowUp(NodeBase):
     @staticmethod
     def required_params():
-        return []  # Getting from context
+        return []
     
     @staticmethod
     def action_type():
         return Action.do_follow_up
 
-    def prep(self, shared: SharedState) -> Tuple[str, Queue[str]]:
+    def prep(self, shared: SharedState) -> Tuple[str, Queue[Optional[str]]]:
         # End flow and prepare follow-up question
         self.log_to_flow(shared, None)  # Stop flow thoughts
         
         question = "I need more information to continue. Could you please clarify your request?"
         return question, shared["queue"]
 
-    def exec(self, prep_res: Tuple[str, Queue[str]]) -> str:
+    def exec(self, prep_res: Tuple[str, Queue[Optional[str]]]) -> str:
         question, queue = prep_res
         queue.put(question)
-        # Don't put None in chat queue - that's handled by the UI layer
         return question
 
-    def post(self, shared: SharedState, prep_res: Tuple[str, Queue[str]], exec_res: str) -> str:
-        # Don't update research journey for follow-up questions
+    def post(self, shared: SharedState, prep_res: Tuple[str, Queue[Optional[str]]], exec_res: str) -> str:
         return "done"
 
 class ResultNotification(NodeBase):
     @staticmethod
     def required_params():
-        return []  # Getting from context
+        return []
     
     @staticmethod
     def action_type():
         return Action.do_result_notification
 
-    def prep(self, shared: SharedState) -> Tuple[str, Queue[str]]:
+    def prep(self, shared: SharedState) -> Tuple[str, Queue[Optional[str]]]:
         # End flow and prepare final result
         self.log_to_flow(shared, None)  # Stop flow thoughts
         
@@ -252,7 +189,7 @@ class ResultNotification(NodeBase):
         
         return proposal, shared["queue"]
 
-    def exec(self, prep_res: Tuple[str, Queue[str]]) -> str:
+    def exec(self, prep_res: Tuple[str, Queue[Optional[str]]]) -> str:
         proposal, queue = prep_res
         
         final_message = f"""✅ **Research Proposal Completed!**
@@ -267,16 +204,10 @@ class ResultNotification(NodeBase):
 Thank you for using the Research Assistant! 🚀"""
         
         queue.put(final_message)
-        # Don't put None in chat queue - that's handled by the UI layer
+        queue.put(None)
         return final_message
 
-    def post(self, shared: SharedState, prep_res: Tuple[str, Queue[str]], exec_res: str) -> str:
-        # Clear session state to mark completion
-        conversation_id = shared["conversation_id"]
-        session = load_conversation(conversation_id)
-        session["last_action"] = None
-        session["waiting_for_feedback"] = None
-        save_conversation(conversation_id, session)
+    def post(self, shared: SharedState, prep_res: Tuple[str, Queue[Optional[str]]], exec_res: str) -> str:
         return "done"
 
 

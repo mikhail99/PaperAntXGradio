@@ -1,5 +1,5 @@
 import gradio as gr
-from core.copilot_service import CopilotService
+from core.copilot_business_service  import CopilotBusinessService as CopilotService
 import json
 import hashlib
 
@@ -10,7 +10,7 @@ _js_attach_listener = """
   // We wrap our code in a setTimeout to ensure it runs after Gradio has
   // finished rendering the HTML from the Python event on the page.
   setTimeout(() => {
-    const container = document.getElementById('agent-list-container');
+    const container = document.getElementById('agent-list-container-business');
     if (!container) return;
 
     // Prevent attaching multiple listeners if the component is re-rendered.
@@ -24,7 +24,7 @@ _js_attach_listener = """
       const agentName = agentItem.dataset.agentName;
       if (!agentName) return;
 
-      const hiddenTextbox = document.querySelector('#copilot_selected_agent_trigger');
+      const hiddenTextbox = document.querySelector('#copilot_selected_agent_trigger_business');
       if (!hiddenTextbox) return;
 
       // A gr.Textbox can be rendered as either an <input> or a <textarea>.
@@ -83,7 +83,7 @@ def generate_agent_list_html(copilot_service: CopilotService, selected_agent_nam
 def create_copilot_tab(state, copilot_service: CopilotService):
     with gr.TabItem("🤖 AI Copilot") as copilot_tab:
         with gr.Blocks(theme=gr.themes.Soft(), fill_height=True):
-            with gr.Row(equal_height=False, elem_id="copilot-main-container"):
+            with gr.Row(equal_height=False, elem_id="copilot-main-container-business"):
                 with gr.Column(scale=1, min_width=320):
                     with gr.Row():
                         gr.Markdown("### Agents")
@@ -102,21 +102,21 @@ def create_copilot_tab(state, copilot_service: CopilotService):
                     selected_agent_trigger = gr.Textbox(
                         label="selected_agent_trigger",
                         visible=False,
-                        elem_id="copilot_selected_agent_trigger"
+                        elem_id="copilot_selected_agent_trigger_business"
                     )
 
                     
                     # UI component to display the HTML list
-                    agent_list_display = gr.HTML(elem_id="agent-list-container")
+                    agent_list_display = gr.HTML(elem_id="agent-list-container-business")
 
                     
-                    agent_details_display = gr.Markdown("Select an agent to see details.", elem_id="agent-details-display", max_height=150)
+                    agent_details_display = gr.Markdown("Select an agent to see details.", elem_id="agent-details-display-business", max_height=150)
                 
 
-                with gr.Column(scale=3, elem_id="copilot-chat-column"):
+                with gr.Column(scale=3, elem_id="copilot-chat-column-business"):
                     chatbot = gr.Chatbot(
                         [],
-                        elem_id="copilot_chatbot",
+                        elem_id="copilot_chatbot_business",
                         bubble_full_width=False,
                         # The height is controlled by CSS for responsiveness.
                         label="Copilot Chat",

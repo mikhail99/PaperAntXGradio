@@ -21,7 +21,7 @@ def get_collection_description(collections_manager: CollectionsManager, collecti
 
 # --- Gradio UI Definition ---
 def create_research_plan_tab(proposal_agent_service, collections_manager: CollectionsManager):
-    with gr.TabItem("🧠 Research Proposal Agent"):
+    with gr.TabItem("🧠 Research Proposal Agent DSPY"):
         gr.Markdown("## Research Proposal Agent")
         gr.Markdown("Select a collection, provide a research direction, and let the agent generate a comprehensive proposal with your guidance.")
 

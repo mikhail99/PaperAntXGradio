@@ -2,6 +2,7 @@ from typing import TypedDict, List, Dict, Any, Optional, Union
 from typing_extensions import Annotated
 from queue import Queue
 from datetime import datetime
+import threading
 
 # Research Journey Entry Structure
 class JourneyEntry(TypedDict):
@@ -23,8 +24,12 @@ class SharedState(TypedDict):
     conversation_id: str
     query: str
     history: List[Dict[str, Any]]
-    queue: Queue[str]
+    queue: Queue[Optional[str]]  # Allow None for UI termination
     flow_queue: Queue[Optional[str]]  # Flow queue can accept None to signal completion
+
+# Optional HITL fields for SharedState (using dict access, not typed)
+# hitl_event: threading.Event
+# user_input: str
 
 # Session State Type Definition  
 class SessionState(TypedDict, total=False):

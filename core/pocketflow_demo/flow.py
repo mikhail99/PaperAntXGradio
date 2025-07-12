@@ -1,7 +1,5 @@
 from pocketflow import Flow
 from core.pocketflow_demo.nodes.workers import (
-    FlowEntry,
-    PauseForFeedback,
     GenerateQueries,
     LiteratureReview,
     SynthesizeGap,
@@ -16,13 +14,11 @@ from typing import List, Dict, Any, Optional
 
 def create_flow():
     """
-    Create a simplified research flow with smart entry point for resume handling.
-    Uses declarative connections and node-driven dynamic routing.
+    Create a simplified research flow using threading-based HITL.
+    Much simpler than the session-based approach.
     """
     
     # Create all nodes
-    flow_entry = FlowEntry()
-    pause_for_feedback = PauseForFeedback()
     generate_queries = GenerateQueries()
     review_queries = ReviewQueries()
     literature_review = LiteratureReview()
@@ -32,44 +28,31 @@ def create_flow():
     follow_up = FollowUp()
     result_notification = ResultNotification()
 
-    # Smart entry routing
-    flow_entry - "start_new_flow" >> generate_queries
-    flow_entry - "resume_query_review" >> review_queries
-    flow_entry - "resume_report_review" >> review_report
-
-    # Main research pipeline - mostly linear
+    # Simple linear pipeline with dynamic routing
     generate_queries >> review_queries
     
-    # Dynamic routing from query review
+    # Dynamic routing from query review (threading handles the blocking)
     review_queries - "approved" >> literature_review
     review_queries - "rejected" >> generate_queries  # Retry query generation
-    review_queries - "pause" >> pause_for_feedback   # Pause for human feedback
+    review_queries - "default" >> follow_up  # Unclear feedback
     
     # Continue linear pipeline
     literature_review >> synthesize_gap
     synthesize_gap >> report_generation
     report_generation >> review_report
     
-    # Dynamic routing from report review
+    # Dynamic routing from report review (threading handles the blocking)
     review_report - "approved" >> result_notification
     review_report - "rejected" >> report_generation  # Retry report generation
-    review_report - "pause" >> pause_for_feedback    # Pause for human feedback
-    
-    # Follow-up handling (fallback for unclear feedback)
-    review_queries - "default" >> follow_up
-    review_report - "default" >> follow_up
-    
-    # IMPORTANT: Handle "done" responses - this allows the flow to terminate properly when waiting for human input
-    # When review nodes return "done", the flow should end and wait for user to provide feedback in a new flow run
-    # The FlowEntry node will detect the waiting_for_feedback state and resume at the correct review node
+    review_report - "default" >> follow_up  # Unclear feedback
 
-    return Flow(start=flow_entry)
+    return Flow(start=generate_queries)
 
 def create_shared_state(
     conversation_id: str,
     query: str, 
     history: List[Dict[str, Any]],
-    chat_queue: Queue[str],
+    chat_queue: Queue[Optional[str]],
     flow_queue: Queue[Optional[str]]
 ) -> SharedState:
     """

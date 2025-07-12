@@ -19,10 +19,19 @@ class CopilotService:
         self.agents: Dict[str, Any] = self._load_agents()
 
     def reload(self) -> List[str]:
-        """Reloads agent configs and LLM service settings."""
+        """Reloads agent configs, LLM service settings, and restarts MCP sessions."""
         self.llm_service.reload()
         self.agents = self._load_agents()
-        print("Reloaded agents and LLM configurations.")
+        
+        # Restart MCP sessions to pick up code changes
+        try:
+            print("Restarting MCP sessions to pick up server code changes...")
+            self.mcp_server_manager.run_coroutine_and_get_result(self.mcp_server_manager.stop_all_async())
+            print("MCP sessions restarted successfully.")
+        except Exception as e:
+            print(f"Warning: Error restarting MCP sessions: {e}")
+        
+        print("Reloaded agents, LLM configurations, and MCP sessions.")
         return self.get_agent_list()
 
     def _load_agents(self) -> Dict[str, Any]:
@@ -32,6 +41,7 @@ class CopilotService:
         if not os.path.exists(agents_dir):
             print(f"Warning: Agents directory not found at {agents_dir}")
             return {}
+        
         for filename in os.listdir(agents_dir):
             if filename.endswith('.json'):
                 filepath = os.path.join(agents_dir, filename)
@@ -39,9 +49,13 @@ class CopilotService:
                     try:
                         agent_config = json.load(f)
                         if 'name' in agent_config:
-                            agents[agent_config['name']] = agent_config
-                    except json.JSONDecodeError:
-                        print(f"Warning: Could not decode JSON from {filename}")
+                            agent_name = agent_config['name']
+                            agents[agent_name] = agent_config
+                    except json.JSONDecodeError as e:
+                        print(f"Warning: Could not decode JSON from {filename}: {e}")
+                    except Exception as e:
+                        print(f"Error loading agent from {filename}: {e}")
+        
         return agents
 
     def get_agent_list(self) -> List[str]:
@@ -70,22 +84,37 @@ class CopilotService:
             return " ".join([part.text for part in response.content if hasattr(part, 'text')]).strip()
 
         try:
-            print(f"Executing tool '{tool_name}' on server '{server_id}'...")
+            print(f"Executing tool '{tool_name}' on server '{server_id}' with arguments: {arguments}")
             # The MCPServerManager handles running the coroutine in its own event loop.
             result = self.mcp_server_manager.run_coroutine_and_get_result(call_tool_async())
             print(f"Tool '{tool_name}' executed successfully. Result: {result}")
             return result
         except Exception as e:
-            error_message = f"Error executing tool '{tool_name}' on server '{server_id}': {e}"
-            print(error_message)
+            import traceback
+            # Capture full exception details
+            exception_type = type(e).__name__
+            exception_message = str(e)
+            full_traceback = traceback.format_exc()
+            
+            error_message = f"Error executing tool '{tool_name}' on server '{server_id}': {exception_type}: {exception_message}"
+            print(f"FULL ERROR DETAILS: {error_message}")
+            print(f"TRACEBACK:\n{full_traceback}")
+            
             # On failure, try to gracefully shut down sessions to ensure a clean state.
             try:
                 self.mcp_server_manager.run_coroutine_and_get_result(self.mcp_server_manager.stop_all_async())
             except Exception as stop_e:
                 print(f"Error while stopping MCP sessions after failure: {stop_e}")
-            return json.dumps({"error": error_message})
+            
+            # Return a safe error message that won't break JSON serialization
+            safe_error = {
+                "error": error_message,
+                "exception_type": exception_type,
+                "details": exception_message
+            }
+            return json.dumps(safe_error)
 
-    def chat_with_agent(self, agent_name: str, message: str, llm_history: List[Dict[str, Any]], provider: str, model: str) -> Generator[Dict, None, None]:
+    def chat_with_agent(self, agent_name: str, message: str, llm_history: List[Dict[str, Any]], provider: str="ollama") -> Generator[Dict, None, None]:
         """
         Handles a chat interaction with a specific agent, supporting tools.
         This is a generator function to support streaming and tool calls.
@@ -109,7 +138,7 @@ class CopilotService:
                 messages=messages,
                 system_prompt=system_prompt,
                 provider=provider,
-                model=model,
+                model="qwen3:4b",
                 tools=tools
             )
 

@@ -1,7 +1,7 @@
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from queue import Queue
+from queue import Queue, Empty
 from typing import List, Dict, Any, Optional, Generator, Union
 
 import gradio as gr
@@ -16,6 +16,8 @@ chatflow_thread_pool = ThreadPoolExecutor(
     thread_name_prefix="chatflow_worker",
 )
 
+# Global storage for active conversations
+active_conversations: Dict[str, SharedState] = {}
 
 def chat_fn(message: str, history: List[Dict[str, Any]], uuid_val: str) -> Generator[Union[ChatMessage, List[ChatMessage]], None, None]:
     """
@@ -29,11 +31,79 @@ def chat_fn(message: str, history: List[Dict[str, Any]], uuid_val: str) -> Gener
     Yields:
         ChatMessage or List[ChatMessage]: Streams of thought process and chat responses
     """
-    # Log conversation details
-    print(f"Conversation ID: {uuid_val}\nHistory: {history}\nQuery: {message}\n---")
+    # Enhanced logging for debugging
+    print(f"DEBUG: Conversation ID: {uuid_val}")
+    print(f"DEBUG: Message: '{message}'")
+    print(f"DEBUG: Active conversations: {list(active_conversations.keys())}")
+    print(f"DEBUG: Is continuation: {uuid_val in active_conversations}")
+    
+    # Additional debugging for conversation state
+    if uuid_val in active_conversations:
+        existing_shared = active_conversations[uuid_val]
+        print(f"DEBUG: Found existing conversation, has hitl_event: {'hitl_event' in existing_shared}")
+    
+    print(f"---")
+    
+    # Check if this is a continuation of an existing conversation (HITL feedback)
+    if uuid_val in active_conversations:
+        print(f"🔄 Continuing existing conversation with feedback: {message}")
+        existing_shared = active_conversations[uuid_val]
+        
+        # Set user input and trigger the waiting event
+        existing_shared["user_input"] = message  # type: ignore  # Dynamic field access
+        if "hitl_event" in existing_shared:
+            existing_shared["hitl_event"].set()  # type: ignore  # Dynamic field access
+            print(f"DEBUG: Triggered hitl_event for conversation {uuid_val}")
+        
+        # Provide immediate feedback that input was received
+        feedback_response = ChatMessage(
+            content=f"✅ Received your feedback: **{message}**\n\nProcessing...",
+            metadata={"title": "Feedback Received", "id": int(time.time())}
+        )
+        yield feedback_response
+        
+        # Continue monitoring the existing conversation's queues without starting a new flow
+        chat_queue = existing_shared["queue"]
+        flow_queue = existing_shared["flow_queue"]
+        
+        # Process any remaining flow thoughts first
+        while True:
+            try:
+                thought = flow_queue.get(timeout=0.1)  # Short timeout to check for immediate messages
+                if thought is None:
+                    break
+                # Create a flow log update
+                flow_update = ChatMessage(
+                    content=f"- {thought}",
+                    metadata={"title": "Flow Log Update", "id": int(time.time())}
+                )
+                yield flow_update
+                flow_queue.task_done()
+            except Empty:
+                break  # No more immediate flow messages
+        
+        # Now process chat messages
+        while True:
+            try:
+                msg = chat_queue.get(timeout=5.0)  # Wait up to 5 seconds for response
+                if msg is None:
+                    break
+                final_response = [feedback_response, ChatMessage(content=msg)]
+                yield final_response
+                chat_queue.task_done()
+            except Empty:
+                # Timeout - the flow might still be processing
+                processing_update = [feedback_response, ChatMessage(content="⏳ Still processing your feedback...")]
+                yield processing_update
+                continue
+        
+        return
+    
+    # New conversation - create fresh state and start flow
+    print(f"🆕 Starting new conversation for UUID: {uuid_val}")
     
     # Initialize queues for chat messages and flow thoughts with proper typing
-    chat_queue: Queue[str] = Queue()
+    chat_queue: Queue[Optional[str]] = Queue()
     flow_queue: Queue[Optional[str]] = Queue()
     
     # Create properly typed shared context for the flow
@@ -45,8 +115,14 @@ def chat_fn(message: str, history: List[Dict[str, Any]], uuid_val: str) -> Gener
         "flow_queue": flow_queue,
     }
     
-    # Create and run the chat flow in a separate thread
+    # Store for future HITL interactions
+    active_conversations[uuid_val] = shared
+    print(f"DEBUG: Stored conversation {uuid_val} in active_conversations")
+    print(f"DEBUG: Active conversations now: {list(active_conversations.keys())}")
+    
+    # Create and run the chat flow in a separate thread (keeps running for HITL)
     chat_flow = create_flow()
+    print(f"DEBUG: Starting flow for conversation {uuid_val}")
     chatflow_thread_pool.submit(chat_flow.run, shared)
 
     # Initialize thought response tracking
@@ -80,11 +156,19 @@ def chat_fn(message: str, history: List[Dict[str, Any]], uuid_val: str) -> Gener
         chat_response = [thought_response, ChatMessage(content=msg)]
         yield chat_response
         chat_queue.task_done()
+    
+    # Don't remove conversation from active_conversations here 
+    # Let it stay for potential HITL feedback
+    print(f"DEBUG: Flow completed for {uuid_val}, keeping conversation active for HITL")
 
 
 def clear_fn():
-    print("Clearing conversation")
-    return uuid.uuid4()
+    print("DEBUG: Clearing ALL conversations manually")
+    new_uuid = uuid.uuid4()
+    # Clean up any active conversation data
+    active_conversations.clear()
+    print(f"DEBUG: Generated new UUID: {new_uuid}")
+    return new_uuid
 
 
 def create_pocketflow_demo_tab():

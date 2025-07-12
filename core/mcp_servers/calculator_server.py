@@ -30,11 +30,22 @@ async def calculate(expression: str) -> str:
     return _calculate_expression(expression)
 
 if __name__ == "__main__":
+    import asyncio
+    import platform
+    
     try:
+        # Fix for macOS asyncio issues - run in main thread
+        if platform.system() == "Darwin":  # macOS
+            # Create a new event loop and set it as the main loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
         # The run method handles the server lifecycle, including initialization and transport.
         mcp.run(transport='stdio')
     except KeyboardInterrupt:
         print("Calculator server shutting down.")
     except Exception as e:
         print(f"Calculator server crashed with error: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         sys.exit(1)

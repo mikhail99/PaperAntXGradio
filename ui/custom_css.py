@@ -84,6 +84,13 @@ button:has(> span:contains('Get Report')) {
     gap: 8px;
 }
 
+.agent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
 .agent-item {
     display: flex;
     align-items: center;
@@ -130,9 +137,60 @@ button:has(> span:contains('Get Report')) {
 .agent-description {
     font-size: 0.9em;
     color: var(--body-text-color);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-wrap: break-word;
+    line-height: 1.3;
+}
+
+/* Agent Details Section Styles */
+.agent-details-section {
+    border-top: 1px solid var(--border-color-primary);
+    padding-top: 16px;
+    margin-top: 16px;
+}
+
+.agent-details-section h4 {
+    margin: 0 0 12px 0;
+    color: var(--body-text-color-strong);
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.agent-details-content {
+    color: var(--body-text-color);
+    line-height: 1.4;
+}
+
+.agent-details-content h1,
+.agent-details-content h2,
+.agent-details-content h3 {
+    color: var(--body-text-color-strong);
+    margin: 12px 0 8px 0;
+}
+
+.agent-details-content pre {
+    background: var(--background-fill-secondary);
+    border: 1px solid var(--border-color-primary);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 0;
+    overflow-x: auto;
+    font-size: 0.9em;
+}
+
+.agent-details-content code {
+    background: var(--background-fill-secondary);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.agent-details-content ul {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.agent-details-content li {
+    margin: 4px 0;
 }
 
 /* Custom style for the discrete reload button */

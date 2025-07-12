@@ -28,7 +28,7 @@ class LLMService:
         self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
         self.openai_model = os.getenv("OPENAI_MODEL", "gpt-4o")
         self.anthropic_model = os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
-        self.ollama_model = os.getenv("OLLAMA_MODEL", "gemma3:4b")
+        self.ollama_model = "qwen3:4b"
 
         self.openai_client = None
         self.anthropic_client = None
@@ -266,27 +266,61 @@ class LLMService:
 
     def _call_ollama(self, messages: List[Dict[str, Any]], system_prompt: Optional[str], tools: Optional[List[Dict[str, Any]]], model: Optional[str]) -> Generator[Dict, None, None]:
         """Handles streaming calls to a local Ollama model."""
+        from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+        
         model_name = model or self.ollama_model
         
-        # Combine system prompt with user messages if present
-        full_messages = []
+        # Convert raw message dictionaries to LangChain message objects
+        lc_messages = []
         if system_prompt:
-            full_messages.append({"role": "system", "content": system_prompt})
-        full_messages.extend(messages)
+            lc_messages.append(SystemMessage(content=system_prompt))
+        
+        for msg in messages:
+            if msg["role"] == "user":
+                lc_messages.append(HumanMessage(content=msg["content"]))
+            elif msg["role"] == "assistant":
+                if "tool_calls" in msg:
+                    # Convert tool calls to LangChain format
+                    tool_calls = []
+                    for tc in msg["tool_calls"]:
+                        tool_calls.append({
+                            "id": tc["id"],
+                            "name": tc["function"]["name"],
+                            "args": tc["function"]["arguments"]
+                        })
+                    lc_messages.append(AIMessage(
+                        content=msg.get("content", ""),
+                        tool_calls=tool_calls
+                    ))
+                else:
+                    lc_messages.append(AIMessage(content=msg["content"]))
+            elif msg["role"] == "tool":
+                lc_messages.append(ToolMessage(
+                    content=msg["content"],
+                    tool_call_id=msg["tool_call_id"]
+                ))
 
         print(f"--- Calling Ollama (model: {model_name}) ---")
-        print(f"Messages: {json.dumps(full_messages, indent=2)}")
+        print(f"Messages: {json.dumps([{'role': m.__class__.__name__, 'content': str(m.content)[:100]} for m in lc_messages], indent=2)}")
         print("------------------------------------------")
 
         try:
             llm = ChatOllama(model=model_name)
             if tools:
-                # Note: Tool calling with Ollama in LangChain might have specific syntax.
-                # This binding is a standard approach.
-                llm_with_tools = llm.bind_tools(tools)
-                stream = llm_with_tools.stream(full_messages)
+                # Convert MCP tool format to OpenAI tool format
+                openai_tools = []
+                for tool in tools:
+                    openai_tool = {
+                        "name": tool["name"],
+                        "description": tool["description"],
+                        "parameters": tool["inputSchema"]  # MCP uses inputSchema, OpenAI uses parameters
+                    }
+                    openai_tools.append(openai_tool)
+                
+                llm_with_tools = llm.bind_tools(openai_tools)
+                stream = llm_with_tools.stream(lc_messages)
             else:
-                stream = llm.stream(full_messages)
+                stream = llm.stream(lc_messages)
 
             for chunk in stream:
                 if chunk.content:

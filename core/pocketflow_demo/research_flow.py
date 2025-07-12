@@ -1,6 +1,5 @@
 from pocketflow import Flow
 from core.pocketflow_demo.nodes.workers import (
-    FlowEntry,
     GenerateQueries,
     LiteratureReview,
     SynthesizeGap,
@@ -12,12 +11,11 @@ from core.pocketflow_demo.nodes.hitl import ReviewQueries, ReviewReport
 
 def create_research_flow():
     """
-    Create a simplified research flow with smart entry point for resume handling.
-    Uses declarative connections and node-driven dynamic routing.
+    Create a simplified research flow with threading-based HITL.
+    Linear pipeline with human review points for queries and reports.
     """
     
     # Create all nodes
-    flow_entry = FlowEntry()
     generate_queries = GenerateQueries()
     review_queries = ReviewQueries()
     literature_review = LiteratureReview()
@@ -27,12 +25,7 @@ def create_research_flow():
     follow_up = FollowUp()
     result_notification = ResultNotification()
 
-    # Smart entry routing
-    flow_entry - "start_new_flow" >> generate_queries
-    flow_entry - "resume_query_review" >> review_queries
-    flow_entry - "resume_report_review" >> review_report
-
-    # Main research pipeline - mostly linear
+    # Linear research pipeline with HITL review points
     generate_queries >> review_queries
     
     # Dynamic routing from query review
@@ -52,4 +45,4 @@ def create_research_flow():
     review_queries - "default" >> follow_up
     review_report - "default" >> follow_up
 
-    return Flow(start=flow_entry)
+    return Flow(start=generate_queries)

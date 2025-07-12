@@ -1,0 +1,24 @@
+{
+  "name": "Finance News Assistant",
+  "description": "An assistant that can help you with finance news.",
+  "model_prompt": "You are a helpful business assistant that can help with finance news.",
+  "mcp_info": {
+    "server_id": "managed_calculator",
+    "tools": [
+      {
+        "name": "yahoo_finance",
+        "description": "Get the latest news from Yahoo Finance.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "ticker": {
+              "type": "string",
+              "description": "Company ticker symbol."
+            }
+          },
+          "required": ["ticker"]
+        }
+      }
+    ]
+  }
+}

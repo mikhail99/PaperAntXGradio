@@ -23,8 +23,8 @@ class ChromaService:
         #)
     
     def _prepare_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Union[str, bool, int, float, None]]:
-        """Convert complex metadata values to simple types ChromaDB can handle"""
-        prepared_metadata = {}
+        """Convert metadata to ChromaDB-compatible format (simple types only)"""
+        prepared_metadata: Dict[str, Union[str, bool, int, float, None]] = {}
         for key, value in metadata.items():
             if isinstance(value, (str, bool, int, float)):
                 prepared_metadata[key] = value
@@ -237,8 +237,8 @@ class ChromaService:
             # Format results
             articles = []
             if results and "ids" in results:
-                for i, ids in enumerate(results["ids"]):
-                    for j, article_id in enumerate(ids):
+                for i, result_ids in enumerate(results["ids"]):
+                    for j, article_id in enumerate(result_ids):
                         metadata = results["metadatas"][i][j] if "metadatas" in results else {}
                         # Deserialize any JSON strings in metadata
                         metadata = self._deserialize_metadata(metadata)
