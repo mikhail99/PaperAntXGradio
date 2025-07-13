@@ -6,24 +6,25 @@ dspy.configure(lm=get_llm())
 import gradio as gr
 from state.state import get_shared_state
 from ui.ui_collections import create_collections_tab
-from ui.ui_articles import create_articles_tab
+#from ui.ui_articles import create_articles_tab
 #from ui.ui_proposal_agent_debugger import create_proposal_debugger_tab
-from ui.ui_copilot import create_copilot_tab
-from ui.ui_paperqa import create_paperqa_tab
-from ui.ui_research_plan import create_research_plan_tab
-from ui.ui_library import create_library_tab
-from ui.ui_manager_review import create_manager_review_tab
+#from ui.ui_copilot import create_copilot_tab
+#from ui.ui_paperqa import create_paperqa_tab
+#from ui.ui_research_plan import create_research_plan_tab
+#from ui.ui_library import create_library_tab
+#from ui.ui_manager_review import create_manager_review_tab
 #from ui.ui_pocketflow_demo import create_pocketflow_demo_tab
-from ui.ui_research_demo import create_research_demo_tab
+#from ui.ui_research_demo import create_research_demo_tab
 from ui.custom_css import CUSTOM_CSS
-from core.article_manager import ArticleManager
-from core.collections_manager import CollectionsManager
-from core.copilot_service import CopilotService
+#from core.article_manager import ArticleManager
+#from core.collections_manager import CollectionsManager
+#from core.copilot_service import CopilotService
 from core.llm_service import LLMService
-from core.mcp_server_manager import MCPServerManager
-from core.proposal_agent_pf_dspy.main import create_research_service as create_service
+#from core.mcp_server_manager import MCPServerManager
+#from core.proposal_agent_pf_dspy.main import create_research_service as create_service
 from core.copilot_business_service import CopilotBusinessService 
 from ui.ui_copilot_business import create_copilot_tab as create_copilot_business_tab
+from ui.ui_test import create_ui_test_tab
 
 def main():
     with gr.Blocks(css=CUSTOM_CSS) as demo:
@@ -31,12 +32,12 @@ def main():
         state = get_shared_state()
 
         llm_service = LLMService()
-        collections_manager = CollectionsManager()
-        article_manager = ArticleManager(collections_manager)
-        mcp_server_manager = MCPServerManager()
-        copilot_service = CopilotService(collections_manager, article_manager, llm_service, mcp_server_manager)
+        #collections_manager = CollectionsManager()
+        #article_manager = ArticleManager(collections_manager)
+        #mcp_server_manager = MCPServerManager()
+        #copilot_service = CopilotService(collections_manager, article_manager, llm_service, mcp_server_manager)
         copilot_business_service = CopilotBusinessService(llm_service)
-        proposal_agent_service = create_service(use_parrot=True)
+        #proposal_agent_service = create_service(use_parrot=True)
 
         with gr.Tabs():
             #create_manager_review_tab()
@@ -46,9 +47,9 @@ def main():
             ##create_proposal_debugger_tab(proposal_agent_service, collections_manager)
             ##create_pocketflow_demo_tab()
             #create_research_demo_tab()
-            create_copilot_tab(state, copilot_service)
+            #create_copilot_tab(state, copilot_service)
             create_copilot_business_tab(state, copilot_business_service)
-            #create_collections_tab(state)
+            create_collections_tab(state)
             #create_library_tab(state)
     demo.launch()
 
