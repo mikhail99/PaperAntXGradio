@@ -25,6 +25,8 @@ from core.llm_service import LLMService
 from core.copilot_business_service import CopilotBusinessService 
 from ui.ui_copilot_business import create_copilot_tab as create_copilot_business_tab
 from ui.ui_test import create_ui_test_tab
+from ui.ui_copilot_project_proposal import create_copilot_tab as create_copilot_project_proposal_tab
+from core.copilot_project_proposal_service import CopilotProjectProposalService
 
 def main():
     with gr.Blocks(css=CUSTOM_CSS) as demo:
@@ -37,6 +39,7 @@ def main():
         #mcp_server_manager = MCPServerManager()
         #copilot_service = CopilotService(collections_manager, article_manager, llm_service, mcp_server_manager)
         copilot_business_service = CopilotBusinessService(llm_service)
+        copilot_project_proposal_service = CopilotProjectProposalService(llm_service)
         #proposal_agent_service = create_service(use_parrot=True)
 
         with gr.Tabs():
@@ -48,6 +51,7 @@ def main():
             ##create_pocketflow_demo_tab()
             #create_research_demo_tab()
             #create_copilot_tab(state, copilot_service)
+            create_copilot_project_proposal_tab(state, copilot_project_proposal_service)
             create_copilot_business_tab(state, copilot_business_service)
             create_collections_tab(state)
             #create_library_tab(state)

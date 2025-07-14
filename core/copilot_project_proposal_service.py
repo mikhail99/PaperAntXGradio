@@ -217,7 +217,7 @@ class QueryAgent(dspy.Module):
         result = self.react(user_request=user_request, past_user_requests=past_user_requests,question_topic=question_topic)
         return result.response 
 
-class CopilotBusinessService:
+class CopilotProjectProposalService:
     def __init__(self, llm_service: LLMService) -> None:
         """Initialize CopilotService with agent modules"""
         self.llm_service = llm_service

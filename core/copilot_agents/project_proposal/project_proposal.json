@@ -1,0 +1,24 @@
+{
+  "name": "Project Proposal Assistant",
+  "description": "An assistant that can help you with literature and gapanalysis.",
+  "model_prompt": "You are a helpful business assistant that can help with managing queries and their reviews.",
+  "mcp_info": {
+    "server_id": "managed_calculator",
+    "tools": [
+      {
+        "name": "add_query",
+        "description": "add a query to the memory.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "query to add to the memory."
+            }
+          },
+          "required": ["query"]
+        }
+      }
+    ]
+  }
+}

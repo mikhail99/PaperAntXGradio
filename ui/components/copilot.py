@@ -36,6 +36,7 @@ def create_copilot(tab_title, copilot_service, tab_id_suffix):
                             "https://em-content.zobj.net/source/twitter/53/robot-face_1f916.png",
                         ),
                     scale=1,
+                    render_markdown=True,
                     show_copy_button=True,
                     placeholder=f"<strong>{tab_title}</strong><br>Ask me to help with your research proposal!"
                 )
