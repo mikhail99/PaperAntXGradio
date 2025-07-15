@@ -253,6 +253,28 @@ class CopilotBusinessService:
             return all_details.get(agent_name)
         return all_details
 
+    def get_quick_actions(self, agent_name: str) -> List[Dict[str, str]]:
+        """Returns quick action buttons for the specified agent."""
+        if not agent_name:
+            return []
+        
+        # Dummy implementation - different actions per agent
+        actions_map = {
+            "Finance News Assistant": [
+                {"label": "Market Analysis", "icon": "📊"},
+                {"label": "Stock Research", "icon": "📈"},
+                {"label": "News Summary", "icon": "📰"},
+                {"label": "Portfolio Review", "icon": "💼"}
+            ],
+            "Query Research Assistant": [
+                {"label": "Generate Query", "icon": "🔍"},
+                {"label": "Research Topic", "icon": "📚"},
+                {"label": "Find Sources", "icon": "🔗"}
+            ]
+        }
+        
+        return actions_map.get(agent_name, [])
+
     def reload(self) -> None:
         """Reload agent configurations - placeholder for UI compatibility."""
         print(f"Reloading {self.__class__.__name__} - agents recreated")

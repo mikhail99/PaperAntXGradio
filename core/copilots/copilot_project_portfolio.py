@@ -62,6 +62,27 @@ class CopilotProjectPortfolioService:
             return all_details.get(agent_name)
         return all_details
 
+    def get_quick_actions(self, agent_name: str) -> List[Dict[str, str]]:
+        """Returns quick action buttons for the specified agent."""
+        if not agent_name:
+            return []
+        
+        # Dummy implementation - different actions per agent
+        actions_map = {
+            "Local Project Proposals": [
+                {"label": "Review Proposals", "icon": "📋"},
+                {"label": "Compare Projects", "icon": "⚖️"},
+                {"label": "Status Update", "icon": "📊"}
+            ],
+            "External Project Proposals": [
+                {"label": "Import Proposal", "icon": "📥"},
+                {"label": "External Analysis", "icon": "🔍"},
+                {"label": "Benchmark Compare", "icon": "📈"}
+            ]
+        }
+        
+        return actions_map.get(agent_name, [])
+
     def reload(self) -> None:
         """Reload agent configurations - placeholder for UI compatibility."""
         print(f"Reloading {self.__class__.__name__} - agents recreated")

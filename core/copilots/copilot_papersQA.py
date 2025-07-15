@@ -84,6 +84,33 @@ class CopilotPaperQAService:
             return all_details.get(agent_name)
         return all_details
 
+    def get_quick_actions(self, agent_name: str) -> List[Dict[str, str]]:
+        """Returns quick action buttons for the specified agent."""
+        if not agent_name:
+            return []
+        
+        # Dummy implementation - different actions per agent
+        actions_map = {
+            "Library Abstract QA Assistant": [
+                {"label": "Search Abstracts", "icon": "🔍"},
+                {"label": "Topic Analysis", "icon": "📊"},
+                {"label": "Key Insights", "icon": "💡"}
+            ],
+            "Collection QA Assistant": [
+                {"label": "Collection Overview", "icon": "📚"},
+                {"label": "Document Summary", "icon": "📄"},
+                {"label": "Knowledge Extract", "icon": "🧠"}
+            ],
+            "Paper QA Assistant": [
+                {"label": "Paper Analysis", "icon": "📝"},
+                {"label": "Citation Check", "icon": "🔗"},
+                {"label": "Methodology Review", "icon": "🔬"},
+                {"label": "Results Summary", "icon": "📈"}
+            ]
+        }
+        
+        return actions_map.get(agent_name, [])
+
     def reload(self) -> None:
         """Reload agent configurations - placeholder for UI compatibility."""
         print(f"Reloading {self.__class__.__name__} - agents recreated")

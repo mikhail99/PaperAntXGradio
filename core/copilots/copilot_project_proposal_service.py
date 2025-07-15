@@ -271,6 +271,42 @@ class CopilotProjectProposalService:
             return all_details.get(agent_name)
         return all_details
 
+    def get_quick_actions(self, agent_name: str) -> List[Dict[str, str]]:
+        """Returns quick action buttons for the specified agent."""
+        if not agent_name:
+            return []
+        
+        # Dummy implementation - different actions per agent
+        actions_map = {
+            "Generate Research Questions": [
+                {"label": "Topic Questions", "icon": "❓"},
+                {"label": "Hypothesis Ideas", "icon": "💡"},
+                {"label": "Research Gaps", "icon": "🔍"}
+            ],
+            "Generate Project Ideas": [
+                {"label": "Brainstorm Ideas", "icon": "🧠"},
+                {"label": "Innovation Areas", "icon": "⚡"},
+                {"label": "Problem Solving", "icon": "🎯"}
+            ],
+            "Generate Literature Review": [
+                {"label": "Find Papers", "icon": "📚"},
+                {"label": "Review Structure", "icon": "📋"},
+                {"label": "Citation Analysis", "icon": "🔗"}
+            ],
+            "Generate Project Proposal": [
+                {"label": "Proposal Outline", "icon": "📝"},
+                {"label": "Budget Planning", "icon": "💰"},
+                {"label": "Timeline Creation", "icon": "📅"}
+            ],
+            "Generate Project Review": [
+                {"label": "Review Criteria", "icon": "✅"},
+                {"label": "Evaluation Framework", "icon": "📊"},
+                {"label": "Feedback Analysis", "icon": "📈"}
+            ]
+        }
+        
+        return actions_map.get(agent_name, [])
+
     def reload(self) -> None:
         """Reload agent configurations - placeholder for UI compatibility."""
         print(f"Reloading {self.__class__.__name__} - agents recreated")

@@ -141,6 +141,123 @@ def create_quick_actions_toolbar(
     
     return action_buttons, css_component
 
+def get_context_aware_actions(agent_name: str, base_actions: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """
+    Adapts action labels and prompts based on the selected agent.
+    
+    Args:
+        agent_name: Name of the currently selected agent
+        base_actions: Base list of actions to adapt
+        
+    Returns:
+        List of adapted actions with context-aware labels
+    """
+    if not agent_name:
+        return base_actions
+    
+    # Agent-specific adaptations
+    agent_adaptations = {
+        "Generate Research Questions": {
+            "Generate Literature Review": {"label": "Find Key Research Papers", "icon": "📚"},
+            "Generate Project Ideas": {"label": "Brainstorm Project Concepts", "icon": "💡"},
+            "Generate Project Proposal": {"label": "Research Proposal Questions", "icon": "❓"},
+            "Generate Project Review": {"label": "Review Criteria Questions", "icon": "✅"},
+        },
+        "Create Proposal Outline": {
+            "Generate Literature Review": {"label": "Structure Literature Analysis", "icon": "📋"},
+            "Generate Project Ideas": {"label": "Project Idea Framework", "icon": "🏗️"},
+            "Generate Project Proposal": {"label": "Proposal Structure", "icon": "📝"},
+            "Generate Project Review": {"label": "Review Framework", "icon": "🔍"},
+        },
+        "Find Related Work": {
+            "Generate Literature Review": {"label": "Systematic Literature Search", "icon": "🔍"},
+            "Generate Project Ideas": {"label": "Find Similar Projects", "icon": "🔗"},
+            "Generate Project Proposal": {"label": "Literature Gap Analysis", "icon": "📊"},
+            "Generate Project Review": {"label": "Find Review Templates", "icon": "📑"},
+        },
+        "Suggest Methodology": {
+            "Generate Literature Review": {"label": "Review Methodology", "icon": "🔬"},
+            "Generate Project Ideas": {"label": "Ideation Methods", "icon": "🧠"},
+            "Generate Project Proposal": {"label": "Research Methodology", "icon": "⚗️"},
+            "Generate Project Review": {"label": "Evaluation Methods", "icon": "📏"},
+        }
+    }
+    
+    adapted_actions = []
+    for action in base_actions:
+        adapted_action = action.copy()
+        
+        # Check if we have adaptations for this action
+        action_label = action['label']
+        if action_label in agent_adaptations and agent_name in agent_adaptations[action_label]:
+            adaptation = agent_adaptations[action_label][agent_name]
+            adapted_action['label'] = adaptation['label']
+            adapted_action['icon'] = adaptation['icon']
+        
+        adapted_actions.append(adapted_action)
+    
+    return adapted_actions
+
+def generate_agent_specific_prompt(action_label: str, agent_name: str, state_context: Dict = None) -> str:
+    """
+    Generates context-aware prompts based on action and selected agent.
+    
+    Args:
+        action_label: The action button that was clicked
+        agent_name: Currently selected agent
+        state_context: Optional state context (collection, article, etc.)
+        
+    Returns:
+        Context-aware prompt string
+    """
+    context = ""
+    if state_context:
+        if state_context.get("selected_collection_name"):
+            context += f"Working with collection '{state_context['selected_collection_name']}'. "
+        if state_context.get("selected_article_id"):
+            context += f"Focusing on article '{state_context['selected_article_id']}'. "
+    
+    # Base prompt templates
+    base_prompts = {
+        "Generate Research Questions": "Generate 5-7 compelling research questions",
+        "Find Key Research Papers": "Help me find the most important research papers",
+        "Brainstorm Project Concepts": "Help me brainstorm innovative project ideas",
+        "Research Proposal Questions": "Generate research questions for a proposal",
+        
+        "Create Proposal Outline": "Create a detailed outline",
+        "Structure Literature Analysis": "Create a structure for literature analysis",
+        "Project Idea Framework": "Create a framework for developing project ideas",
+        "Proposal Structure": "Create a research proposal structure",
+        
+        "Find Related Work": "Help me find related work and literature",
+        "Systematic Literature Search": "Conduct a systematic literature search",
+        "Find Similar Projects": "Find similar projects and initiatives",
+        "Literature Gap Analysis": "Analyze gaps in current literature",
+        
+        "Suggest Methodology": "Suggest appropriate methodologies",
+        "Review Methodology": "Suggest methodologies for literature review",
+        "Ideation Methods": "Suggest creative ideation methodologies",
+        "Research Methodology": "Suggest research methodologies",
+        
+        "Create Project Timeline": "Create a realistic project timeline",
+        "Budget Estimation": "Help estimate project budget and resources",
+        "Identify Risks": "Identify potential risks and mitigation strategies",
+        "Review & Improve": "Review and suggest improvements"
+    }
+    
+    # Agent-specific context additions
+    agent_context = {
+        "Generate Literature Review": " for a comprehensive literature review",
+        "Generate Project Ideas": " for innovative project development",
+        "Generate Project Proposal": " for a research proposal",
+        "Generate Project Review": " for project evaluation and review"
+    }
+    
+    base_prompt = base_prompts.get(action_label, f"Help me with {action_label.lower()}")
+    agent_suffix = agent_context.get(agent_name, "")
+    
+    return f"{context}{base_prompt}{agent_suffix}. Please provide detailed, actionable guidance."
+
 def get_research_proposal_actions() -> List[Dict[str, str]]:
     """Predefined actions for research proposal workflows."""
     return [
@@ -199,3 +316,146 @@ def create_action_handler(action_prompts: Dict[str, str], state_accessor: Option
         return f"{context}{prompt_template}"
     
     return handle_action 
+
+def create_quick_action_handlers(action_buttons: List[gr.Button], selected_agent_state: gr.State, state: gr.State = None):
+    """
+    Creates event handlers for quick action buttons that generate context-aware prompts.
+    
+    Args:
+        action_buttons: List of action buttons from create_quick_actions_toolbar
+        selected_agent_state: Gradio state containing the selected agent name
+        state: Optional shared state for additional context
+        
+    Returns:
+        Dictionary mapping button indices to their generated prompts
+    """
+    quick_action_outputs = []
+    
+    def create_action_click_handler(button_label: str):
+        def handle_click():
+            # Get current agent name
+            current_agent = selected_agent_state.value if hasattr(selected_agent_state, 'value') else None
+            
+            # Get state context
+            state_context = {}
+            if state and hasattr(state, 'value'):
+                state_context = state.value or {}
+            
+            # Generate context-aware prompt
+            prompt = generate_agent_specific_prompt(button_label, current_agent, state_context)
+            return prompt
+        
+        return handle_click
+    
+    # Create handlers for each button
+    for i, button in enumerate(action_buttons):
+        # Extract label from button (remove icon)
+        button_label = button.value.split(' ', 1)[-1] if hasattr(button, 'value') else f"Action {i+1}"
+        handler = create_action_click_handler(button_label)
+        quick_action_outputs.append(handler)
+    
+    return quick_action_outputs
+
+def connect_quick_actions_to_chat(action_buttons: List[gr.Button], base_actions: List[Dict[str, str]], selected_agent_state: gr.State, state: gr.State = None):
+    """
+    Connects quick action buttons to generate prompts that can be used with chat interface.
+    
+    Args:
+        action_buttons: List of quick action buttons
+        base_actions: Original action definitions
+        selected_agent_state: State containing selected agent name
+        state: Optional shared state
+        
+    Returns:
+        List of outputs that can be connected to chat inputs
+    """
+    action_outputs = []
+    
+    for i, (button, action) in enumerate(zip(action_buttons, base_actions)):
+        def create_click_handler(action_label: str):
+            def on_click(agent_name_state_value, shared_state_value):
+                # Handle potential state access issues
+                try:
+                    agent_name = agent_name_state_value
+                    state_context = shared_state_value or {}
+                    
+                    # Generate the appropriate prompt
+                    prompt = generate_agent_specific_prompt(action_label, agent_name, state_context)
+                    print(f"Quick action triggered: {action_label} -> {prompt}")
+                    return prompt
+                    
+                except Exception as e:
+                    print(f"Error in quick action handler: {e}")
+                    return f"Help me with {action_label.lower()}"
+            
+            return on_click
+        
+        action_label = action['label']
+        handler = create_click_handler(action_label)
+        
+        # Create a textbox to capture the output
+        output_textbox = gr.Textbox(visible=False, label=f"action_output_{i}")
+        
+        # Connect button click to handler
+        button.click(
+            fn=handler,
+            inputs=[selected_agent_state, state] if state else [selected_agent_state],
+            outputs=[output_textbox]
+        )
+        
+        action_outputs.append(output_textbox)
+    
+    return action_outputs 
+
+def create_dynamic_quick_actions_toolbar(
+    base_actions: List[Dict[str, str]], 
+    title: str = "🚀 Quick Actions",
+    show_title: bool = True,
+    actions_per_row: int = 4
+) -> tuple:
+    """
+    Creates a dynamic quick actions toolbar that updates its button labels based on agent selection.
+    
+    Args:
+        base_actions: Base list of actions to adapt
+        title: Title for the toolbar section
+        show_title: Whether to show the title
+        actions_per_row: Number of action buttons per row
+        
+    Returns:
+        tuple: (action_buttons_list, css_html_component, update_function)
+    """
+    
+    # Create the toolbar infrastructure
+    action_buttons, css_component = create_quick_actions_toolbar(
+        actions=base_actions,
+        title=title,
+        show_title=show_title,
+        actions_per_row=actions_per_row
+    )
+    
+    def update_buttons_for_agent(agent_name: str):
+        """
+        Returns updated button configurations for the specified agent.
+        
+        Args:
+            agent_name: Name of the selected agent
+            
+        Returns:
+            List of gr.Button.update() objects with new labels
+        """
+        if not agent_name:
+            return [gr.Button.update() for _ in action_buttons]
+        
+        # Get context-aware actions for this agent
+        adapted_actions = get_context_aware_actions(agent_name, base_actions)
+        
+        # Create button updates
+        button_updates = []
+        for i, (button, adapted_action) in enumerate(zip(action_buttons, adapted_actions)):
+            new_label = f"{adapted_action.get('icon', '🔧')} {adapted_action['label']}"
+            button_updates.append(gr.Button.update(value=new_label))
+        
+        return button_updates
+    
+    return action_buttons, css_component, update_buttons_for_agent 
