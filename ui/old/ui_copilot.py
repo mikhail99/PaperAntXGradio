@@ -1,5 +1,5 @@
 import gradio as gr
-from core.copilots.copilot_service import CopilotService
+from core.copilots.copilot_service_old import CopilotService
 import json
 import hashlib
 

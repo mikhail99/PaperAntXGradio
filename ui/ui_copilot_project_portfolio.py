@@ -1,25 +1,25 @@
-from core.copilots.copilot_business_service import CopilotBusinessService
+from core.copilots.copilot_project_proposal_service import CopilotProjectProposalService
 import gradio as gr
 from ui.components.copilot import create_copilot
-from ui.components.quick_actions import create_quick_actions_toolbar, get_business_analysis_actions
+from ui.components.quick_actions import create_quick_actions_toolbar, get_research_proposal_actions
 
-def create_copilot_tab(state, copilot_service: CopilotBusinessService):
-    with gr.TabItem("💼 Business Copilot") as copilot_tab:
+def create_copilot_tab(state, copilot_service: CopilotProjectProposalService):
+    with gr.TabItem("📊 Project Portfolio Copilot") as copilot_tab:
         
         # Create beautiful quick actions toolbar
-        actions = get_business_analysis_actions()
+        actions = get_research_proposal_actions()
         action_buttons, css_component = create_quick_actions_toolbar(
             actions=actions,
-            title="💼 Business Analysis Quick Actions",
+            title="🚀 Research Proposal Quick Actions",
             show_title=False,
             actions_per_row=4
         )
         
         # Integrate the standard copilot component (with working JavaScript)
         agent_list_display, initial_load_fn, js_listener = create_copilot(
-            "💼 Business Copilot", 
+            "Project Portfolio Copilot", 
             copilot_service, 
-            "business", 
+            "portfolio", 
             state
         )
         

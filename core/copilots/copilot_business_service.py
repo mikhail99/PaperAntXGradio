@@ -234,9 +234,9 @@ class CopilotBusinessService:
         """Returns a list of available agent names."""
         return sorted(list(self.agents.keys()))
     
-    def get_agent_details(self) -> Dict[str, str]:
-        """Returns the configuration for a specific agent."""
-        return {
+    def get_agent_details(self, agent_name: str = None) -> Dict[str, str]:
+        """Returns the configuration for a specific agent or all agents."""
+        all_details = {
             "Finance News Assistant": {
                 "short_description": "A finance news assistant that can answer questions about the stock market.",
                 "full_description": "A finance news assistant that can answer questions about the stock market.",
@@ -248,7 +248,15 @@ class CopilotBusinessService:
                 "tools": [{"name": "query_tools", "description": "A tool to generate queries for the query research assistant."}]
             }
         }
+        
+        if agent_name:
+            return all_details.get(agent_name)
+        return all_details
 
+    def reload(self) -> None:
+        """Reload agent configurations - placeholder for UI compatibility."""
+        print(f"Reloading {self.__class__.__name__} - agents recreated")
+        self.agents = self._create_agents()
     
     def chat_with_agent(self, agent_name: str, message: str, llm_history: List[Dict[str, Any]], provider: str = "ollama") -> Generator[Dict, None, None]:
         """Route chat to the appropriate agent module"""

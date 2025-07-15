@@ -29,6 +29,8 @@ from ui.ui_copilot_project_proposal import create_copilot_tab as create_copilot_
 from core.copilots.copilot_project_proposal_service import CopilotProjectProposalService
 from ui.ui_copilot_libraryQA import create_copilot_tab as create_copilot_library_qa_tab
 from core.copilots.copilot_papersQA import CopilotPaperQAService
+from ui.ui_copilot_project_portfolio import create_copilot_tab as create_copilot_project_portfolio_tab
+from core.copilots.copilot_project_portfolio import CopilotProjectPortfolioService
 def main():
     with gr.Blocks(css=CUSTOM_CSS) as demo:
         gr.Markdown("# PaperAnt X")
@@ -42,6 +44,7 @@ def main():
         copilot_business_service = CopilotBusinessService()
         copilot_project_proposal_service = CopilotProjectProposalService()
         copilot_paper_qa_service = CopilotPaperQAService()
+        copilot_project_portfolio_service = CopilotProjectPortfolioService()
         #proposal_agent_service = create_service(use_parrot=True)
 
         with gr.Tabs():
@@ -56,6 +59,7 @@ def main():
             create_copilot_library_qa_tab(state, copilot_paper_qa_service)
             create_copilot_project_proposal_tab(state, copilot_project_proposal_service)
             create_copilot_business_tab(state, copilot_business_service)
+            create_copilot_project_portfolio_tab(state, copilot_project_portfolio_service)
             #create_collections_tab(state)
             #create_library_tab(state)
     demo.launch()
