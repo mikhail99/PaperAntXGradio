@@ -2,43 +2,57 @@ import gradio as gr
 import hashlib
 from typing import Dict
 
-
-# Defines a Gradio-compliant way to run JavaScript for component interaction.
-# The JS is defined as a string and passed to an event listener's `js` parameter.
-_js_attach_listener = """
-() => {
+def create_js_event_listener(container_id: str, trigger_id: str) -> str:
+    """
+    Creates a Gradio-compliant JavaScript string that attaches a click listener
+    to a dynamically-named container, and updates a dynamically-named trigger component.
+    """
+    return f"""
+() => {{
   // We wrap our code in a setTimeout to ensure it runs after Gradio has
   // finished rendering the HTML from the Python event on the page.
-  setTimeout(() => {
-    const container = document.getElementById('agent-list-container-business');
-    if (!container) return;
+  setTimeout(() => {{
+    const container = document.getElementById('{container_id}');
+    if (!container) {{
+        console.error("JS Listener: Container with id '{container_id}' not found.");
+        return;
+    }}
 
     // Prevent attaching multiple listeners if the component is re-rendered.
     if (container.dataset.listenerAttached === 'true') return;
     container.dataset.listenerAttached = 'true';
 
-    container.addEventListener('click', (event) => {
+    container.addEventListener('click', (event) => {{
       const agentItem = event.target.closest('.agent-item');
       if (!agentItem) return;
 
       const agentName = agentItem.dataset.agentName;
       if (!agentName) return;
 
-      const hiddenTextbox = document.querySelector('#copilot_selected_agent_trigger_business');
-      if (!hiddenTextbox) return;
+      // Note: Gradio wraps components, so we need to query for the ID
+      // of the wrapper div, then find the input/textarea inside it.
+      const hiddenTextboxWrapper = document.getElementById('{trigger_id}');
+      if (!hiddenTextboxWrapper) {{
+          console.error("JS Listener: Trigger wrapper with id '{trigger_id}' not found.");
+          return;
+      }}
 
       // A gr.Textbox can be rendered as either an <input> or a <textarea>.
-      // This more robust selector finds whichever one is present.
-      const hiddenInput = hiddenTextbox.querySelector('input[type="text"], textarea');
-      if (!hiddenInput) return;
+      // This more robust selector finds whichever one is present inside the wrapper.
+      const hiddenInput = hiddenTextboxWrapper.querySelector('input[type="text"], textarea');
+      if (!hiddenInput) {{
+          console.error("JS Listener: Input/textarea not found inside trigger wrapper '{trigger_id}'.");
+          return;
+      }}
 
-      if (hiddenInput.value !== agentName) {
+      if (hiddenInput.value !== agentName) {{
         hiddenInput.value = agentName;
-        hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    });
-  }, 150);
-}
+        // The 'input' event must be dispatched for Gradio to recognize the change.
+        hiddenInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+      }}
+    }});
+  }}, 150);
+}}
 """
 
 def name_to_color(name: str) -> str:

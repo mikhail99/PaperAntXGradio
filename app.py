@@ -4,8 +4,8 @@ from core.business_intelligence.business_bridge import get_llm
 dspy.configure(lm=get_llm())
 
 import gradio as gr
-from state.state import get_shared_state
-from ui.ui_collections import create_collections_tab
+from ui.state.state import get_shared_state
+from ui.old.ui_collections import create_collections_tab
 #from ui.ui_articles import create_articles_tab
 #from ui.ui_proposal_agent_debugger import create_proposal_debugger_tab
 #from ui.ui_copilot import create_copilot_tab
@@ -22,12 +22,13 @@ from ui.custom_css import CUSTOM_CSS
 from core.llm_service import LLMService
 #from core.mcp_server_manager import MCPServerManager
 #from core.proposal_agent_pf_dspy.main import create_research_service as create_service
-from core.copilot_business_service import CopilotBusinessService 
+from core.copilots.copilot_business_service import CopilotBusinessService 
 from ui.ui_copilot_business import create_copilot_tab as create_copilot_business_tab
-from ui.ui_test import create_ui_test_tab
+#from ui.old.ui_test import create_ui_test_tab
 from ui.ui_copilot_project_proposal import create_copilot_tab as create_copilot_project_proposal_tab
-from core.copilot_project_proposal_service import CopilotProjectProposalService
-
+from core.copilots.copilot_project_proposal_service import CopilotProjectProposalService
+from ui.ui_copilot_libraryQA import create_copilot_tab as create_copilot_library_qa_tab
+from core.copilots.copilot_papersQA import CopilotPaperQAService
 def main():
     with gr.Blocks(css=CUSTOM_CSS) as demo:
         gr.Markdown("# PaperAnt X")
@@ -38,8 +39,9 @@ def main():
         #article_manager = ArticleManager(collections_manager)
         #mcp_server_manager = MCPServerManager()
         #copilot_service = CopilotService(collections_manager, article_manager, llm_service, mcp_server_manager)
-        copilot_business_service = CopilotBusinessService(llm_service)
-        copilot_project_proposal_service = CopilotProjectProposalService(llm_service)
+        copilot_business_service = CopilotBusinessService()
+        copilot_project_proposal_service = CopilotProjectProposalService()
+        copilot_paper_qa_service = CopilotPaperQAService()
         #proposal_agent_service = create_service(use_parrot=True)
 
         with gr.Tabs():
@@ -51,9 +53,10 @@ def main():
             ##create_pocketflow_demo_tab()
             #create_research_demo_tab()
             #create_copilot_tab(state, copilot_service)
+            create_copilot_library_qa_tab(state, copilot_paper_qa_service)
             create_copilot_project_proposal_tab(state, copilot_project_proposal_service)
             create_copilot_business_tab(state, copilot_business_service)
-            create_collections_tab(state)
+            #create_collections_tab(state)
             #create_library_tab(state)
     demo.launch()
 

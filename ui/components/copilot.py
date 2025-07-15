@@ -1,12 +1,15 @@
 import gradio as gr
 from gradio import ChatMessage
-from ui.components.agent_list import generate_agent_list_html, _js_attach_listener
+from ui.components.agent_list import generate_agent_list_html, create_js_event_listener
 
-def create_copilot(tab_title, copilot_service, tab_id_suffix):
+def create_copilot(tab_title:str, copilot_service, tab_id_suffix:str, state: gr.State):
     main_container_id = f"copilot-main-container-{tab_id_suffix}"
     selected_agent_trigger_id = f"copilot_selected_agent_trigger_{tab_id_suffix}"
     agent_list_display_id = f"agent-list-container-{tab_id_suffix}"
     chat_column_id = f"copilot-chat-column-{tab_id_suffix}"
+
+    # Generate the dynamic JavaScript for this specific component instance
+    js_listener = create_js_event_listener(agent_list_display_id, selected_agent_trigger_id)
 
     with gr.Blocks(theme=gr.themes.Soft(), fill_height=True):
         with gr.Row(equal_height=False, elem_id=main_container_id):
@@ -124,7 +127,7 @@ def create_copilot(tab_title, copilot_service, tab_id_suffix):
                 chatbot,
                 conversation_history_state
             ],
-            js=_js_attach_listener
+            js=js_listener
         )
 
         # Initial load for agent details and list
@@ -133,5 +136,5 @@ def create_copilot(tab_title, copilot_service, tab_id_suffix):
             html = generate_agent_list_html(copilot_service.get_agent_details(), initial_agent_name)
             return html
 
-        # Return the display and the initial load function for use by the caller
-        return agent_list_display, initial_load_fn
+        # Return the display, the initial load function, and the dynamic JS listener
+        return agent_list_display, initial_load_fn, js_listener
