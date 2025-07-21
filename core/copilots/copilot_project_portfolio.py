@@ -3,10 +3,10 @@ import os
 from typing import Dict, List, Optional, Any, Generator
 #from .llm_service import LLMService
 import dspy
-from langchain_community.tools.yahoo_finance_news import YahooFinanceNewsTool
+#from langchain_community.tools.yahoo_finance_news import YahooFinanceNewsTool
 from dspy.adapters.types.tool import Tool
 import json
-import yfinance as yf
+#import yfinance as yf
 import asyncio
 import pandas as pd
 from gradio import ChatMessage

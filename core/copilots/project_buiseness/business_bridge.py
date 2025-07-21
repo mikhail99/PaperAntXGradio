@@ -3,7 +3,7 @@ import os
 import requests
 import json
 from typing import Dict, List, Any
-from mem0 import Memory
+#from mem0 import Memory
 import time
 from collections import Counter, defaultdict
 
@@ -149,7 +149,7 @@ class BusinessTechnicalBridgeQA(dspy.Signature):
 class BusinessTechnicalBridgeAgent(dspy.Module):
     """A ReAct agent for bridging technical proposals with business impact, enhanced with patent intelligence."""
 
-    def __init__(self, memory: Memory = None):
+    def __init__(self, memory = None):
         super().__init__()
         self.patent_analyzer = PatentLandscapeAnalyzer()
         self.query_generator = dspy.Predict(PatentQueryGenerator)

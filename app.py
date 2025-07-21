@@ -1,7 +1,7 @@
 # Configure DSPy for parrot mode at app startup FIRST to avoid threading conflicts
 import dspy
 from core.copilots.project_buiseness.business_bridge import get_llm
-dspy.configure(lm=get_llm())
+#dspy.configure(lm=get_llm())
 
 import gradio as gr
 from ui.state.state import get_shared_state
@@ -19,7 +19,7 @@ from ui.custom_css import CUSTOM_CSS
 #from core.article_manager import ArticleManager
 #from core.collections_manager import CollectionsManager
 #from core.copilot_service import CopilotService
-from core.llm_service import LLMService
+#from core.llm_service import LLMService
 #from core.mcp_server_manager import MCPServerManager
 #from core.proposal_agent_pf_dspy.main import create_research_service as create_service
 #from core.copilots.copilot_business_service import CopilotBusinessService 
@@ -36,7 +36,7 @@ def main():
         gr.Markdown("# PaperAnt X")
         state = get_shared_state()
 
-        llm_service = LLMService()
+        #llm_service = LLMService()
         #collections_manager = CollectionsManager()
         #article_manager = ArticleManager(collections_manager)
         #mcp_server_manager = MCPServerManager()

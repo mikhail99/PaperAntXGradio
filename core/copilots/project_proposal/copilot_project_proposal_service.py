@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, List, Optional, Any, Generator
 #from .llm_service import LLMService
-from query_agent import QueryAgent
+from .query_agent import QueryAgent
 import dspy
 import json
 
