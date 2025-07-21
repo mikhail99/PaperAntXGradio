@@ -1,4 +1,4 @@
-from core.copilots.copilot_project_proposal_service import CopilotProjectProposalService
+from core.copilots.project_proposal.copilot_project_proposal_service import CopilotProjectProposalService
 import gradio as gr
 from ui.components.copilot import create_copilot
 from ui.components.quick_actions import create_quick_actions_toolbar, get_research_proposal_actions

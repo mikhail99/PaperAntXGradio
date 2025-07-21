@@ -1,6 +1,6 @@
 # Configure DSPy for parrot mode at app startup FIRST to avoid threading conflicts
 import dspy
-from core.business_intelligence.business_bridge import get_llm
+from core.copilots.project_buiseness.business_bridge import get_llm
 dspy.configure(lm=get_llm())
 
 import gradio as gr
@@ -26,7 +26,7 @@ from core.llm_service import LLMService
 #from ui.ui_copilot_business import create_copilot_tab as create_copilot_business_tab
 #from ui.old.ui_test import create_ui_test_tab
 from ui.ui_copilot_project_proposal import create_copilot_tab as create_copilot_project_proposal_tab
-from core.copilots.copilot_project_proposal_service import CopilotProjectProposalService
+from core.copilots.project_proposal.copilot_project_proposal_service import CopilotProjectProposalService
 #from ui.ui_copilot_libraryQA import create_copilot_tab as create_copilot_library_qa_tab
 #from core.copilots.copilot_papersQA import CopilotPaperQAService
 from ui.ui_copilot_project_portfolio import create_copilot_tab as create_copilot_project_portfolio_tab

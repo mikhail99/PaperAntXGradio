@@ -12,7 +12,7 @@ import os
 import urllib.parse
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from core.business_intelligence.business_bridge import PatentLandscapeAnalyzer
+from core.copilots.project_buiseness.business_bridge import PatentLandscapeAnalyzer
 import json
 import requests
 import time

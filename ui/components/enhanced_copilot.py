@@ -1,6 +1,13 @@
 import gradio as gr
 from gradio import ChatMessage
 from ui.components.agent_list import generate_agent_list_html, create_js_event_listener
+from ui.components.file_references import (
+    process_prompt_with_references,
+    generate_selected_files_html,
+    generate_file_preview_text,
+    get_file_reference_css,
+    create_file_reference_examples
+)
 
 def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, state):
     """
@@ -17,31 +24,31 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
     js_listener = create_js_event_listener(agent_list_display_id, selected_agent_trigger_id)
 
     # --- Define CSS ---
-    # The CSS is simplified as we are removing the outer containers
-    css = """
+    css = f"""
     <style>
-    .quick-actions-row {
+    .quick-actions-row {{
         gap: 0.5rem !important;
         margin-bottom: 1rem;
         flex-wrap: wrap;
-    }
-    .quick-action-btn {
+    }}
+    .quick-action-btn {{
         transition: all 0.3s ease !important;
         border-radius: 8px !important;
         font-weight: 500 !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
         border: none !important;
         color: white !important;
-    }
-    .quick-action-btn:hover {
+    }}
+    .quick-action-btn:hover {{
         transform: translateY(-2px) !important;
         box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-    }
-    .research-btn { background: linear-gradient(135deg, #ff6b6b, #ee5a24) !important; }
-    .outline-btn { background: linear-gradient(135deg, #4834d4, #686de0) !important; }
-    .search-btn { background: linear-gradient(135deg, #00d2d3, #54a0ff) !important; }
-    .method-btn { background: linear-gradient(135deg, #5f27cd, #a55eea) !important; }
-    .default-btn { background: linear-gradient(135deg, #8854d0, #3742fa) !important; }
+    }}
+    .research-btn {{ background: linear-gradient(135deg, #ff6b6b, #ee5a24) !important; }}
+    .outline-btn {{ background: linear-gradient(135deg, #4834d4, #686de0) !important; }}
+    .search-btn {{ background: linear-gradient(135deg, #00d2d3, #54a0ff) !important; }}
+    .method-btn {{ background: linear-gradient(135deg, #5f27cd, #a55eea) !important; }}
+    .default-btn {{ background: linear-gradient(135deg, #8854d0, #3742fa) !important; }}
+    {get_file_reference_css()}
     </style>
     """
     gr.HTML(css)
@@ -58,7 +65,7 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
     # 1. Main Content Row
     with gr.Row(equal_height=False, elem_id=main_container_id):
         # Left Column: Agent List
-        with gr.Column(scale=1, min_width=320):
+        with gr.Column(scale=1, min_width=300):
             with gr.Row():
                 gr.Markdown("### Agents")
                 gr.HTML("<div style='flex-grow: 1'></div>")
@@ -67,20 +74,74 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
             selected_agent_trigger = gr.Textbox(label="selected_agent_trigger", visible=False, elem_id=selected_agent_trigger_id)
             agent_list_display = gr.HTML(elem_id=agent_list_display_id)
 
-        # Right Column: Chatbot
-        with gr.Column(scale=3, elem_id=chat_column_id):
+        # Middle Column: Chatbot
+        with gr.Column(scale=2, elem_id=chat_column_id):
             chatbot = gr.Chatbot(label="My Chatbot", type="messages", avatar_images=(None, "https://em-content.zobj.net/source/twitter/53/robot-face_1f916.png"), scale=1, render_markdown=True, show_copy_button=True, placeholder=f"<strong>{tab_title}</strong><br>Ask me to help with your research proposal!")
             
-            def reply(prompt, history, selected_agent_name):
-                answer, flow_log = copilot_service.chat_with_agent(selected_agent_name, prompt, history)
+            def reply(prompt, history, selected_agent_name, selected_files):
+                # Process the prompt to replace @1, @2 references with file content
+                processed_prompt = process_prompt_with_references(prompt, selected_files or [])
+                
+                answer, flow_log = copilot_service.chat_with_agent(selected_agent_name, processed_prompt, history)
                 messages = list(flow_log)
                 if not isinstance(answer, str):
                     answer = str(answer)
                 messages.append(ChatMessage(role="assistant", content=answer))
                 return messages
 
-            gr.ChatInterface(fn=reply, type="messages", additional_inputs=[selected_agent_name_state], chatbot=chatbot, title=f"{tab_title} Agent with Human Review", examples=[["I want to research LLMs in education"], ["Help me research machine learning for healthcare"]])
+            # State for selected files
+            selected_files_state = gr.State([])
+
+            gr.ChatInterface(
+                fn=reply, 
+                type="messages", 
+                additional_inputs=[selected_agent_name_state, selected_files_state], 
+                chatbot=chatbot, 
+                title=f"{tab_title} Agent with Human Review", 
+                examples=create_file_reference_examples()
+            )
             conversation_history_state = gr.State([])
+
+        # Right Column: Document Files
+        with gr.Column(scale=1, min_width=300):
+            gr.Markdown("### 📄 Research Documents")
+            
+            # File selection display
+            selected_files_display = gr.HTML(
+                value=generate_selected_files_html([]),
+                elem_classes=["selected-files"]
+            )
+            
+            file_explorer = gr.FileExplorer(
+                root_dir="documents",
+                glob="*.md",
+                file_count="multiple",  # Enable multiple selection
+                label="Select Documents",
+                height=250,
+                interactive=True
+            )
+            
+            # Helper text
+            gr.HTML("<small>💡 <strong>Tip:</strong> Select files above, then use @1, @2, @3 in your chat to reference them</small>")
+            
+            # File preview area
+            file_preview = gr.Markdown(
+                value=generate_file_preview_text([]),
+                label="Document Preview",
+                max_height=150
+            )
+            
+            # Function to update selected files display and preview
+            def update_selected_files(selected_files):
+                display_html = generate_selected_files_html(selected_files or [])
+                preview_text = generate_file_preview_text(selected_files or [])
+                return display_html, preview_text, selected_files
+            
+            file_explorer.change(
+                fn=update_selected_files,
+                inputs=[file_explorer],
+                outputs=[selected_files_display, file_preview, selected_files_state]
+            )
 
     # 2. Quick Actions Row (now at the bottom)
     action_buttons = []

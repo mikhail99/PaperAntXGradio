@@ -137,7 +137,7 @@ def create_manager_review_tab():
             traceback.print_exc()
 
         try:
-            from core.business_intelligence.business_bridge import create_business_bridge_service
+            from core.copilots.project_buiseness.business_bridge import create_business_bridge_service
             business_bridge_service = create_business_bridge_service()
         except Exception as e:
             service_error = f"Business bridge service error: {e}"

@@ -1,4 +1,4 @@
-from core.copilots.copilot_project_proposal_service import CopilotProjectProposalService
+from core.copilots.project_proposal.copilot_project_proposal_service import CopilotProjectProposalService
 import gradio as gr
 from ui.components.enhanced_copilot import build_copilot_view
 
