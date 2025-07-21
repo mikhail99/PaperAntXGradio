@@ -207,4 +207,9 @@ button:has(> span:contains('Get Report')) {
     border-color: var(--primary-500) !important;
     color: var(--body-text-color-strong) !important;
 }
+
+/* Hide the trigger textboxes but keep them in the DOM */
+.hidden-trigger {
+    display: none !important;
+}
 '''

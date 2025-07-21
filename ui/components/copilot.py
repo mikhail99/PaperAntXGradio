@@ -2,9 +2,9 @@ import gradio as gr
 from gradio import ChatMessage
 from ui.components.agent_list import generate_agent_list_html, create_js_event_listener
 
-def create_copilot(tab_title:str, copilot_service, tab_id_suffix:str, state: gr.State):
+def create_copilot(tab_title:str, copilot_service, tab_id_suffix:str, state: gr.State, trigger: gr.Textbox):
     main_container_id = f"copilot-main-container-{tab_id_suffix}"
-    selected_agent_trigger_id = f"copilot_selected_agent_trigger_{tab_id_suffix}"
+    selected_agent_trigger_id = trigger.elem_id
     agent_list_display_id = f"agent-list-container-{tab_id_suffix}"
     chat_column_id = f"copilot-chat-column-{tab_id_suffix}"
 
@@ -23,11 +23,7 @@ def create_copilot(tab_title:str, copilot_service, tab_id_suffix:str, state: gr.
                 agent_list = copilot_service.get_agent_list()
                 initial_agent = agent_list[0] if agent_list else None
                 selected_agent_name_state = gr.State(initial_agent)
-                selected_agent_trigger = gr.Textbox(
-                    label="selected_agent_trigger",
-                    visible=False,
-                    elem_id=selected_agent_trigger_id
-                )
+                # The trigger is now passed in, so we no longer create it here.
                 agent_list_display = gr.HTML(elem_id=agent_list_display_id)
 
             with gr.Column(scale=3, elem_id=chat_column_id):
@@ -105,9 +101,9 @@ def create_copilot(tab_title:str, copilot_service, tab_id_suffix:str, state: gr.
             )
 
         # Agent selection from JS trigger
-        selected_agent_trigger.input(
+        trigger.input(
             fn=on_select_agent,
-            inputs=[selected_agent_trigger, selected_agent_name_state],
+            inputs=[trigger, selected_agent_name_state],
             outputs=[
                 chatbot,
                 conversation_history_state,

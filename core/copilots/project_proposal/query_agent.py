@@ -99,10 +99,10 @@ class QueyTools:
 
 class QueryHelper(dspy.Signature):
     """
-    You're a research assistant helping to generate and bookkeep research questions.
+    You're a research assistant helping to answer user questions on a collection of documents (research papers).
     Your task unclude:
-    - Generate a research question from user request.
-    - List already created questions satisfying. 
+    - fetching the most relevant documents from the collection.
+    - answering the user question based on the documents.
     """
     user_request: str = dspy.InputField()
     past_user_requests: str = dspy.InputField()

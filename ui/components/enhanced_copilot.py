@@ -9,7 +9,7 @@ from ui.components.file_references import (
     create_file_reference_examples
 )
 
-def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, state):
+def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, state, trigger: gr.Textbox):
     """
     Creates the UI for a copilot tab, including quick actions at the top,
     and wires up all the event handling logic.
@@ -18,7 +18,8 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
     
     # --- Define IDs and JS ---
     main_container_id = f"copilot-main-container-{tab_id_suffix}"
-    selected_agent_trigger_id = f"copilot_selected_agent_trigger_{tab_id_suffix}"
+    # The trigger ID is now taken from the passed-in component
+    selected_agent_trigger_id = trigger.elem_id
     agent_list_display_id = f"agent-list-container-{tab_id_suffix}"
     chat_column_id = f"copilot-chat-column-{tab_id_suffix}"
     js_listener = create_js_event_listener(agent_list_display_id, selected_agent_trigger_id)
@@ -71,7 +72,8 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
                 gr.HTML("<div style='flex-grow: 1'></div>")
                 with gr.Column(scale=0, min_width=120):
                     reload_button = gr.Button("Reload Agents", size="sm", elem_classes="discrete-reload-button")
-            selected_agent_trigger = gr.Textbox(label="selected_agent_trigger", visible=False, elem_id=selected_agent_trigger_id)
+            # The trigger Textbox is now passed in from app.py, so we don't create it here.
+            # selected_agent_trigger = gr.Textbox(...) 
             agent_list_display = gr.HTML(elem_id=agent_list_display_id)
 
         # Middle Column: Chatbot
@@ -186,9 +188,9 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
             generate_agent_list_html(copilot_service.get_agent_details(), agent_name)
         ] + button_updates
 
-    selected_agent_trigger.input(
+    trigger.input(
         fn=on_select_agent,
-        inputs=[selected_agent_trigger, selected_agent_name_state],
+        inputs=[trigger, selected_agent_name_state],
         outputs=[chatbot, conversation_history_state, selected_agent_name_state, agent_list_display] + action_buttons,
         queue=False
     )

@@ -1,9 +1,9 @@
-from core.copilots.project_proposal.copilot_project_proposal_service import CopilotProjectProposalService
+from core.copilots.copilot_project_portfolio import CopilotProjectPortfolioService
 import gradio as gr
 from ui.components.copilot import create_copilot
 from ui.components.quick_actions import create_quick_actions_toolbar, get_research_proposal_actions
 
-def create_copilot_tab(state, copilot_service: CopilotProjectProposalService):
+def create_copilot_tab(state, copilot_service: CopilotProjectPortfolioService, trigger: gr.Textbox):
     with gr.TabItem("📊 Project Portfolio Copilot") as copilot_tab:
         
         # Create beautiful quick actions toolbar
@@ -20,7 +20,8 @@ def create_copilot_tab(state, copilot_service: CopilotProjectProposalService):
             "Project Portfolio Copilot", 
             copilot_service, 
             "portfolio", 
-            state
+            state,
+            trigger=trigger
         )
         
         # TODO: Connect quick action buttons to chat interface
@@ -28,9 +29,9 @@ def create_copilot_tab(state, copilot_service: CopilotProjectProposalService):
         # This can be implemented by connecting them to the chat input
         
         copilot_tab.select(
-            initial_load_fn,
-            None,
-            [agent_list_display],
+            fn=initial_load_fn,
+            inputs=None,
+            outputs=[agent_list_display],
             js=js_listener
         )
 

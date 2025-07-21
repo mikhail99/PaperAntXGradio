@@ -32,7 +32,7 @@ from core.copilots.project_proposal.copilot_project_proposal_service import Copi
 from ui.ui_copilot_project_portfolio import create_copilot_tab as create_copilot_project_portfolio_tab
 from core.copilots.copilot_project_portfolio import CopilotProjectPortfolioService
 def main():
-    with gr.Blocks(css=CUSTOM_CSS) as demo:
+    with gr.Blocks(css=CUSTOM_CSS, fill_width=True) as demo:
         gr.Markdown("# PaperAnt X")
         state = get_shared_state()
 
@@ -47,6 +47,11 @@ def main():
         copilot_project_portfolio_service = CopilotProjectPortfolioService()
         #proposal_agent_service = create_service(use_parrot=True)
 
+        # Create the hidden trigger textboxes at the top level, outside the Tabs.
+        # This ensures they are present in the DOM from the start, avoiding the race condition.
+        proposal_trigger = gr.Textbox(label="proposal_trigger", visible=True, elem_id="copilot_selected_agent_trigger_proposal", elem_classes="hidden-trigger")
+        portfolio_trigger = gr.Textbox(label="portfolio_trigger", visible=True, elem_id="copilot_selected_agent_trigger_portfolio", elem_classes="hidden-trigger")
+
         with gr.Tabs():
             #create_manager_review_tab()
             #create_articles_tab(state)
@@ -57,9 +62,9 @@ def main():
             #create_research_demo_tab()
             #create_copilot_tab(state, copilot_service)
             #create_copilot_library_qa_tab(state, copilot_paper_qa_service)
-            create_copilot_project_proposal_tab(state, copilot_project_proposal_service)
+            create_copilot_project_proposal_tab(state, copilot_project_proposal_service, trigger=proposal_trigger)
             #create_copilot_business_tab(state, copilot_business_service)
-            create_copilot_project_portfolio_tab(state, copilot_project_portfolio_service)
+            create_copilot_project_portfolio_tab(state, copilot_project_portfolio_service, trigger=portfolio_trigger)
             #create_collections_tab(state)
             #create_library_tab(state)
     demo.launch()
