@@ -16,7 +16,7 @@ from core.data_models import Article
 from core.utils import get_local_llm_settings
 
 # --- Configuration ---
-LLM_MODEL = "ollama/gemma3:4b"
+LLM_MODEL = "ollama/qwen3:4b"
 EMBEDDING_MODEL = "ollama/nomic-embed-text:latest"
 
 
@@ -100,5 +100,5 @@ async def build_cache_from_collection(collection_name: str):
 
 if __name__ == "__main__":
     # Build a PaperQA cache for a curated collection using its ChromaDB for metadata.
-    collection_name = "LLM_Reasoning_Agents"
+    collection_name = "Diffusion_Models"
     asyncio.run(build_cache_from_collection(collection_name)) 

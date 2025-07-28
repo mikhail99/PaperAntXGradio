@@ -23,8 +23,8 @@ DEST_BASE_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "collecti
 # DSPy and Ollama Configuration
 OLLAMA_BASE_URL = "http://localhost:11434"
 # As requested, using 'gemma3:4b'. Make sure this model is available in your Ollama instance.
-OLLAMA_MODEL = "gemma3:4b"
-TOP_K_SEARCH = 100  # Number of initial papers to retrieve for filtering
+OLLAMA_MODEL = "qwen3:4b"
+TOP_K_SEARCH = 250  # Number of initial papers to retrieve for filtering
 
 
 # --- DSPy Setup ---
@@ -182,8 +182,8 @@ def main(new_collection_name: str, new_collection_description: str):
 
 if __name__ == "__main__":
     # --- Define the new collection here ---
-    collection_name = "LLM_Reasoning_Agents"
-    collection_description = "Papers about LLM reasoning agents, coding agents, problem solving agents, etc."
+    collection_name = "Diffusion_Models"
+    collection_description = "Papers about diffusion models, diffusion processes, diffusion-based methods, etc."
     
     print(f"Initializing collection '{collection_name}'...")
     main(collection_name, collection_description)

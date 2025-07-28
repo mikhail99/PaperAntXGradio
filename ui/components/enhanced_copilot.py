@@ -3,7 +3,6 @@ from gradio import ChatMessage
 from ui.components.agent_list import generate_agent_list_html, create_js_event_listener
 from ui.components.file_references import (
     process_prompt_with_references,
-    generate_selected_files_html,
     generate_file_preview_text,
     get_file_reference_css,
     create_file_reference_examples
@@ -78,18 +77,25 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
 
         # Middle Column: Chatbot
         with gr.Column(scale=2, elem_id=chat_column_id):
-            chatbot = gr.Chatbot(label="My Chatbot", type="messages", avatar_images=(None, "https://em-content.zobj.net/source/twitter/53/robot-face_1f916.png"), scale=1, render_markdown=True, show_copy_button=True, placeholder=f"<strong>{tab_title}</strong><br>Ask me to help with your research proposal!")
+            chatbot = gr.Chatbot(
+                label="My Chatbot", 
+                type="messages", 
+                avatar_images=(None, "https://em-content.zobj.net/source/twitter/53/robot-face_1f916.png"), 
+                scale=1, 
+                render_markdown=True, 
+                show_copy_button=True, 
+                placeholder=f"<strong>{tab_title}</strong><br>Ask me to help with your research proposal!"
+            )
             
             def reply(prompt, history, selected_agent_name, selected_files):
                 # Process the prompt to replace @1, @2 references with file content
                 processed_prompt = process_prompt_with_references(prompt, selected_files or [])
                 
-                answer, flow_log = copilot_service.chat_with_agent(selected_agent_name, processed_prompt, history)
-                messages = list(flow_log)
-                if not isinstance(answer, str):
-                    answer = str(answer)
-                messages.append(ChatMessage(role="assistant", content=answer))
-                return messages
+                # Get response from agent - now returns only list of ChatMessage objects
+                agent_messages = copilot_service.chat_with_agent(selected_agent_name, processed_prompt, history)
+                
+                # agent_messages is a list of ChatMessage objects (tool calls + final answer)
+                return agent_messages
 
             # State for selected files
             selected_files_state = gr.State([])
@@ -99,7 +105,7 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
                 type="messages", 
                 additional_inputs=[selected_agent_name_state, selected_files_state], 
                 chatbot=chatbot, 
-                title=f"{tab_title} Agent with Human Review", 
+                title=f"{tab_title}", 
                 examples=create_file_reference_examples()
             )
             conversation_history_state = gr.State([])
@@ -107,12 +113,6 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
         # Right Column: Document Files
         with gr.Column(scale=1, min_width=300):
             gr.Markdown("### 📄 Research Documents")
-            
-            # File selection display
-            selected_files_display = gr.HTML(
-                value=generate_selected_files_html([]),
-                elem_classes=["selected-files"]
-            )
             
             file_explorer = gr.FileExplorer(
                 root_dir="documents",
@@ -135,14 +135,13 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
             
             # Function to update selected files display and preview
             def update_selected_files(selected_files):
-                display_html = generate_selected_files_html(selected_files or [])
                 preview_text = generate_file_preview_text(selected_files or [])
-                return display_html, preview_text, selected_files
+                return preview_text, selected_files
             
             file_explorer.change(
                 fn=update_selected_files,
                 inputs=[file_explorer],
-                outputs=[selected_files_display, file_preview, selected_files_state]
+                outputs=[file_preview, selected_files_state]
             )
 
     # 2. Quick Actions Row (now at the bottom)
@@ -166,6 +165,23 @@ def build_copilot_view(tab_title: str, copilot_service, tab_id_suffix: str, stat
 
     # --- EVENT HANDLING ---
     
+    # Like/Dislike messages (just for feedback/printing)
+    def handle_like_dislike(evt: gr.LikeData, history):
+        # The index is a direct integer for the message index
+        message_index = evt.index
+        message = history[message_index]
+        
+        if evt.liked:
+            print(f"User LIKED message: \"{message['content'][:60]}...\"")
+        else:
+            print(f"User DISLIKED message: \"{message['content'][:60]}...\"")
+
+    chatbot.like(
+        fn=handle_like_dislike,
+        inputs=[chatbot],
+        outputs=[]
+    )
+
     # Agent selection updates buttons and agent details
     def on_select_agent(agent_name, current_selected_agent):
         button_updates = []
