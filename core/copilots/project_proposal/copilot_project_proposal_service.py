@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, List, Optional, Any, Generator
 #from .llm_service import LLMService
-from .query_agent import QueryAgent
+
 import dspy
 import json
 
@@ -12,8 +12,56 @@ from gradio import ChatMessage
 from queue import Queue
 import threading
 import gradio as gr
-
+from core.collections_manager import CollectionsManager, Article
+from core.copilots.project_proposal.idea_generator.evolution import simplified_evolutionary_abstracts, Abstract, Candidate
 # Configure DSPy
+
+class QueryAgent(dspy.Module):
+    def __init__(self):
+        super().__init__()
+        self.query_tools = []
+
+    def forward(self, user_request: str, past_messages: str, topic: str, **kwargs):
+        print("STUB")
+        return "STUB"
+
+class IdeaGenerator(dspy.Module):
+    def __init__(self):
+        super().__init__()
+        self.query_tools = []
+    
+    def forward(self, user_request: str, past_messages: str, topic: str, **kwargs):
+        print(f"IdeaGenerator: {user_request}, {past_messages}, {topic}")
+
+        winners = self._evolution_algorithm(topic)
+        winners_str = "\n".join([f"Idea {i+1}: {winner.idea}" for i, winner in enumerate(winners)])
+        return winners_str
+
+    def _evolution_algorithm(self, topic: str):
+        '''
+        This function is used to generate project ideas based on abstracts.
+        It uses the evolutionary algorithm to generate project ideas.
+        It returns a list of project ideas.
+        It uses the collections manager to get the abstracts.
+        It uses the evolutionary algorithm to generate project ideas.
+        It returns a list of project ideas.
+        PROGRESS: 80%
+        '''
+        
+
+        manager = CollectionsManager()
+        collection_name = "HuggingFaceDailyPapers" #TODO: make it dynamic
+        collection = manager.get_collection_by_name(collection_name)
+        print(list(collection.articles.values())[0])
+
+        selected_articles : List[Article] = manager.search_articles(collection_name, topic, limit = 100)
+        all_abstracts: List[Abstract] = [Abstract(id=article.id, text=article.abstract) for article in selected_articles]
+        print(f"Number of abstracts in collection: {len(all_abstracts)}")
+
+        winners: List[Candidate] = simplified_evolutionary_abstracts(all_abstracts, context) #TODO path context
+        print(f"Number of winners: {len(winners)}")
+        return winners
+
 
 class CopilotProjectProposalService:
     def __init__(self) -> None:
@@ -24,9 +72,7 @@ class CopilotProjectProposalService:
     def _create_agents(self) -> Dict[str, dspy.Module]:
         """Create agent instances"""
         return {
-            "Generate Research Questions": QueryAgent(),  #(self.llm_service),
-            "Generate Project Ideas": QueryAgent(),  #(self.llm_service),
-            "Generate Literature Review": QueryAgent(),  #(self.llm_service),
+            "Generate Project Ideas": IdeaGenerator(),  #(self.llm_service),
             "Generate Project Proposal": QueryAgent(),  #(self.llm_service),
             "Generate Project Review": QueryAgent()  #(self.llm_service),
         }
@@ -38,21 +84,12 @@ class CopilotProjectProposalService:
     def get_agent_details(self, agent_name: str = None) -> Dict[str, str]:
         """Returns the configuration for a specific agent or all agents."""
         all_details = {
-            "Generate Research Questions": {
-                "short_description": "An assistant that randomly looks at abstracts and generates questions.",
-                "full_description": "An assistant that randomly looks at abstracts and generates questions.",
-                "tools": [{"name": "abstract_retriever", "description": "access to chroma db."}]
-            },
+
             "Generate Project Ideas": {
                 "short_description": "Runs evolution algoritm that is design to generate project ideas based on abstracts.",
                 "full_description": "Runs evolution algoritm that is design to generate project ideas based on abstracts.",
                 "tools": [{"name": "abstract_retriever",  "description": "access to chroma db."}, 
                           {"name": "abstract_evolution",  "description": "evolution algorithm ge generate to abstracts."}]
-            },
-            "Generate Literature Review": {
-                "short_description": "A query research assistant that write literature review on a topic.",
-                "full_description": "A query research assistant that write literature review on a topic.",
-                "tools": [{"name": "paper_qa", "description": "A tool to generate literature review for the query research assistant."}]
             },
             "Generate Project Proposal": {
                 "short_description": "A query research assistant that can answer questions about the stock market.",
@@ -77,20 +114,10 @@ class CopilotProjectProposalService:
         
         # Dummy implementation - different actions per agent
         actions_map = {
-            "Generate Research Questions": [
-                {"label": "Topic Questions", "icon": "❓"},
-                {"label": "Hypothesis Ideas", "icon": "💡"},
-                {"label": "Research Gaps", "icon": "🔍"}
-            ],
             "Generate Project Ideas": [
                 {"label": "Brainstorm Ideas", "icon": "🧠"},
                 {"label": "Innovation Areas", "icon": "⚡"},
                 {"label": "Problem Solving", "icon": "🎯"}
-            ],
-            "Generate Literature Review": [
-                {"label": "Find Papers", "icon": "📚"},
-                {"label": "Review Structure", "icon": "📋"},
-                {"label": "Citation Analysis", "icon": "🔗"}
             ],
             "Generate Project Proposal": [
                 {"label": "Proposal Outline", "icon": "📝"},
@@ -111,7 +138,7 @@ class CopilotProjectProposalService:
         print(f"Reloading {self.__class__.__name__} - agents recreated")
         self.agents = self._create_agents()
     
-    def chat_with_agent(self, agent_name: str, message: str, llm_history: List[Dict[str, Any]], provider: str = "ollama") -> Generator[Dict, None, None]:
+    def chat_with_agent(self, agent_name: str, message: str, llm_history: List[Dict[str, Any]]) -> Generator[Dict, None, None]:
         """Route chat to the appropriate agent module"""
         
         agent : dspy.Module = self.agents.get(agent_name)
@@ -120,12 +147,13 @@ class CopilotProjectProposalService:
     
         # Delegate to the specific agent
         past_messages = " \n ".join([h["role"] + ": " + h["content"] for h in llm_history ][-5:])
-        topic = "LLM for Math" 
+        topic = "diffusion for video generation" #TODO: make it dynamic
        
         #assistant_message = {"role": "assistant", "content": answer}
         #messages.append(assistant_message)
 
-        agent.query_tools.flow_log = []
+        #agent.query_tools.flow_log = []
+        agent.flow_log = []
         answer = agent(message, past_messages, topic) # ,llm_history, provider)
-        return answer, agent.query_tools.flow_log
+        return answer, agent.flow_log
 

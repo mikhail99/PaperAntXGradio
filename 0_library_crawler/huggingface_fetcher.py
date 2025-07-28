@@ -7,8 +7,8 @@ import logging
 import os
 from pathlib import Path
 
-from library_crawler.models import HFPaperInfo, BASE_URL
-from library_crawler.io import load_existing_dates, append_to_csv, parse_date
+from .models import HFPaperInfo, BASE_URL
+from .io import load_existing_dates, append_to_csv, parse_date
 
 def get_papers_for_date(target_date: date, save_debug_html: bool = False) -> Optional[List[HFPaperInfo]]:
     """

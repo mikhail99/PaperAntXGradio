@@ -1,4 +1,4 @@
-from core.copilots.copilot_business_service import CopilotBusinessService
+from core.copilots.project_buiseness.copilot_business_service import CopilotBusinessService
 import gradio as gr
 from ui.components.enhanced_copilot import build_copilot_view
 

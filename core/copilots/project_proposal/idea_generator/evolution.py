@@ -4,11 +4,12 @@ import dspy
 #evolution algotithm go generate new abstracts 
 from typing import Literal, List
 # --- Parameters ---
-POP_SIZE = 10
+POP_SIZE = 16 # must be a power of 2
 WIN_THRESHOLD = 2
 N_GENERATIONS = 3
-from models import Candidate, IdeaTemplate
-from signatures import IdeaEvolution, IdeaCompetition, IdeaTemplateSignature
+
+from core.copilots.project_proposal.idea_generator.models import Candidate
+from core.copilots.project_proposal.idea_generator.signatures import IdeaEvolution, IdeaCompetition, IdeaTemplateSignature, AHAMomentSignature, AHAKeyIdeas
 from pydantic import BaseModel
 
 class Abstract(BaseModel):
@@ -16,13 +17,26 @@ class Abstract(BaseModel):
     text: str
 
 
-def abstract_to_candidate(abstract:Abstract)->Candidate:
-    converter = dspy.ChainOfThought(IdeaTemplateSignature)
+def abstract_to_aha(abstract:Abstract)->str:
+    aha_detector = dspy.ChainOfThought(AHAMomentSignature)
     try:
+        print(f"Abstract => AHA information")
+        aha_information = aha_detector(abstract=abstract.text).AHA_information
+        if len(aha_information) >  20:
+            return aha_information
+        else:
+            return ""
+    except Exception as e:
+        print(f"Error converting abstract {abstract.id} to candidate: {e}")
+        # Return a dummy or fallback candidate, or handle error as needed
+        return ""
+
+def abstract_to_candidate(abstract:Abstract)->Candidate:
+    converter = dspy.Predict(IdeaTemplateSignature)
+    try:
+        print(f"Abstract => Idea template")
         idea_template = converter(abstract=abstract.text).idea_template
 
-        print(f"Idea template: {idea_template}")
-        print(f"Idea template type: {type(idea_template)}")
         # The output from the LLM is a string representation of the Pydantic model.
         # We need to parse it into an actual IdeaTemplate object.
         # This assumes the LLM returns a JSON-compatible string.
@@ -34,20 +48,23 @@ def abstract_to_candidate(abstract:Abstract)->Candidate:
 
 
 # --- LLM-based generation and evaluation (placeholders) ---
-def generate_new_candidate(parent1:Candidate, parent2:Candidate,temperature:float=0.5) -> Candidate:
+def generate_new_candidate(parent1:Candidate, parent2:Candidate,context: str, temperature:float) -> Candidate:
     generator = dspy.ChainOfThought(IdeaEvolution)
     try:
-        result = generator(idea_A=parent1.idea.model_dump_json(), idea_B=parent2.idea.model_dump_json(), temperature=temperature)
+        print(f"Parent1, Parent2 => Child")
+        dspy.settings.configure(temperature=temperature)
+        result = generator(idea_A=parent1.idea, idea_B=parent2.idea, context=context)
         new_idea_str : str = result.new_idea
-        new_idea = IdeaTemplate.model_validate_json(new_idea_str)
+        #new_idea = IdeaTemplate.model_validate_json(new_idea_str)
         new_id = f"{parent1.id}-{parent2.id}-{random.randint(1000, 9999)}"
-        return Candidate(id=new_id, idea=new_idea, win_count=0)
+        return Candidate(id=new_id, idea=new_idea_str, win_count=0)
     except Exception as e:
         print(f"Error generating new candidate from {parent1.id} and {parent2.id}: {e}")
         return None
 
 def judge_abstracts(candidate1:Candidate, candidate2:Candidate)->int :
     selector = dspy.ChainOfThought(IdeaCompetition)
+    print(f"Candidate1, Candidate2 => Winner")
     result = selector(idea_A=candidate1.idea, idea_B=candidate2.idea)
     print(f"Judge result: {result}")
     if "A" in result.winner:
@@ -81,6 +98,13 @@ def initialize_population(all_abstracts:List[Abstract], population_size:int)->Li
     initial_candidates = [abstract_to_candidate(abstract) for abstract in initial_candidates_abstracts]
     return initial_candidates
 
+def get_population_aha(all_abstracts:List[Abstract])->str:
+    aha_information = [abstract_to_aha(abstract) for abstract in all_abstracts]
+    summarizer = dspy.Predict(AHAKeyIdeas)
+    print(f"AHA Summary")
+    key_ideas = summarizer(idea_information="\n".join(aha_information)).key_ideas
+    return key_ideas
+
 def pairwise_competition(population: List[Candidate]) -> List[Candidate]:
     # Shuffle and pair up for competitions
     random.shuffle(population)
@@ -93,56 +117,34 @@ def pairwise_competition(population: List[Candidate]) -> List[Candidate]:
         survivors.append(winner)
     return survivors
 
-def evolutionary_abstracts(all_abstracts:List[Abstract]) -> List[Candidate]:
-    # 1. Initialize a population of Candidates
-    population = initialize_population(all_abstracts, POP_SIZE)
-    winners = []
-
-    for gen in range(N_GENERATIONS):
-        print(f"\n--- Generation {gen+1} ---")
+def simplified_evolutionary_abstracts(all_abstracts: List[Abstract], context: str) -> Candidate:
+    # Start with initial population
+    population = initialize_population(all_abstracts, POP_SIZE)  # or any power of 2
+    
+    while len(population) > 1:
+        print(f"Generation: {len(population)} candidates")
         
-        # 2. Generate new candidates (offspring)
-        offspring = []
-        for _ in range(POP_SIZE // 2):
-            p1, p2 = random.sample(population, 2)
-            # Generate two children from each pair of parents
-            child1 = generate_new_candidate(p1, p2, temperature=0.2)
-            child2 = generate_new_candidate(p2, p1, temperature=0.6)
-            if child1: offspring.append(child1)
-            if child2: offspring.append(child2)
-
-        # 3. Combine current population and offspring for competition
-        combined_population = population + offspring
-
-        # 4. Pairwise competitions to select survivors
-        survivors = pairwise_competition(combined_population)
-
-        # 5. Process survivors: move winners and build the next generation's pool
-        next_population = []
-        for candidate in survivors:
-            if candidate.win_count >= WIN_THRESHOLD:
-                print(f"🏆 Candidate {candidate.id} promoted to winners!")
-                winners.append(candidate)
+        # Pair up and generate children
+        new_population = []
+        for i in range(0, len(population), 2):
+            if i + 1 < len(population):
+                p1, p2 = population[i], population[i + 1]
+                
+                # Generate 2 children
+                c1 = generate_new_candidate(p1, p2, context=context, temperature=0.3)
+                c2 = generate_new_candidate(p2, p1, context=context, temperature=0.7)
+                
+                # Keep only the better child
+                winner = judge_abstracts(c1, c2)
+                selected_child = c1 if winner == 0 else c2
+                new_population.append(selected_child)
             else:
-                next_population.append(candidate)
-
-        # 6. Repopulate to maintain population size
-        while len(next_population) < POP_SIZE:
-            new_candidate = get_new_candidate(all_abstracts)
-            if new_candidate:
-                next_population.append(new_candidate)
-
-        population = next_population[:POP_SIZE] # Ensure size constraint
-
-        print(f"Population: {len(population)}, Winners: {len(winners)}")
-        # Print top 3 ideas in the current population for observability
-        population.sort(key=lambda c: c.win_count, reverse=True)
-        print("--- Top 3 ideas in population ---")
-        for cand in population[:3]:
-            print(cand)
-
-
-    return winners
+                # Odd number - keep the last one
+                new_population.append(population[i])
+        
+        population = new_population
+    
+    return population[0]  # Final winner
 
 
 from core.collections_manager import CollectionsManager
@@ -151,17 +153,19 @@ if __name__ == "__main__":
     dspy.configure(lm=dspy.LM('ollama_chat/qwen3:4b', api_base='http://localhost:11434', api_key=''))
 
     manager = CollectionsManager()
-    collection_name = "LLM_Reasoning_Agents"
+    collection_name = "HuggingFaceDailyPapers" #TODO: change this to the collection you want to use
     collection = manager.get_collection_by_name(collection_name)
     print(list(collection.articles.values())[0])
 
     all_abstracts = [Abstract(id=article.id, text=article.abstract) for article in collection.articles.values()]
     print(f"Number of abstracts in collection: {len(all_abstracts)}")
 
-    winners = evolutionary_abstracts(all_abstracts)
-    print(f"Number of winners: {len(winners)}")
-    for winner in winners:
-        print(winner)
+    aha_information = get_population_aha(all_abstracts[:100])
+    print(f"AHA information: {aha_information}")
+
+    winner = simplified_evolutionary_abstracts(all_abstracts[:100], aha_information)
+    print(f"Final winner: {winner.id}")
+    print(winner)
 
 
 

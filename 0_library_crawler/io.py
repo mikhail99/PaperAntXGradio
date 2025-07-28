@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from typing import List, Set, Union, Optional
 from datetime import date, datetime
-from library_crawler.models import HFPaperInfo
+from .models import HFPaperInfo
 
 # Define a constant for field names to ensure consistency
 CSV_FIELDNAMES = ['fetch_date', 'title', 'hf_id', 'arxiv_id', 'votes']

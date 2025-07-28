@@ -16,7 +16,7 @@ from core.collections_manager import CollectionsManager
 from core.data_models import Article
 
 # --- Configuration ---
-INPUT_JSON_PATH = os.path.join(PROJECT_ROOT, "data", "0_library_crawler_output", "huggingface_papers_enhanced.json")
+INPUT_JSON_PATH = os.path.join(PROJECT_ROOT, "0_library_crawler", "output", "huggingface_papers_enhanced.json")
 COLLECTION_NAME = "HuggingFaceDailyPapers"
 
 

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+'''
 class IdeaTemplate(BaseModel):
     research_question: str
     hypothesis: str
@@ -8,11 +8,11 @@ class IdeaTemplate(BaseModel):
     experiments: str
     key_findings: str
     applications: str
-
+'''
 
 class Candidate(BaseModel):
     id: str
-    idea: IdeaTemplate
+    idea: str# IdeaTemplate
     win_count: int = 0
 
     def __repr__(self):

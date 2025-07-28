@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
-from library_crawler.huggingface_fetcher import main as fetch_huggingface_papers
-from library_crawler.arxiv_fetcher import main as fetch_arxiv_details
+from .huggingface_fetcher import main as fetch_huggingface_papers
+from .arxiv_fetcher import main as fetch_arxiv_details
 
 # --- Configuration ---
 # Configure logging for the entire application
