@@ -12,7 +12,7 @@ from paperqa import Docs, Settings
 from core.utils import get_local_llm_settings
 
 # --- Configuration ---
-LLM_MODEL = "ollama/gemma3:4b"
+LLM_MODEL = "ollama/qwen3:4b"
 EMBEDDING_MODEL = "ollama/nomic-embed-text:latest"
 
 async def main(collection_name: str, question: str):

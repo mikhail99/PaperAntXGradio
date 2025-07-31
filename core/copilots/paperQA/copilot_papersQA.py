@@ -42,7 +42,8 @@ class EventLogger:
                 "type": "tool_complete",
                 "result": result[:200] + "..." if len(result) > 200 else result,  # Truncate long results
                 "duration": duration,
-                "status": "done" if success else "error",
+                "status": "done",  # Always use "done" since Gradio only accepts "pending" or "done"
+                "success": success,  # Track success separately
                 "end_timestamp": end_time
             })
     
@@ -67,20 +68,25 @@ class EventLogger:
                 args = event.get("args", {})
                 duration = event.get("duration", 0)
                 status = event.get("status", "done")
+                success = event.get("success", True)
                 
                 # Format args for display
                 args_str = ", ".join([f"{k}='{v}'" for k, v in args.items()])
                 
                 # Create metadata for the thought bubble
+                title_icon = "🛠️" if success else "⚠️"
                 metadata = {
-                    "title": f"🛠️ Tool: {tool_name}",
+                    "title": f"{title_icon} Tool: {tool_name}",
                     "status": status,
                     "duration": duration
                 }
                 
                 # Content shows the tool call and result
                 content = f"**Called:** `{tool_name}({args_str})`\n\n"
-                content += f"**Result:** {event.get('result', 'No result')}"
+                if success:
+                    content += f"**Result:** {event.get('result', 'No result')}"
+                else:
+                    content += f"**Error:** {event.get('result', 'No result')}"
                 
                 messages.append(ChatMessage(
                     role="assistant",
@@ -111,7 +117,7 @@ class EventLogger:
 class PaperQAReActAgent(dspy.Module):
     """ReAct agent for basic paper search and summarization."""
 
-    def __init__(self, collection_name: str = "HuggingFaceDailyPapers"):
+    def __init__(self, collection_name: str):
         super().__init__()
         self.event_logger = EventLogger()
         self.manager = CollectionsManager()
@@ -237,7 +243,7 @@ class PaperQAReActAgent(dspy.Module):
 class LiteratureReviewAgent(dspy.Module):
     """Specialized agent for advanced literature review using PaperQA."""
 
-    def __init__(self, collection_name: str = "HuggingFaceDailyPapers"):
+    def __init__(self, collection_name: str):
         super().__init__()
         self.event_logger = EventLogger()
         self.collection_name = collection_name
@@ -325,13 +331,14 @@ class LiteratureReviewAgent(dspy.Module):
 class CopilotPaperQAService:
     def __init__(self) -> None:
         """Initialize CopilotService with both ReAct agents"""
-        self.agents : Dict[str, dspy.Module] = self._create_agents()
+        self.collection_name = "Diffusion_Models" #HACK: make it dynamic TODO
+        self.agents : Dict[str, dspy.Module] = self._create_agents(self.collection_name)
     
-    def _create_agents(self) -> Dict[str, dspy.Module]:
+    def _create_agents(self, collection_name: str) -> Dict[str, dspy.Module]:
         """Create agent instances"""
         return {
-            "Research Assistant": PaperQAReActAgent(),
-            "Literature Review Assistant": LiteratureReviewAgent()
+            "Research Assistant": PaperQAReActAgent(collection_name),
+            "Literature Review Assistant": LiteratureReviewAgent(collection_name)
         }
     
     def get_agent_list(self) -> List[str]:

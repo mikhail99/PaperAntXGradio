@@ -13,7 +13,7 @@ from core.collections_manager import CollectionsManager
 
 # --- Global PaperQA Configuration (base settings) ---
 
-llm_model = "ollama/gemma3:4b"
+llm_model = "ollama/qwen3:4b"
 embedding_model = "ollama/nomic-embed-text:latest"
 
 # --- Lazy Service Initializer ---

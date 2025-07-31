@@ -11,7 +11,7 @@ import ollama
 logger = logging.getLogger(__name__)
 
 # Default model for this project
-DEFAULT_MODEL = "gemma3:4b"
+DEFAULT_MODEL = "qwen3:4b"
 DEFAULT_TEMPERATURE = 0.7
 DEFAULT_MAX_TOKENS = 4000
 

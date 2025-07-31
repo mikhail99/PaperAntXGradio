@@ -18,7 +18,7 @@ def get_llm():
     else:
         provider = os.getenv("DEFAULT_LLM_PROVIDER", "ollama").lower()
         if provider == "ollama":
-            model_name = os.getenv("OLLAMA_MODEL", "gemma3:4b")
+            model_name = os.getenv("OLLAMA_MODEL", "qwen3:4b")
             return dspy.LM(f'ollama_chat/{model_name}', api_base='http://localhost:11434', api_key='')
         elif provider == "openai":
             model_name = os.getenv("OPENAI_MODEL", "gpt-4o")
